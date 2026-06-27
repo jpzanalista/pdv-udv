@@ -54,10 +54,10 @@ async function main() {
   const totalReg = (await db.select().from(regioes)).length
   const totalNuc = (await db.select().from(nucleos)).length
 
-  // 3) Dev users (admin global + operador em um núcleo real)
+  // 3) Dev users (admin global + operador no Núcleo N. Senhora Santana / Empório NSS)
   const nucleoDev = req(
-    (await db.select().from(nucleos).where(eq(nucleos.type, 'nucleo')).limit(1))[0],
-    'nenhum núcleo importado',
+    (await db.select().from(nucleos).where(eq(nucleos.udvId, 162)).limit(1))[0],
+    'núcleo udv_id 162 (Senhora Santana) não encontrado',
   )
 
   await db

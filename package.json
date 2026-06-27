@@ -16,6 +16,7 @@
     "db:generate": "pnpm --filter @pdv-udv/db db:generate",
     "db:migrate": "pnpm --filter @pdv-udv/db db:migrate",
     "db:seed": "pnpm --filter @pdv-udv/db db:seed",
+    "db:import-taurus": "pnpm --filter @pdv-udv/db db:import-taurus",
     "db:studio": "pnpm --filter @pdv-udv/db db:studio",
     "test:login": "node scripts/test-login.mjs"
   },

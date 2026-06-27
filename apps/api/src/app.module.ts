@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { AuthModule } from './auth/auth.module'
+import { CatalogoModule } from './catalogo/catalogo.module'
 import { ContasModule } from './contas/contas.module'
 import { DbModule } from './db/db.module'
 import { HealthController } from './health/health.controller'
@@ -17,6 +18,7 @@ import { RegioesModule } from './regioes/regioes.module'
     NucleosModule,
     PessoasModule,
     ContasModule,
+    CatalogoModule,
   ],
   controllers: [HealthController],
 })

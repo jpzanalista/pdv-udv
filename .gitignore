@@ -29,3 +29,6 @@ npm-debug.log*
 
 # drizzle generated meta (keep migrations, ignore temp)
 drizzle/.snapshot
+
+# PII — nomes de clientes da migração TaurusPOS (não versionar)
+packages/db/data/taurus/clientes.json
