@@ -22,6 +22,13 @@
       "when": 1782574231485,
       "tag": "0002_drop_regiao_text",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1782584734580,
+      "tag": "0003_expediente_fechamento",
+      "breakpoints": true
     }
   ]
 }

@@ -17,3 +17,10 @@ export type Conta = { id: string; nome: string; tipo: string }
 export type CartItem = { produtoId: string; descricao: string; qtde: number; unitario: number }
 
 export type Ident = { kind: 'socio'; conta: Conta } | { kind: 'visitante' } | null
+
+export type Expediente = {
+  id: string
+  fundoTroco: string
+  abertoEm: string
+  esperadoCents: number
+}

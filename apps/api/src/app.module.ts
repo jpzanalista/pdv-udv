@@ -4,6 +4,7 @@ import { AuthModule } from './auth/auth.module'
 import { CatalogoModule } from './catalogo/catalogo.module'
 import { ContasModule } from './contas/contas.module'
 import { DbModule } from './db/db.module'
+import { ExpedientesModule } from './expedientes/expedientes.module'
 import { HealthController } from './health/health.controller'
 import { NucleosModule } from './nucleos/nucleos.module'
 import { PessoasModule } from './pessoas/pessoas.module'
@@ -21,6 +22,7 @@ import { VendasModule } from './vendas/vendas.module'
     ContasModule,
     CatalogoModule,
     VendasModule,
+    ExpedientesModule,
   ],
   controllers: [HealthController],
 })

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { BadRequestException, Inject, Injectable } from '@nestjs/common'
 import {
   type Database,
+  expedientes,
   lancamentos,
   pagamentos,
   produtos,
@@ -24,6 +25,13 @@ export class VendasService {
     const total = Math.max(0, subtotal - desconto)
 
     return this.db.transaction(async (tx) => {
+      const [exp] = await tx
+        .select()
+        .from(expedientes)
+        .where(and(eq(expedientes.nucleoId, nucleoId), eq(expedientes.status, 'aberto')))
+        .limit(1)
+      if (!exp) throw new BadRequestException('Abra o caixa antes de vender')
+
       const [{ max }] = await tx
         .select({ max: sql<number>`coalesce(max(${vendas.numero}), 0)` })
         .from(vendas)
@@ -36,6 +44,8 @@ export class VendasService {
         .values({
           id: vendaId,
           nucleoId,
+          expedienteId: exp.id,
+          terminalId: exp.terminalId,
           numero,
           personKind: input.personKind ?? null,
           pessoaId: input.pessoaId ?? null,

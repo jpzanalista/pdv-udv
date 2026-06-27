@@ -1,17 +1,19 @@
 'use client'
 
-import { calcularTotais, reaisToCents } from '@pdv-udv/core'
+import { calcularTotais, formatBRL, reaisToCents } from '@pdv-udv/core'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
+import { AbrirCaixa } from '@/components/caixa/AbrirCaixa'
 import { Cart } from '@/components/caixa/Cart'
+import { FecharCaixaModal } from '@/components/caixa/FecharCaixaModal'
 import { ProductGrid } from '@/components/caixa/ProductGrid'
 import { QtyStepper } from '@/components/caixa/QtyStepper'
 import { ReceberModal } from '@/components/caixa/ReceberModal'
 import { SocioModal } from '@/components/caixa/SocioModal'
 import { ApiError, api } from '@/lib/api'
 import { getToken } from '@/lib/auth'
-import type { CartItem, Categoria, Conta, Ident, Produto } from '@/lib/types'
+import type { CartItem, Categoria, Conta, Expediente, Ident, Produto } from '@/lib/types'
 
 const TODOS = '__todos__'
 
@@ -20,6 +22,9 @@ export default function CaixaPage() {
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [produtos, setProdutos] = useState<Produto[]>([])
   const [contas, setContas] = useState<Conta[]>([])
+  const [expediente, setExpediente] = useState<Expediente | null>(null)
+  const [sugestaoFundo, setSugestaoFundo] = useState<number | null>(null)
+  const [fecharOpen, setFecharOpen] = useState(false)
   const [carregando, setCarregando] = useState(true)
 
   const [activeCat, setActiveCat] = useState<string>(TODOS)
@@ -40,11 +45,14 @@ export default function CaixaPage() {
       api<Categoria[]>('/categorias'),
       api<Produto[]>('/produtos'),
       api<Conta[]>('/contas'),
+      api<{ aberto: Expediente | null; sugestaoFundoCents: number | null }>('/expedientes/atual'),
     ])
-      .then(([cat, prod, cont]) => {
+      .then(([cat, prod, cont, exp]) => {
         setCategorias(cat)
         setProdutos(prod.filter((p) => p.ativo && p.exibirVenda))
         setContas(cont)
+        setExpediente(exp.aberto)
+        setSugestaoFundo(exp.sugestaoFundoCents)
       })
       .catch((e) => {
         if (e instanceof ApiError && e.status === 401) router.replace('/login')
@@ -115,7 +123,51 @@ export default function CaixaPage() {
     }
   }
 
+  async function abrirCaixa(fundoCents: number) {
+    setSubmitting(true)
+    try {
+      await api('/expedientes/abrir', {
+        method: 'POST',
+        body: JSON.stringify({ fundoTrocoCents: fundoCents }),
+      })
+      const r = await api<{ aberto: Expediente | null }>('/expedientes/atual')
+      setExpediente(r.aberto)
+    } catch {
+      setMsg('Erro ao abrir o caixa.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function fecharCaixa(contadoCents: number) {
+    setSubmitting(true)
+    try {
+      const r = await api<{ diferencaCents: number }>('/expedientes/fechar', {
+        method: 'POST',
+        body: JSON.stringify({ valorContadoCents: contadoCents }),
+      })
+      setExpediente(null)
+      setFecharOpen(false)
+      setCart([])
+      setIdent(null)
+      setMsg(`Caixa fechado. Diferença: ${formatBRL(r.diferencaCents)}`)
+    } catch {
+      setMsg('Erro ao fechar o caixa.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   if (carregando) return <main className="p-8 text-ink-muted">Carregando caixa…</main>
+
+  if (!expediente)
+    return (
+      <AbrirCaixa
+        submitting={submitting}
+        sugestaoFundoCents={sugestaoFundo}
+        onAbrir={abrirCaixa}
+      />
+    )
 
   return (
     <main className="flex h-screen flex-col">
@@ -130,6 +182,16 @@ export default function CaixaPage() {
             onVisitante={() => setIdent({ kind: 'visitante' })}
             onTrocar={() => setIdent(null)}
           />
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="hidden text-sm text-success sm:inline">● Caixa aberto</span>
+          <button
+            type="button"
+            onClick={() => setFecharOpen(true)}
+            className="min-h-touch rounded border border-line bg-white px-3 text-sm font-semibold text-ink-muted hover:bg-canvas"
+          >
+            Fechar caixa
+          </button>
         </div>
       </header>
 
@@ -189,6 +251,15 @@ export default function CaixaPage() {
           submitting={submitting}
           onConfirm={confirmarVenda}
           onClose={() => setReceberOpen(false)}
+        />
+      )}
+
+      {fecharOpen && (
+        <FecharCaixaModal
+          esperadoCents={expediente.esperadoCents}
+          submitting={submitting}
+          onConfirm={fecharCaixa}
+          onClose={() => setFecharOpen(false)}
         />
       )}
     </main>

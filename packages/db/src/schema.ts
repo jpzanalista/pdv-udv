@@ -184,6 +184,9 @@ export const expedientes = pgTable('expedientes', {
   abertoPor: uuid('aberto_por').references(() => usuarios.id),
   abertoEm: timestamp('aberto_em', { withTimezone: true }).defaultNow().notNull(),
   fechadoEm: timestamp('fechado_em', { withTimezone: true }),
+  valorContado: money('valor_contado'),
+  valorEsperado: money('valor_esperado'),
+  diferenca: money('diferenca'),
 })
 
 // ---------- vendas (id gerado no cliente p/ offline) ----------
