@@ -69,6 +69,15 @@ export default function Home() {
             </Button>
           </Link>
         )}
+        {['tesoureiro_1', 'tesoureiro_2', 'responsavel_emporio', 'presidencia', 'admin'].includes(
+          me.role,
+        ) && (
+          <Link href="/historico" className="inline-block no-underline">
+            <Button variant="secondary" className="min-h-touch-lg px-6">
+              Histórico
+            </Button>
+          </Link>
+        )}
       </div>
     </main>
   )

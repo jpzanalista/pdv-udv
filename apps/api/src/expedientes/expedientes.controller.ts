@@ -67,7 +67,14 @@ export class ExpedientesController {
     return this.expedientes.criarMovimento(nucleoOf(user), user.sub, body)
   }
 
-  // ⚠️ 'pendentes' antes de ':id' para não cair no param.
+  // ⚠️ rotas estáticas ('historico', 'pendentes') antes de ':id'.
+  @Get('movimentos/historico')
+  @UseGuards(RolesGuard)
+  @Roles('tesoureiro_1', 'tesoureiro_2', 'responsavel_emporio', 'presidencia', 'admin')
+  historico(@CurrentUser() user: JwtClaims) {
+    return this.expedientes.historicoMovimentos(nucleoOf(user))
+  }
+
   @Get('movimentos/pendentes')
   @UseGuards(RolesGuard)
   @Roles('tesoureiro_1', 'tesoureiro_2', 'admin')

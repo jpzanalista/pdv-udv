@@ -110,6 +110,28 @@ export class ExpedientesService {
     return { ...mov, nucleoNome: nuc?.nome ?? null, validadorRole }
   }
 
+  /** Histórico completo de movimentos do núcleo (vitalício) + quem validou. */
+  historicoMovimentos(nucleoId: string) {
+    return this.db
+      .select({
+        id: caixaMovimentos.id,
+        tipo: caixaMovimentos.tipo,
+        destino: caixaMovimentos.destino,
+        valor: caixaMovimentos.valor,
+        descricao: caixaMovimentos.descricao,
+        recebedor: caixaMovimentos.recebedor,
+        status: caixaMovimentos.status,
+        validadoEm: caixaMovimentos.validadoEm,
+        createdAt: caixaMovimentos.createdAt,
+        validadorRole: usuarios.role,
+      })
+      .from(caixaMovimentos)
+      .leftJoin(usuarios, eq(usuarios.id, caixaMovimentos.validadoPor))
+      .where(eq(caixaMovimentos.nucleoId, nucleoId))
+      .orderBy(desc(caixaMovimentos.createdAt))
+      .limit(500)
+  }
+
   /** Sangrias para tesouraria pendentes de validação (todas do núcleo). */
   movimentosPendentes(nucleoId: string) {
     return this.db

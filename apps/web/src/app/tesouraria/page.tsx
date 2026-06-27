@@ -71,9 +71,14 @@ export default function TesourariaPage() {
     <main className="mx-auto max-w-2xl p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-brand">Tesouraria · validações</h1>
-        <Link href="/" className="text-sm text-ink-muted">
-          ← início
-        </Link>
+        <div className="flex items-center gap-3 text-sm">
+          <Link href="/historico" className="text-brand">
+            Histórico
+          </Link>
+          <Link href="/" className="text-ink-muted">
+            ← início
+          </Link>
+        </div>
       </div>
       <p className="mt-1 text-ink-muted">Sangrias para a tesouraria aguardando validação.</p>
       {erro && <p className="mt-2 text-danger">{erro}</p>}
