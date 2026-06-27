@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from 'react'
 import * as XLSX from 'xlsx'
+import { ProdutoFormModal } from '@/components/produtos/ProdutoFormModal'
 import { Button } from '@/components/ui/Button'
 import { ApiError, api } from '@/lib/api'
 import { getToken } from '@/lib/auth'
@@ -21,6 +22,7 @@ export default function ProdutosPage() {
   const [carregando, setCarregando] = useState(true)
   const [msg, setMsg] = useState<string | null>(null)
   const [importando, setImportando] = useState(false)
+  const [form, setForm] = useState<{ produto: Produto | null } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const catNome = useMemo(() => new Map(cats.map((c) => [c.id, c.nome])), [cats])
@@ -94,6 +96,17 @@ export default function ProdutosPage() {
     }
   }
 
+  async function toggle(p: Produto, campo: 'ativo' | 'exibirVenda') {
+    const novo = !p[campo]
+    setProdutos((prev) => prev.map((x) => (x.id === p.id ? { ...x, [campo]: novo } : x)))
+    try {
+      await api(`/produtos/${p.id}`, { method: 'PATCH', body: JSON.stringify({ [campo]: novo }) })
+    } catch {
+      setProdutos((prev) => prev.map((x) => (x.id === p.id ? { ...x, [campo]: !novo } : x)))
+      setMsg('Não foi possível atualizar o produto.')
+    }
+  }
+
   if (carregando) return <main className="p-8 text-ink-muted">Carregando…</main>
   if (me && !ALLOWED.includes(me.role))
     return (
@@ -110,17 +123,25 @@ export default function ProdutosPage() {
     <main className="mx-auto max-w-4xl p-6">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-brand">Produtos</h1>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button className="text-sm" onClick={() => setForm({ produto: null })}>
+            Novo produto
+          </Button>
+          <Button
+            variant="secondary"
+            className="text-sm"
+            onClick={() => fileRef.current?.click()}
+            disabled={importando}
+          >
+            {importando ? 'Importando…' : 'Importar'}
+          </Button>
           <Button
             variant="secondary"
             className="text-sm"
             onClick={exportar}
             disabled={!produtos.length}
           >
-            Exportar Excel
-          </Button>
-          <Button className="text-sm" onClick={() => fileRef.current?.click()} disabled={importando}>
-            {importando ? 'Importando…' : 'Importar Excel'}
+            Exportar
           </Button>
           <input
             ref={fileRef}
@@ -147,6 +168,8 @@ export default function ProdutosPage() {
               <th className="p-3 text-right">Custo</th>
               <th className="p-3 text-right">Venda</th>
               <th className="p-3">Ativo</th>
+              <th className="p-3">Exibir na venda</th>
+              <th className="p-3" />
             </tr>
           </thead>
           <tbody>
@@ -159,12 +182,52 @@ export default function ProdutosPage() {
                 <td className="p-3 text-right font-semibold">
                   {formatBRL(reaisToCents(Number(p.precoVenda)))}
                 </td>
-                <td className="p-3">{p.ativo ? 'Sim' : 'Não'}</td>
+                <td className="p-3">
+                  <Toggle on={p.ativo} onClick={() => toggle(p, 'ativo')} />
+                </td>
+                <td className="p-3">
+                  <Toggle on={p.exibirVenda} onClick={() => toggle(p, 'exibirVenda')} />
+                </td>
+                <td className="p-3">
+                  <button
+                    type="button"
+                    onClick={() => setForm({ produto: p })}
+                    className="text-sm font-semibold text-brand"
+                  >
+                    editar
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {form && (
+        <ProdutoFormModal
+          produto={form.produto}
+          categorias={cats}
+          onClose={() => setForm(null)}
+          onSaved={async () => {
+            setForm(null)
+            await carregar()
+          }}
+        />
+      )}
     </main>
+  )
+}
+
+function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`min-h-touch rounded-full px-3 text-xs font-semibold ${
+        on ? 'bg-success/15 text-success' : 'border border-line bg-canvas text-ink-light'
+      }`}
+    >
+      {on ? 'Sim' : 'Não'}
+    </button>
   )
 }

@@ -1,6 +1,6 @@
-import { Inject, Injectable } from '@nestjs/common'
+import { Inject, Injectable, NotFoundException } from '@nestjs/common'
 import { type Database, categorias, produtos } from '@pdv-udv/db'
-import type { CreateProdutoInput, ImportProdutosInput } from '@pdv-udv/shared'
+import type { CreateProdutoInput, ImportProdutosInput, UpdateProdutoInput } from '@pdv-udv/shared'
 import { and, asc, eq } from 'drizzle-orm'
 import { DB } from '../db/db.module'
 
@@ -33,6 +33,28 @@ export class ProdutosService {
       ? and(eq(produtos.nucleoId, nucleoId), eq(produtos.categoriaId, categoriaId))
       : eq(produtos.nucleoId, nucleoId)
     return this.db.select().from(produtos).where(where).orderBy(asc(produtos.descricao))
+  }
+
+  async atualizar(nucleoId: string, id: string, patch: UpdateProdutoInput) {
+    const set: Partial<typeof produtos.$inferInsert> = {}
+    if (patch.codigo !== undefined) set.codigo = patch.codigo
+    if (patch.codigoBarras !== undefined) set.codigoBarras = patch.codigoBarras
+    if (patch.descricao !== undefined) set.descricao = patch.descricao
+    if (patch.categoriaId !== undefined) set.categoriaId = patch.categoriaId
+    if (patch.precoVenda !== undefined) set.precoVenda = String(patch.precoVenda)
+    if (patch.precoCusto !== undefined) set.precoCusto = String(patch.precoCusto)
+    if (patch.estoqueAtual !== undefined) set.estoqueAtual = String(patch.estoqueAtual)
+    if (patch.controlaEstoque !== undefined) set.controlaEstoque = patch.controlaEstoque
+    if (patch.ativo !== undefined) set.ativo = patch.ativo
+    if (patch.exibirVenda !== undefined) set.exibirVenda = patch.exibirVenda
+
+    const [row] = await this.db
+      .update(produtos)
+      .set(set)
+      .where(and(eq(produtos.nucleoId, nucleoId), eq(produtos.id, id)))
+      .returning()
+    if (!row) throw new NotFoundException('Produto não encontrado')
+    return row
   }
 
   /** Import em massa via Excel: casa por código; cria categoria a partir do grupo. */

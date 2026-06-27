@@ -26,6 +26,23 @@ export const importProdutosSchema = z.object({
 })
 export type ImportProdutosInput = z.infer<typeof importProdutosSchema>
 
+/** Atualização parcial de produto (toggles e edição completa). */
+export const updateProdutoSchema = z
+  .object({
+    codigo: z.string().max(40).nullish(),
+    codigoBarras: z.string().max(40).nullish(),
+    descricao: z.string().min(1).max(160).optional(),
+    categoriaId: z.string().uuid().nullish(),
+    precoVenda: z.number().min(0).optional(),
+    precoCusto: z.number().min(0).optional(),
+    estoqueAtual: z.number().optional(),
+    controlaEstoque: z.boolean().optional(),
+    ativo: z.boolean().optional(),
+    exibirVenda: z.boolean().optional(),
+  })
+  .refine((d) => Object.keys(d).length > 0, { message: 'Nada para atualizar' })
+export type UpdateProdutoInput = z.infer<typeof updateProdutoSchema>
+
 export const createProdutoSchema = z.object({
   descricao: z.string().min(1).max(160),
   categoriaId: z.string().uuid().optional(),

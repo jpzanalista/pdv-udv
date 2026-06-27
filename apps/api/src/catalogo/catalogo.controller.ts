@@ -1,12 +1,24 @@
-import { BadRequestException, Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common'
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common'
 import {
   type CreateCategoriaInput,
   type CreateProdutoInput,
   type ImportProdutosInput,
   type JwtClaims,
+  type UpdateProdutoInput,
   createCategoriaSchema,
   createProdutoSchema,
   importProdutosSchema,
+  updateProdutoSchema,
 } from '@pdv-udv/shared'
 import { CurrentUser } from '../auth/current-user.decorator'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
@@ -66,5 +78,16 @@ export class ProdutosController {
     @Body(new ZodValidationPipe(importProdutosSchema)) body: ImportProdutosInput,
   ) {
     return this.produtos.importar(nucleoOf(user), body)
+  }
+
+  @Patch(':id')
+  @UseGuards(RolesGuard)
+  @Roles('responsavel_emporio', 'admin')
+  atualizar(
+    @CurrentUser() user: JwtClaims,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(updateProdutoSchema)) body: UpdateProdutoInput,
+  ) {
+    return this.produtos.atualizar(nucleoOf(user), id, body)
   }
 }
