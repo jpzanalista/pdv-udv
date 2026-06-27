@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/Button'
@@ -57,9 +58,9 @@ export default function Home() {
           </li>
         </ul>
       </Card>
-      <p className="mt-4 text-sm text-ink-light">
-        Próximo: tela de caixa (grade de produtos + carrinho).
-      </p>
+      <Link href="/caixa" className="mt-4 inline-block no-underline">
+        <Button className="min-h-touch-lg px-8">Abrir caixa →</Button>
+      </Link>
     </main>
   )
 }
