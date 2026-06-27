@@ -9,9 +9,10 @@ export const CARGO_TO_ROLE: Record<number, Role> = {
   49: 'presidencia', // Presidente Local
   47: 'representante_nucleo', // Mestre Representante
   48: 'representante_nucleo', // Responsável pela DAV (= Mestre Representante, p/ DAVs em início)
-  // TODO(tesoureiro): preencher role_new_id do 1º e 2º Tesoureiro Local quando o
-  // responsável retornar (1-2 dias) → 'tesoureiro_1' / 'tesoureiro_2'.
+  53: 'tesoureiro_1', // 1º TESOUREIRO(A) LOCAL
+  54: 'tesoureiro_2', // 2º TESOUREIRO(A) LOCAL
   // Secretário: intencionalmente FORA do mapa → bloqueado (403).
+  // (53/54 assumidos como role_new_id de custom:cargos; confirmar no srp-debug.)
 }
 
 /** Prioridade quando a pessoa tem múltiplos cargos (escolhe o de maior peso). */

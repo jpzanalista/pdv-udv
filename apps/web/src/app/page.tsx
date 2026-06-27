@@ -58,9 +58,18 @@ export default function Home() {
           </li>
         </ul>
       </Card>
-      <Link href="/caixa" className="mt-4 inline-block no-underline">
-        <Button className="min-h-touch-lg px-8">Abrir caixa →</Button>
-      </Link>
+      <div className="mt-4 flex flex-wrap gap-3">
+        <Link href="/caixa" className="inline-block no-underline">
+          <Button className="min-h-touch-lg px-8">Abrir caixa →</Button>
+        </Link>
+        {['tesoureiro_1', 'tesoureiro_2', 'admin'].includes(me.role) && (
+          <Link href="/tesouraria" className="inline-block no-underline">
+            <Button variant="secondary" className="min-h-touch-lg px-6">
+              Tesouraria · validações
+            </Button>
+          </Link>
+        )}
+      </div>
     </main>
   )
 }

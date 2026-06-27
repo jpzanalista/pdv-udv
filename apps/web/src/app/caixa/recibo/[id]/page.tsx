@@ -15,8 +15,16 @@ type Movimento = {
   descricao: string | null
   recebedor: string | null
   status: string | null
+  validadoEm: string | null
+  validadorRole: string | null
   createdAt: string
   nucleoNome: string | null
+}
+
+const TESOUREIRO_LABEL: Record<string, string> = {
+  tesoureiro_1: '1º Tesoureiro(a)',
+  tesoureiro_2: '2º Tesoureiro(a)',
+  admin: 'Administração',
 }
 
 export default function ReciboPage() {
@@ -49,19 +57,41 @@ export default function ReciboPage() {
         {mov.nucleoNome && <p className="text-center text-ink-muted">Empório {mov.nucleoNome}</p>}
         <hr className="my-5 border-line" />
 
-        <p className="leading-relaxed">
-          Declaro que foi efetuado <b>pagamento em dinheiro do caixa</b> no valor de{' '}
-          <b>{formatBRL(reaisToCents(Number(mov.valor)))}</b>
-          {mov.recebedor ? (
-            <>
-              {' '}
-              para <b>{mov.recebedor}</b>
-            </>
-          ) : null}
-          .
-        </p>
-        {mov.descricao && <p className="mt-2">Referente a: {mov.descricao}</p>}
-        <p className="mt-2">Data: {data}</p>
+        {mov.destino === 'tesouraria' ? (
+          <>
+            <p className="leading-relaxed">
+              Repasse de <b>{formatBRL(reaisToCents(Number(mov.valor)))}</b> do caixa para a{' '}
+              <b>tesouraria</b>.
+            </p>
+            {mov.descricao && <p className="mt-2">Referente a: {mov.descricao}</p>}
+            <p className="mt-2">Data: {data}</p>
+            {mov.status === 'validada' ? (
+              <p className="mt-4 rounded bg-success/10 px-3 py-2 text-sm text-success">
+                ✓ Validado por{' '}
+                <b>{TESOUREIRO_LABEL[mov.validadorRole ?? ''] ?? 'Tesouraria'}</b>
+                {mov.validadoEm ? ` em ${new Date(mov.validadoEm).toLocaleString('pt-BR')}` : ''}.
+              </p>
+            ) : (
+              <p className="mt-4 text-sm text-warning">Pendente de validação do tesoureiro.</p>
+            )}
+          </>
+        ) : (
+          <>
+            <p className="leading-relaxed">
+              Declaro que foi efetuado <b>pagamento em dinheiro do caixa</b> no valor de{' '}
+              <b>{formatBRL(reaisToCents(Number(mov.valor)))}</b>
+              {mov.recebedor ? (
+                <>
+                  {' '}
+                  para <b>{mov.recebedor}</b>
+                </>
+              ) : null}
+              .
+            </p>
+            {mov.descricao && <p className="mt-2">Referente a: {mov.descricao}</p>}
+            <p className="mt-2">Data: {data}</p>
+          </>
+        )}
 
         <p className="mt-8 text-sm text-ink-light">
           Documento gerado pelo sistema — sem necessidade de assinatura.

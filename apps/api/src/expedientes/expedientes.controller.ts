@@ -18,6 +18,8 @@ import {
 } from '@pdv-udv/shared'
 import { CurrentUser } from '../auth/current-user.decorator'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
+import { Roles } from '../common/roles.decorator'
+import { RolesGuard } from '../common/roles.guard'
 import { ZodValidationPipe } from '../common/zod-validation.pipe'
 import { ExpedientesService } from './expedientes.service'
 
@@ -63,6 +65,21 @@ export class ExpedientesController {
     @Body(new ZodValidationPipe(createMovimentoSchema)) body: CreateMovimentoInput,
   ) {
     return this.expedientes.criarMovimento(nucleoOf(user), user.sub, body)
+  }
+
+  // ⚠️ 'pendentes' antes de ':id' para não cair no param.
+  @Get('movimentos/pendentes')
+  @UseGuards(RolesGuard)
+  @Roles('tesoureiro_1', 'tesoureiro_2', 'admin')
+  pendentes(@CurrentUser() user: JwtClaims) {
+    return this.expedientes.movimentosPendentes(nucleoOf(user))
+  }
+
+  @Post('movimentos/:id/validar')
+  @UseGuards(RolesGuard)
+  @Roles('tesoureiro_1', 'tesoureiro_2', 'admin')
+  validar(@CurrentUser() user: JwtClaims, @Param('id') id: string) {
+    return this.expedientes.validarMovimento(nucleoOf(user), user.sub, id)
   }
 
   @Get('movimentos/:id')

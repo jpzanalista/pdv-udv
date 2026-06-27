@@ -11,6 +11,7 @@ import {
   expedientes,
   nucleos,
   pagamentos,
+  usuarios,
   vendas,
 } from '@pdv-udv/db'
 import type { CreateMovimentoInput } from '@pdv-udv/shared'
@@ -87,7 +88,7 @@ export class ExpedientesService {
       .orderBy(desc(caixaMovimentos.createdAt))
   }
 
-  /** Movimento + nome do núcleo (para o recibo). */
+  /** Movimento + nome do núcleo + papel de quem validou (para o recibo). */
   async getMovimento(nucleoId: string, id: string) {
     const [mov] = await this.db
       .select()
@@ -96,7 +97,53 @@ export class ExpedientesService {
       .limit(1)
     if (!mov) throw new NotFoundException('Movimento não encontrado')
     const [nuc] = await this.db.select().from(nucleos).where(eq(nucleos.id, nucleoId)).limit(1)
-    return { ...mov, nucleoNome: nuc?.nome ?? null }
+
+    let validadorRole: string | null = null
+    if (mov.validadoPor) {
+      const [u] = await this.db
+        .select({ role: usuarios.role })
+        .from(usuarios)
+        .where(eq(usuarios.id, mov.validadoPor))
+        .limit(1)
+      validadorRole = u?.role ?? null
+    }
+    return { ...mov, nucleoNome: nuc?.nome ?? null, validadorRole }
+  }
+
+  /** Sangrias para tesouraria pendentes de validação (todas do núcleo). */
+  movimentosPendentes(nucleoId: string) {
+    return this.db
+      .select()
+      .from(caixaMovimentos)
+      .where(
+        and(
+          eq(caixaMovimentos.nucleoId, nucleoId),
+          eq(caixaMovimentos.tipo, 'sangria'),
+          eq(caixaMovimentos.destino, 'tesouraria'),
+          eq(caixaMovimentos.status, 'pendente'),
+        ),
+      )
+      .orderBy(desc(caixaMovimentos.createdAt))
+  }
+
+  /** Tesoureiro valida uma sangria→tesouraria → habilita o recibo. */
+  async validarMovimento(nucleoId: string, validadorId: string, id: string) {
+    const [mov] = await this.db
+      .select()
+      .from(caixaMovimentos)
+      .where(and(eq(caixaMovimentos.id, id), eq(caixaMovimentos.nucleoId, nucleoId)))
+      .limit(1)
+    if (!mov) throw new NotFoundException('Movimento não encontrado')
+    if (!(mov.tipo === 'sangria' && mov.destino === 'tesouraria')) {
+      throw new BadRequestException('Apenas sangrias para tesouraria precisam de validação')
+    }
+    if (mov.status !== 'pendente') throw new BadRequestException('Movimento já validado')
+    const [updated] = await this.db
+      .update(caixaMovimentos)
+      .set({ status: 'validada', validadoPor: validadorId, validadoEm: new Date() })
+      .where(eq(caixaMovimentos.id, id))
+      .returning()
+    return updated
   }
 
   async abrir(nucleoId: string, abertoPor: string, fundoTrocoCents: number) {

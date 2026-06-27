@@ -89,10 +89,10 @@ export default function LoginPage() {
 
         <div className="mt-6 border-t border-line pt-4">
           <p className="mb-2 text-xs text-ink-light">Atalhos de desenvolvimento:</p>
-          <div className="flex gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <Button
               variant="ghost"
-              className="flex-1 text-sm"
+              className="text-sm"
               onClick={() => devEntrar('caixa@pdv.local')}
               disabled={loading}
             >
@@ -100,7 +100,15 @@ export default function LoginPage() {
             </Button>
             <Button
               variant="ghost"
-              className="flex-1 text-sm"
+              className="text-sm"
+              onClick={() => devEntrar('tesoureiro@pdv.local')}
+              disabled={loading}
+            >
+              Dev: tesoureiro
+            </Button>
+            <Button
+              variant="ghost"
+              className="text-sm"
               onClick={() => devEntrar('admin@pdv.local')}
               disabled={loading}
             >

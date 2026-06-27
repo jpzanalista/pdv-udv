@@ -65,21 +65,22 @@ async function main() {
     .values([
       { cpf: '00000000000', nome: 'Admin', email: 'admin@pdv.local' },
       { cpf: '11111111111', nome: 'Operador', email: 'caixa@pdv.local' },
+      { cpf: '22222222222', nome: 'Tesoureiro', email: 'tesoureiro@pdv.local' },
     ])
     .onConflictDoNothing({ target: pessoas.cpf })
 
-  const admin = req(
-    (await db.select().from(pessoas).where(eq(pessoas.email, 'admin@pdv.local')).limit(1))[0],
-    'pessoa admin não criada',
-  )
-  const operador = req(
-    (await db.select().from(pessoas).where(eq(pessoas.email, 'caixa@pdv.local')).limit(1))[0],
-    'pessoa operador não criada',
-  )
+  const byEmail = async (email: string) =>
+    req(
+      (await db.select().from(pessoas).where(eq(pessoas.email, email)).limit(1))[0],
+      `pessoa ${email} não criada`,
+    )
+  const admin = await byEmail('admin@pdv.local')
+  const operador = await byEmail('caixa@pdv.local')
+  const tesoureiro = await byEmail('tesoureiro@pdv.local')
 
   const ensureUsuario = async (
     pessoaId: string,
-    role: 'admin' | 'responsavel_emporio',
+    role: 'admin' | 'responsavel_emporio' | 'tesoureiro_1',
     nucleoId: string | null,
   ) => {
     const exists = (
@@ -89,14 +90,20 @@ async function main() {
   }
   await ensureUsuario(admin.id, 'admin', null)
   await ensureUsuario(operador.id, 'responsavel_emporio', nucleoDev.id)
+  await ensureUsuario(tesoureiro.id, 'tesoureiro_1', nucleoDev.id)
   await db
     .insert(pessoaNucleo)
-    .values({ pessoaId: operador.id, nucleoId: nucleoDev.id })
+    .values([
+      { pessoaId: operador.id, nucleoId: nucleoDev.id },
+      { pessoaId: tesoureiro.id, nucleoId: nucleoDev.id },
+    ])
     .onConflictDoNothing()
 
   console.log(`Seed OK: ${totalReg} regiões, ${totalNuc} núcleos`)
-  console.log(`  dev núcleo (operador): ${nucleoDev.nome} (${nucleoDev.id})`)
-  console.log('  dev-login: admin@pdv.local (admin) / caixa@pdv.local (responsavel_emporio)')
+  console.log(`  dev núcleo: ${nucleoDev.nome} (${nucleoDev.id})`)
+  console.log(
+    '  dev-login: admin@pdv.local / caixa@pdv.local / tesoureiro@pdv.local (tesoureiro_1)',
+  )
   process.exit(0)
 }
 
