@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { type ChangeEvent, useRef, useState } from 'react'
 import { useEffect } from 'react'
 import * as XLSX from 'xlsx'
+import { ContaFormModal } from '@/components/contas/ContaFormModal'
 import { Button } from '@/components/ui/Button'
 import { ApiError, api } from '@/lib/api'
 import { getToken } from '@/lib/auth'
@@ -26,6 +27,7 @@ export default function ContasPage() {
   const [carregando, setCarregando] = useState(true)
   const [msg, setMsg] = useState<string | null>(null)
   const [importando, setImportando] = useState(false)
+  const [form, setForm] = useState<{ conta: ContaRow | null } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   async function carregar() {
@@ -105,6 +107,9 @@ export default function ContasPage() {
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-brand">Contas</h1>
         <div className="flex flex-wrap items-center gap-2">
+          <Button className="text-sm" onClick={() => setForm({ conta: null })}>
+            Nova conta
+          </Button>
           <Button
             variant="secondary"
             className="text-sm"
@@ -134,6 +139,8 @@ export default function ContasPage() {
               <th className="p-3">CPF (titular)</th>
               <th className="p-3">WhatsApp</th>
               <th className="p-3 text-right">Desc. %</th>
+              <th className="p-3">Ativa</th>
+              <th className="p-3" />
             </tr>
           </thead>
           <tbody>
@@ -144,11 +151,38 @@ export default function ContasPage() {
                 <td className="p-3">{c.titularCpf ?? '—'}</td>
                 <td className="p-3">{c.titularWhatsapp ?? '—'}</td>
                 <td className="p-3 text-right">{Number(c.descontoPct).toFixed(0)}%</td>
+                <td className="p-3">
+                  {c.ativa ? (
+                    <span className="text-success">Sim</span>
+                  ) : (
+                    <span className="text-ink-light">Não</span>
+                  )}
+                </td>
+                <td className="p-3">
+                  <button
+                    type="button"
+                    onClick={() => setForm({ conta: c })}
+                    className="text-sm font-semibold text-brand"
+                  >
+                    editar
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {form && (
+        <ContaFormModal
+          conta={form.conta}
+          onClose={() => setForm(null)}
+          onSaved={async () => {
+            setForm(null)
+            await carregar()
+          }}
+        />
+      )}
     </main>
   )
 }

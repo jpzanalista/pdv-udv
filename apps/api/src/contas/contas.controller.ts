@@ -1,10 +1,21 @@
-import { BadRequestException, Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common'
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common'
 import {
   type CreateContaInput,
   type ImportContasInput,
   type JwtClaims,
+  type UpdateContaInput,
   createContaSchema,
   importContasSchema,
+  updateContaSchema,
 } from '@pdv-udv/shared'
 import { CurrentUser } from '../auth/current-user.decorator'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
@@ -39,6 +50,17 @@ export class ContasController {
   @Get()
   list(@CurrentUser() user: JwtClaims) {
     return this.contas.list(this.requireNucleo(user))
+  }
+
+  @Patch(':id')
+  @UseGuards(RolesGuard)
+  @Roles('responsavel_emporio', 'admin')
+  atualizar(
+    @CurrentUser() user: JwtClaims,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(updateContaSchema)) body: UpdateContaInput,
+  ) {
+    return this.contas.atualizar(this.requireNucleo(user), id, body)
   }
 
   @Get(':id')
