@@ -10,6 +10,70 @@ import { clearTokens, getToken } from '@/lib/auth'
 
 type Me = { sub: string; role: string; nucleoId: string | null; nucleoNome: string | null }
 
+type Item = {
+  href: string
+  titulo: string
+  descricao: string
+  papeis: string[] | null // null = todos
+}
+
+type Secao = {
+  nome: string
+  itens: Item[]
+}
+
+const MENU: Secao[] = [
+  {
+    nome: 'Operação',
+    itens: [
+      {
+        href: '/caixa',
+        titulo: 'Abrir caixa',
+        descricao: 'Vender, receber e fechar o caixa do expediente.',
+        papeis: null,
+      },
+    ],
+  },
+  {
+    nome: 'Cadastros',
+    itens: [
+      {
+        href: '/produtos',
+        titulo: 'Produtos',
+        descricao: 'Cadastro, preços, estoque e exibição na venda.',
+        papeis: ['responsavel_emporio', 'admin'],
+      },
+      {
+        href: '/categorias',
+        titulo: 'Categorias',
+        descricao: 'As abas da grade de venda.',
+        papeis: ['responsavel_emporio', 'admin'],
+      },
+    ],
+  },
+  {
+    nome: 'Financeiro',
+    itens: [
+      {
+        href: '/historico',
+        titulo: 'Histórico',
+        descricao: 'Movimentações vitalícias, filtros e exportação.',
+        papeis: ['tesoureiro_1', 'tesoureiro_2', 'responsavel_emporio', 'presidencia', 'admin'],
+      },
+      {
+        href: '/tesouraria',
+        titulo: 'Tesouraria · validações',
+        descricao: 'Validar sangrias pendentes e gerar recibos.',
+        papeis: ['tesoureiro_1', 'tesoureiro_2', 'admin'],
+      },
+    ],
+  },
+]
+
+function podeVer(item: Item, role: string) {
+  return item.papeis === null || item.papeis.includes(role)
+}
+
 export default function Home() {
   const router = useRouter()
   const [me, setMe] = useState<Me | null>(null)
@@ -39,60 +103,39 @@ export default function Home() {
   if (carregando) return <main className="p-8 text-ink-muted">Carregando…</main>
   if (!me) return null
 
+  const secoes = MENU.map((s) => ({
+    ...s,
+    itens: s.itens.filter((i) => podeVer(i, me.role)),
+  })).filter((s) => s.itens.length > 0)
+
   return (
-    <main className="mx-auto max-w-2xl p-6">
+    <main className="mx-auto max-w-3xl p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-brand">PDV UDV</h1>
         <Button variant="ghost" className="text-sm" onClick={sair}>
           Sair
         </Button>
       </div>
-      <Card className="mt-4 p-5">
-        <h2 className="mb-2 font-semibold">Você está autenticado ✓</h2>
-        <ul className="text-ink-muted">
-          <li>
-            <b>Papel:</b> {me.role}
-          </li>
-          <li>
-            <b>Núcleo:</b> {me.nucleoNome ?? '—'}
-          </li>
-        </ul>
-      </Card>
-      <div className="mt-4 flex flex-wrap gap-3">
-        <Link href="/caixa" className="inline-block no-underline">
-          <Button className="min-h-touch-lg px-8">Abrir caixa →</Button>
-        </Link>
-        {['tesoureiro_1', 'tesoureiro_2', 'admin'].includes(me.role) && (
-          <Link href="/tesouraria" className="inline-block no-underline">
-            <Button variant="secondary" className="min-h-touch-lg px-6">
-              Tesouraria · validações
-            </Button>
-          </Link>
-        )}
-        {['tesoureiro_1', 'tesoureiro_2', 'responsavel_emporio', 'presidencia', 'admin'].includes(
-          me.role,
-        ) && (
-          <Link href="/historico" className="inline-block no-underline">
-            <Button variant="secondary" className="min-h-touch-lg px-6">
-              Histórico
-            </Button>
-          </Link>
-        )}
-        {['responsavel_emporio', 'admin'].includes(me.role) && (
-          <Link href="/produtos" className="inline-block no-underline">
-            <Button variant="secondary" className="min-h-touch-lg px-6">
-              Produtos
-            </Button>
-          </Link>
-        )}
-        {['responsavel_emporio', 'admin'].includes(me.role) && (
-          <Link href="/categorias" className="inline-block no-underline">
-            <Button variant="secondary" className="min-h-touch-lg px-6">
-              Categorias
-            </Button>
-          </Link>
-        )}
-      </div>
+      <p className="mt-1 text-ink-muted">
+        <b>{me.role}</b>
+        {me.nucleoNome ? ` · ${me.nucleoNome}` : ''}
+      </p>
+
+      {secoes.map((secao) => (
+        <section key={secao.nome} className="mt-6">
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-light">{secao.nome}</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {secao.itens.map((item) => (
+              <Link key={item.href} href={item.href} className="no-underline">
+                <Card className="min-h-touch-lg p-5 transition hover:border-brand hover:shadow-md">
+                  <h3 className="font-semibold text-ink">{item.titulo}</h3>
+                  <p className="mt-1 text-sm text-ink-muted">{item.descricao}</p>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ))}
     </main>
   )
 }
