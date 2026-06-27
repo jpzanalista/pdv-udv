@@ -8,6 +8,12 @@ export const loginSchema = z.object({
 })
 export type LoginInput = z.infer<typeof loginSchema>
 
+/** Login de desenvolvimento (NODE_ENV != production) — entra por e-mail de usuário semeado. */
+export const devLoginSchema = z.object({
+  email: z.string().email(),
+})
+export type DevLoginInput = z.infer<typeof devLoginSchema>
+
 /** Sócio: solicita OTP por WhatsApp a partir do CPF. */
 export const otpRequestSchema = z.object({
   cpf: z.string().regex(/^\d{11}$/, 'CPF deve ter 11 dígitos'),

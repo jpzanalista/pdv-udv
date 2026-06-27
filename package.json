@@ -15,6 +15,7 @@
     "format": "biome format --write .",
     "db:generate": "pnpm --filter @pdv-udv/db db:generate",
     "db:migrate": "pnpm --filter @pdv-udv/db db:migrate",
+    "db:seed": "pnpm --filter @pdv-udv/db db:seed",
     "db:studio": "pnpm --filter @pdv-udv/db db:studio"
   },
   "devDependencies": {

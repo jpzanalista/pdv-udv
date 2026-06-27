@@ -18,6 +18,7 @@
     "@pdv-udv/db": "workspace:*",
     "@pdv-udv/shared": "workspace:*",
     "amazon-cognito-identity-js": "^6.3.12",
+    "drizzle-orm": "^0.38.3",
     "jose": "^5.9.6",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",

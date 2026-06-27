@@ -1,14 +1,20 @@
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { AuthModule } from './auth/auth.module'
+import { ContasModule } from './contas/contas.module'
 import { DbModule } from './db/db.module'
 import { HealthController } from './health/health.controller'
+import { NucleosModule } from './nucleos/nucleos.module'
+import { PessoasModule } from './pessoas/pessoas.module'
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     DbModule,
     AuthModule,
+    NucleosModule,
+    PessoasModule,
+    ContasModule,
   ],
   controllers: [HealthController],
 })
