@@ -139,6 +139,21 @@ export default function CaixaPage() {
     }
   }
 
+  async function pedirFechamento() {
+    try {
+      const r = await api<{ aberto: Expediente | null }>('/expedientes/atual')
+      if (!r.aberto) {
+        setExpediente(null)
+        setMsg('O caixa não está aberto.')
+        return
+      }
+      setExpediente(r.aberto) // esperado atualizado (inclui vendas após a abertura)
+      setFecharOpen(true)
+    } catch {
+      setMsg('Erro ao carregar o fechamento.')
+    }
+  }
+
   async function fecharCaixa(contadoCents: number) {
     setSubmitting(true)
     try {
@@ -187,7 +202,7 @@ export default function CaixaPage() {
           <span className="hidden text-sm text-success sm:inline">● Caixa aberto</span>
           <button
             type="button"
-            onClick={() => setFecharOpen(true)}
+            onClick={pedirFechamento}
             className="min-h-touch rounded border border-line bg-white px-3 text-sm font-semibold text-ink-muted hover:bg-canvas"
           >
             Fechar caixa
