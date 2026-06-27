@@ -1,12 +1,13 @@
 'use client'
 
-import { reaisToCents } from '@pdv-udv/core'
+import { calcularTotais, reaisToCents } from '@pdv-udv/core'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { Cart } from '@/components/caixa/Cart'
 import { ProductGrid } from '@/components/caixa/ProductGrid'
 import { QtyStepper } from '@/components/caixa/QtyStepper'
+import { ReceberModal } from '@/components/caixa/ReceberModal'
 import { SocioModal } from '@/components/caixa/SocioModal'
 import { ApiError, api } from '@/lib/api'
 import { getToken } from '@/lib/auth'
@@ -26,6 +27,9 @@ export default function CaixaPage() {
   const [cart, setCart] = useState<CartItem[]>([])
   const [ident, setIdent] = useState<Ident>(null)
   const [socioOpen, setSocioOpen] = useState(false)
+  const [receberOpen, setReceberOpen] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [msg, setMsg] = useState<string | null>(null)
 
   useEffect(() => {
     if (!getToken()) {
@@ -54,6 +58,7 @@ export default function CaixaPage() {
   )
 
   function addProduto(p: Produto) {
+    setMsg(null)
     const unitario = reaisToCents(Number(p.precoVenda))
     setCart((prev) => {
       const ex = prev.find((i) => i.produtoId === p.id)
@@ -76,6 +81,38 @@ export default function CaixaPage() {
   const clear = () => {
     setCart([])
     setIdent(null)
+  }
+
+  const totalCents = calcularTotais(cart).total
+
+  async function confirmarVenda(metodo: string) {
+    setSubmitting(true)
+    try {
+      const payload = {
+        personKind:
+          ident?.kind === 'socio' ? 'socio' : ident?.kind === 'visitante' ? 'visitante' : undefined,
+        contaId: ident?.kind === 'socio' ? ident.conta.id : undefined,
+        itens: cart.map((i) => ({
+          produtoId: i.produtoId,
+          descricao: i.descricao,
+          qtde: i.qtde,
+          unitarioCents: i.unitario,
+        })),
+        pagamentos: [{ metodo, valorCents: totalCents }],
+      }
+      const r = await api<{ numero: number }>('/vendas', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+      setMsg(`Venda #${r.numero} registrada ✓`)
+      setCart([])
+      setIdent(null)
+      setReceberOpen(false)
+    } catch {
+      setMsg('Erro ao registrar a venda.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   if (carregando) return <main className="p-8 text-ink-muted">Carregando caixa…</main>
@@ -117,9 +154,22 @@ export default function CaixaPage() {
         </section>
 
         <aside className="flex h-64 flex-col border-t border-line bg-canvas md:h-auto md:w-80 md:border-l md:border-t-0">
-          <Cart items={cart} onInc={inc} onDec={dec} onRemove={remove} onClear={clear} />
+          <Cart
+            items={cart}
+            onInc={inc}
+            onDec={dec}
+            onRemove={remove}
+            onClear={clear}
+            onReceber={() => cart.length > 0 && setReceberOpen(true)}
+          />
         </aside>
       </div>
+
+      {msg && (
+        <div className="pointer-events-none fixed bottom-4 left-1/2 z-20 -translate-x-1/2 rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-white shadow-lg">
+          {msg}
+        </div>
+      )}
 
       {socioOpen && (
         <SocioModal
@@ -129,6 +179,16 @@ export default function CaixaPage() {
             setSocioOpen(false)
           }}
           onClose={() => setSocioOpen(false)}
+        />
+      )}
+
+      {receberOpen && (
+        <ReceberModal
+          totalCents={totalCents}
+          ident={ident}
+          submitting={submitting}
+          onConfirm={confirmarVenda}
+          onClose={() => setReceberOpen(false)}
         />
       )}
     </main>

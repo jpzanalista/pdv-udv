@@ -8,6 +8,7 @@ import { HealthController } from './health/health.controller'
 import { NucleosModule } from './nucleos/nucleos.module'
 import { PessoasModule } from './pessoas/pessoas.module'
 import { RegioesModule } from './regioes/regioes.module'
+import { VendasModule } from './vendas/vendas.module'
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { RegioesModule } from './regioes/regioes.module'
     PessoasModule,
     ContasModule,
     CatalogoModule,
+    VendasModule,
   ],
   controllers: [HealthController],
 })

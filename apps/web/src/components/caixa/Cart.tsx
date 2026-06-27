@@ -8,12 +8,14 @@ export function Cart({
   onDec,
   onRemove,
   onClear,
+  onReceber,
 }: {
   items: CartItem[]
   onInc: (produtoId: string) => void
   onDec: (produtoId: string) => void
   onRemove: (produtoId: string) => void
   onClear: () => void
+  onReceber: () => void
 }) {
   const { total } = calcularTotais(items)
 
@@ -70,7 +72,11 @@ export function Cart({
           <Button variant="ghost" className="flex-1" onClick={onClear} disabled={items.length === 0}>
             Cancelar
           </Button>
-          <Button className="flex-1 min-h-touch-lg" disabled title="Disponível na próxima etapa">
+          <Button
+            className="flex-1 min-h-touch-lg"
+            onClick={onReceber}
+            disabled={items.length === 0}
+          >
             Receber
           </Button>
         </div>
