@@ -1,18 +1,65 @@
-import { formatBRL } from '@pdv-udv/core'
+'use client'
+
+import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
+import { ApiError, api } from '@/lib/api'
+import { clearTokens, getToken } from '@/lib/auth'
+
+type Me = { sub: string; role: string; nucleoId: string | null; nucleoNome: string | null }
 
 export default function Home() {
+  const router = useRouter()
+  const [me, setMe] = useState<Me | null>(null)
+  const [carregando, setCarregando] = useState(true)
+
+  useEffect(() => {
+    if (!getToken()) {
+      router.replace('/login')
+      return
+    }
+    api<Me>('/auth/me')
+      .then(setMe)
+      .catch((e) => {
+        if (e instanceof ApiError && e.status === 401) {
+          clearTokens()
+          router.replace('/login')
+        }
+      })
+      .finally(() => setCarregando(false))
+  }, [router])
+
+  function sair() {
+    clearTokens()
+    router.replace('/login')
+  }
+
+  if (carregando) return <main className="p-8 text-ink-muted">Carregando…</main>
+  if (!me) return null
+
   return (
-    <main style={{ padding: '3rem', maxWidth: 720, margin: '0 auto' }}>
-      <h1>PDV UDV</h1>
-      <p>Frente de caixa dos empórios da União do Vegetal.</p>
-      <p style={{ opacity: 0.7 }}>
-        Scaffolding inicial — exemplo de regra compartilhada do <code>@pdv-udv/core</code>:{' '}
-        <strong>{formatBRL(7900)}</strong>
+    <main className="mx-auto max-w-2xl p-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-brand">PDV UDV</h1>
+        <Button variant="ghost" className="text-sm" onClick={sair}>
+          Sair
+        </Button>
+      </div>
+      <Card className="mt-4 p-5">
+        <h2 className="mb-2 font-semibold">Você está autenticado ✓</h2>
+        <ul className="text-ink-muted">
+          <li>
+            <b>Papel:</b> {me.role}
+          </li>
+          <li>
+            <b>Núcleo:</b> {me.nucleoNome ?? '—'}
+          </li>
+        </ul>
+      </Card>
+      <p className="mt-4 text-sm text-ink-light">
+        Próximo: tela de caixa (grade de produtos + carrinho).
       </p>
-      <ul style={{ opacity: 0.7, lineHeight: 1.8 }}>
-        <li>Próximo: tela de login (Cognito staff / OTP sócio)</li>
-        <li>Depois: caixa (identificação → carrinho → pagamento)</li>
-      </ul>
     </main>
   )
 }

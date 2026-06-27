@@ -1,16 +1,26 @@
-import { Body, Controller, ForbiddenException, Post } from '@nestjs/common'
+import { Body, Controller, ForbiddenException, Get, Post, UseGuards } from '@nestjs/common'
 import {
   type DevLoginInput,
+  type JwtClaims,
   type LoginInput,
   devLoginSchema,
   loginSchema,
 } from '@pdv-udv/shared'
 import { ZodValidationPipe } from '../common/zod-validation.pipe'
 import { AuthService } from './auth.service'
+import { CurrentUser } from './current-user.decorator'
+import { JwtAuthGuard } from './jwt-auth.guard'
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
+
+  /** Quem sou eu? (a partir do nosso JWT) */
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  me(@CurrentUser() user: JwtClaims) {
+    return this.auth.me(user)
+  }
 
   /** Login real: SRP no backend → nosso JWT. */
   @Post('login')

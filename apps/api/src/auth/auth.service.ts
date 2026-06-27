@@ -1,6 +1,6 @@
 import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common'
 import { type Database, nucleos, pessoas, usuarios } from '@pdv-udv/db'
-import { type LoginInput, type TokenPair, parseCargos, pickBestRole } from '@pdv-udv/shared'
+import { type JwtClaims, type LoginInput, type TokenPair, parseCargos, pickBestRole } from '@pdv-udv/shared'
 import { eq } from 'drizzle-orm'
 import { DB } from '../db/db.module'
 import { CognitoService } from './cognito.service'
@@ -44,6 +44,19 @@ export class AuthService {
       .returning()
 
     return this.tokens.issue({ sub: usuario.id, nucleoId: usuario.nucleoId, role: usuario.role })
+  }
+
+  /** "Quem sou eu?" — claims do JWT + nome do núcleo. */
+  async me(claims: JwtClaims) {
+    const nucleo = claims.nucleoId
+      ? (await this.db.select().from(nucleos).where(eq(nucleos.id, claims.nucleoId)).limit(1))[0]
+      : null
+    return {
+      sub: claims.sub,
+      role: claims.role,
+      nucleoId: claims.nucleoId,
+      nucleoNome: nucleo?.nome ?? null,
+    }
   }
 
   /** DEV: mostra os claims/cargos lidos do token (sem barrar por papel). */
