@@ -1,0 +1,58 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: pdv
+      POSTGRES_PASSWORD: pdv
+      POSTGRES_DB: pdv
+    ports:
+      - "5440:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pdv -d pdv"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    command: sh -c "pnpm --filter './packages/*' run build && pnpm --filter @pdv-udv/api run dev"
+    environment:
+      DATABASE_URL: postgresql://pdv:pdv@postgres:5432/pdv
+      API_PORT: 3333
+      NODE_ENV: development
+    env_file:
+      - .env
+    ports:
+      - "3333:3333"
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    command: sh -c "pnpm --filter './packages/*' run build && pnpm --filter @pdv-udv/web run dev"
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:3333
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+  node_modules:

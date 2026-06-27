@@ -1,0 +1,25 @@
+{
+  "name": "pdv-udv",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@9.15.4",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "docker compose up --build",
+    "dev:host": "turbo run dev",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "db:generate": "pnpm --filter @pdv-udv/db db:generate",
+    "db:migrate": "pnpm --filter @pdv-udv/db db:migrate",
+    "db:studio": "pnpm --filter @pdv-udv/db db:studio"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.3"
+  }
+}
