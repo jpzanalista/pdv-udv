@@ -49,6 +49,12 @@ const MENU: Secao[] = [
         descricao: 'As abas da grade de venda.',
         papeis: ['responsavel_emporio', 'admin'],
       },
+      {
+        href: '/contas',
+        titulo: 'Contas',
+        descricao: 'Sócios e contas familiares — importar e exportar.',
+        papeis: ['responsavel_emporio', 'admin'],
+      },
     ],
   },
   {

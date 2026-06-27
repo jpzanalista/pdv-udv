@@ -16,6 +16,19 @@ export type Produto = {
 
 export type Conta = { id: string; nome: string; tipo: string }
 
+/** Conta enriquecida com titular (para a página de gestão/exportação). */
+export type ContaRow = {
+  id: string
+  nome: string
+  tipo: string
+  descontoPct: string
+  ativa: boolean
+  createdAt: string
+  titularNome: string | null
+  titularCpf: string | null
+  titularWhatsapp: string | null
+}
+
 /** Item do carrinho — unitário em centavos. */
 export type CartItem = { produtoId: string; descricao: string; qtde: number; unitario: number }
 
