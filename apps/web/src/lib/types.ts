@@ -2,9 +2,12 @@ export type Categoria = { id: string; nome: string; ordem: number }
 
 export type Produto = {
   id: string
+  codigo: string | null
   descricao: string
   precoVenda: string
   precoCusto: string
+  estoqueAtual: string
+  controlaEstoque: boolean
   categoriaId: string | null
   codigoBarras: string | null
   ativo: boolean

@@ -2,12 +2,16 @@ import { BadRequestException, Body, Controller, Get, Post, Query, UseGuards } fr
 import {
   type CreateCategoriaInput,
   type CreateProdutoInput,
+  type ImportProdutosInput,
   type JwtClaims,
   createCategoriaSchema,
   createProdutoSchema,
+  importProdutosSchema,
 } from '@pdv-udv/shared'
 import { CurrentUser } from '../auth/current-user.decorator'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
+import { Roles } from '../common/roles.decorator'
+import { RolesGuard } from '../common/roles.guard'
 import { ZodValidationPipe } from '../common/zod-validation.pipe'
 import { CategoriasService } from './categorias.service'
 import { ProdutosService } from './produtos.service'
@@ -52,5 +56,15 @@ export class ProdutosController {
   @Get()
   list(@CurrentUser() user: JwtClaims, @Query('categoriaId') categoriaId?: string) {
     return this.produtos.list(nucleoOf(user), categoriaId)
+  }
+
+  @Post('import')
+  @UseGuards(RolesGuard)
+  @Roles('responsavel_emporio', 'admin')
+  importar(
+    @CurrentUser() user: JwtClaims,
+    @Body(new ZodValidationPipe(importProdutosSchema)) body: ImportProdutosInput,
+  ) {
+    return this.produtos.importar(nucleoOf(user), body)
   }
 }
