@@ -1,9 +1,19 @@
-import { BadRequestException, Body, Controller, Get, Post, UseGuards } from '@nestjs/common'
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common'
 import {
   type AbrirExpedienteInput,
+  type CreateMovimentoInput,
   type FecharExpedienteInput,
   type JwtClaims,
   abrirExpedienteSchema,
+  createMovimentoSchema,
   fecharExpedienteSchema,
 } from '@pdv-udv/shared'
 import { CurrentUser } from '../auth/current-user.decorator'
@@ -40,5 +50,23 @@ export class ExpedientesController {
     @Body(new ZodValidationPipe(fecharExpedienteSchema)) body: FecharExpedienteInput,
   ) {
     return this.expedientes.fechar(nucleoOf(user), body.valorContadoCents)
+  }
+
+  @Get('movimentos')
+  listarMovimentos(@CurrentUser() user: JwtClaims) {
+    return this.expedientes.listarMovimentos(nucleoOf(user))
+  }
+
+  @Post('movimentos')
+  criarMovimento(
+    @CurrentUser() user: JwtClaims,
+    @Body(new ZodValidationPipe(createMovimentoSchema)) body: CreateMovimentoInput,
+  ) {
+    return this.expedientes.criarMovimento(nucleoOf(user), user.sub, body)
+  }
+
+  @Get('movimentos/:id')
+  getMovimento(@CurrentUser() user: JwtClaims, @Param('id') id: string) {
+    return this.expedientes.getMovimento(nucleoOf(user), id)
   }
 }

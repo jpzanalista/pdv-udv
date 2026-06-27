@@ -29,6 +29,13 @@
       "when": 1782584734580,
       "tag": "0003_expediente_fechamento",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1782588534787,
+      "tag": "0004_caixa_movimentos",
+      "breakpoints": true
     }
   ]
 }

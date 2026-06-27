@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { AbrirCaixa } from '@/components/caixa/AbrirCaixa'
 import { Cart } from '@/components/caixa/Cart'
 import { FecharCaixaModal } from '@/components/caixa/FecharCaixaModal'
+import { MovimentoModal, type MovimentoPayload } from '@/components/caixa/MovimentoModal'
 import { ProductGrid } from '@/components/caixa/ProductGrid'
 import { QtyStepper } from '@/components/caixa/QtyStepper'
 import { ReceberModal } from '@/components/caixa/ReceberModal'
@@ -25,6 +26,7 @@ export default function CaixaPage() {
   const [expediente, setExpediente] = useState<Expediente | null>(null)
   const [sugestaoFundo, setSugestaoFundo] = useState<number | null>(null)
   const [fecharOpen, setFecharOpen] = useState(false)
+  const [movimentoTipo, setMovimentoTipo] = useState<'sangria' | 'suprimento' | null>(null)
   const [carregando, setCarregando] = useState(true)
 
   const [activeCat, setActiveCat] = useState<string>(TODOS)
@@ -154,6 +156,21 @@ export default function CaixaPage() {
     }
   }
 
+  async function abrirMovimento(tipo: 'sangria' | 'suprimento') {
+    try {
+      const r = await api<{ aberto: Expediente | null }>('/expedientes/atual')
+      if (!r.aberto) {
+        setExpediente(null)
+        setMsg('O caixa não está aberto.')
+        return
+      }
+      setExpediente(r.aberto) // valor em caixa atualizado
+      setMovimentoTipo(tipo)
+    } catch {
+      setMsg('Erro ao carregar o caixa.')
+    }
+  }
+
   async function fecharCaixa(contadoCents: number) {
     setSubmitting(true)
     try {
@@ -168,6 +185,29 @@ export default function CaixaPage() {
       setMsg(`Caixa fechado. Diferença: ${formatBRL(r.diferencaCents)}`)
     } catch {
       setMsg('Erro ao fechar o caixa.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function registrarMovimento(p: MovimentoPayload) {
+    setSubmitting(true)
+    try {
+      const mov = await api<{ id: string }>('/expedientes/movimentos', {
+        method: 'POST',
+        body: JSON.stringify(p),
+      })
+      setMovimentoTipo(null)
+      if (p.tipo === 'sangria' && p.destino === 'compra') {
+        window.open(`/caixa/recibo/${mov.id}`, '_blank')
+        setMsg('Sangria (compra) registrada — recibo aberto.')
+      } else if (p.tipo === 'sangria') {
+        setMsg('Sangria p/ tesouraria registrada (pendente de validação).')
+      } else {
+        setMsg('Suprimento registrado.')
+      }
+    } catch {
+      setMsg('Erro ao registrar o movimento.')
     } finally {
       setSubmitting(false)
     }
@@ -198,8 +238,22 @@ export default function CaixaPage() {
             onTrocar={() => setIdent(null)}
           />
         </div>
-        <div className="flex items-center gap-3">
-          <span className="hidden text-sm text-success sm:inline">● Caixa aberto</span>
+        <div className="flex items-center gap-2">
+          <span className="hidden text-sm text-success lg:inline">● Caixa aberto</span>
+          <button
+            type="button"
+            onClick={() => abrirMovimento('sangria')}
+            className="min-h-touch rounded border border-line bg-white px-3 text-sm font-semibold text-ink-muted hover:bg-canvas"
+          >
+            Sangria
+          </button>
+          <button
+            type="button"
+            onClick={() => abrirMovimento('suprimento')}
+            className="min-h-touch rounded border border-line bg-white px-3 text-sm font-semibold text-ink-muted hover:bg-canvas"
+          >
+            Suprimento
+          </button>
           <button
             type="button"
             onClick={pedirFechamento}
@@ -275,6 +329,16 @@ export default function CaixaPage() {
           submitting={submitting}
           onConfirm={fecharCaixa}
           onClose={() => setFecharOpen(false)}
+        />
+      )}
+
+      {movimentoTipo && (
+        <MovimentoModal
+          tipo={movimentoTipo}
+          esperadoCents={expediente.esperadoCents}
+          submitting={submitting}
+          onConfirm={registrarMovimento}
+          onClose={() => setMovimentoTipo(null)}
         />
       )}
     </main>

@@ -1,5 +1,19 @@
-import { BadRequestException, ConflictException, Inject, Injectable } from '@nestjs/common'
-import { type Database, expedientes, pagamentos, vendas } from '@pdv-udv/db'
+import {
+  BadRequestException,
+  ConflictException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common'
+import {
+  type Database,
+  caixaMovimentos,
+  expedientes,
+  nucleos,
+  pagamentos,
+  vendas,
+} from '@pdv-udv/db'
+import type { CreateMovimentoInput } from '@pdv-udv/shared'
 import { and, desc, eq, sql } from 'drizzle-orm'
 import { DB } from '../db/db.module'
 
@@ -19,14 +33,70 @@ export class ExpedientesService {
     return exp
   }
 
-  /** Esperado em dinheiro = fundo de troco + vendas em dinheiro do expediente. */
+  /** Esperado = fundo + vendas em dinheiro − sangrias + suprimentos. */
   private async esperadoCents(exp: Expediente): Promise<number> {
     const [{ soma }] = await this.db
       .select({ soma: sql<string>`coalesce(sum(${pagamentos.valor}), 0)` })
       .from(pagamentos)
       .innerJoin(vendas, eq(vendas.id, pagamentos.vendaId))
       .where(and(eq(vendas.expedienteId, exp.id), eq(pagamentos.metodo, 'dinheiro')))
-    return Math.round(Number(exp.fundoTroco) * 100) + Math.round(Number(soma) * 100)
+
+    const [mov] = await this.db
+      .select({
+        sangria: sql<string>`coalesce(sum(case when ${caixaMovimentos.tipo} = 'sangria' then ${caixaMovimentos.valor} else 0 end), 0)`,
+        suprimento: sql<string>`coalesce(sum(case when ${caixaMovimentos.tipo} = 'suprimento' then ${caixaMovimentos.valor} else 0 end), 0)`,
+      })
+      .from(caixaMovimentos)
+      .where(eq(caixaMovimentos.expedienteId, exp.id))
+
+    const c = (v: string) => Math.round(Number(v) * 100)
+    return (
+      c(exp.fundoTroco) + c(soma) - c(mov?.sangria ?? '0') + c(mov?.suprimento ?? '0')
+    )
+  }
+
+  async criarMovimento(nucleoId: string, createdBy: string, input: CreateMovimentoInput) {
+    const exp = await this.abertoDoNucleo(nucleoId)
+    if (!exp) throw new BadRequestException('Abra o caixa antes de registrar movimento')
+    const status =
+      input.tipo === 'sangria' && input.destino === 'tesouraria' ? ('pendente' as const) : null
+    const [mov] = await this.db
+      .insert(caixaMovimentos)
+      .values({
+        nucleoId,
+        expedienteId: exp.id,
+        tipo: input.tipo,
+        destino: input.destino ?? null,
+        valor: reais(input.valorCents),
+        descricao: input.descricao ?? null,
+        recebedor: input.recebedor ?? null,
+        status,
+        createdBy,
+      })
+      .returning()
+    return mov
+  }
+
+  async listarMovimentos(nucleoId: string) {
+    const exp = await this.abertoDoNucleo(nucleoId)
+    if (!exp) return []
+    return this.db
+      .select()
+      .from(caixaMovimentos)
+      .where(eq(caixaMovimentos.expedienteId, exp.id))
+      .orderBy(desc(caixaMovimentos.createdAt))
+  }
+
+  /** Movimento + nome do núcleo (para o recibo). */
+  async getMovimento(nucleoId: string, id: string) {
+    const [mov] = await this.db
+      .select()
+      .from(caixaMovimentos)
+      .where(and(eq(caixaMovimentos.id, id), eq(caixaMovimentos.nucleoId, nucleoId)))
+      .limit(1)
+    if (!mov) throw new NotFoundException('Movimento não encontrado')
+    const [nuc] = await this.db.select().from(nucleos).where(eq(nucleos.id, nucleoId)).limit(1)
+    return { ...mov, nucleoNome: nuc?.nome ?? null }
   }
 
   async abrir(nucleoId: string, abertoPor: string, fundoTrocoCents: number) {

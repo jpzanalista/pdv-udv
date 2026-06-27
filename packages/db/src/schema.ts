@@ -40,6 +40,9 @@ export const cobrancaStatusEnum = pgEnum('cobranca_status', [
   'estornada',
 ])
 export const nucleoTypeEnum = pgEnum('nucleo_type', ['sede', 'nucleo', 'dav'])
+export const movimentoTipoEnum = pgEnum('movimento_tipo', ['sangria', 'suprimento'])
+export const movimentoDestinoEnum = pgEnum('movimento_destino', ['tesouraria', 'compra'])
+export const movimentoStatusEnum = pgEnum('movimento_status', ['pendente', 'validada'])
 
 const money = (name: string) => numeric(name, { precision: 12, scale: 2 })
 
@@ -187,6 +190,27 @@ export const expedientes = pgTable('expedientes', {
   valorContado: money('valor_contado'),
   valorEsperado: money('valor_esperado'),
   diferenca: money('diferenca'),
+})
+
+// Sangria (saída) / Suprimento (entrada) de dinheiro no caixa.
+export const caixaMovimentos = pgTable('caixa_movimentos', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  nucleoId: uuid('nucleo_id')
+    .notNull()
+    .references(() => nucleos.id),
+  expedienteId: uuid('expediente_id')
+    .notNull()
+    .references(() => expedientes.id),
+  tipo: movimentoTipoEnum('tipo').notNull(),
+  destino: movimentoDestinoEnum('destino'), // só sangria
+  valor: money('valor').notNull(),
+  descricao: varchar('descricao', { length: 255 }),
+  recebedor: varchar('recebedor', { length: 160 }), // sangria→compra
+  status: movimentoStatusEnum('status'), // pendente p/ tesouraria; validação na Fase 2
+  validadoPor: uuid('validado_por').references(() => usuarios.id),
+  validadoEm: timestamp('validado_em', { withTimezone: true }),
+  createdBy: uuid('created_by').references(() => usuarios.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
 
 // ---------- vendas (id gerado no cliente p/ offline) ----------

@@ -38,3 +38,9 @@ export type ExpedienteStatus = (typeof EXPEDIENTE_STATUS)[number]
 /** Tipo de núcleo na estrutura da UDV (type 1/2/3 nos dados oficiais). */
 export const NUCLEO_TYPES = ['sede', 'nucleo', 'dav'] as const
 export type NucleoType = (typeof NUCLEO_TYPES)[number]
+
+/** Movimento de caixa: sangria (saída) / suprimento (entrada). */
+export const MOVIMENTO_TIPOS = ['sangria', 'suprimento'] as const
+export type MovimentoTipo = (typeof MOVIMENTO_TIPOS)[number]
+export const MOVIMENTO_DESTINOS = ['tesouraria', 'compra'] as const
+export type MovimentoDestino = (typeof MOVIMENTO_DESTINOS)[number]
