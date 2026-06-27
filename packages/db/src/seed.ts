@@ -11,10 +11,6 @@ type NucleoJson = {
   name: string
   type: number
   region_id: number
-  pres_email: string
-  repres_email: string
-  tes_email: string
-  sec_email: string
 }
 
 const TYPE_MAP: Record<number, 'sede' | 'nucleo' | 'dav'> = { 1: 'sede', 2: 'nucleo', 3: 'dav' }
@@ -51,10 +47,6 @@ async function main() {
         nome: n.name,
         type: TYPE_MAP[n.type] ?? 'nucleo',
         regionId: regiaoByUdvId.get(n.region_id) ?? null,
-        presEmail: n.pres_email,
-        represEmail: n.repres_email,
-        tesEmail: n.tes_email,
-        secEmail: n.sec_email,
       })),
     )
     .onConflictDoNothing({ target: nucleos.udvId })
