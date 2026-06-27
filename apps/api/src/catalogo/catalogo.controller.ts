@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -14,10 +15,12 @@ import {
   type CreateProdutoInput,
   type ImportProdutosInput,
   type JwtClaims,
+  type UpdateCategoriaInput,
   type UpdateProdutoInput,
   createCategoriaSchema,
   createProdutoSchema,
   importProdutosSchema,
+  updateCategoriaSchema,
   updateProdutoSchema,
 } from '@pdv-udv/shared'
 import { CurrentUser } from '../auth/current-user.decorator'
@@ -38,7 +41,14 @@ function nucleoOf(user: JwtClaims): string {
 export class CategoriasController {
   constructor(private readonly categorias: CategoriasService) {}
 
+  @Get()
+  list(@CurrentUser() user: JwtClaims) {
+    return this.categorias.list(nucleoOf(user))
+  }
+
   @Post()
+  @UseGuards(RolesGuard)
+  @Roles('responsavel_emporio', 'admin')
   create(
     @CurrentUser() user: JwtClaims,
     @Body(new ZodValidationPipe(createCategoriaSchema)) body: CreateCategoriaInput,
@@ -46,9 +56,22 @@ export class CategoriasController {
     return this.categorias.create(nucleoOf(user), body)
   }
 
-  @Get()
-  list(@CurrentUser() user: JwtClaims) {
-    return this.categorias.list(nucleoOf(user))
+  @Patch(':id')
+  @UseGuards(RolesGuard)
+  @Roles('responsavel_emporio', 'admin')
+  atualizar(
+    @CurrentUser() user: JwtClaims,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(updateCategoriaSchema)) body: UpdateCategoriaInput,
+  ) {
+    return this.categorias.atualizar(nucleoOf(user), id, body)
+  }
+
+  @Delete(':id')
+  @UseGuards(RolesGuard)
+  @Roles('responsavel_emporio', 'admin')
+  excluir(@CurrentUser() user: JwtClaims, @Param('id') id: string) {
+    return this.categorias.excluir(nucleoOf(user), id)
   }
 }
 

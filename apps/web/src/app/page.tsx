@@ -85,6 +85,13 @@ export default function Home() {
             </Button>
           </Link>
         )}
+        {['responsavel_emporio', 'admin'].includes(me.role) && (
+          <Link href="/categorias" className="inline-block no-underline">
+            <Button variant="secondary" className="min-h-touch-lg px-6">
+              Categorias
+            </Button>
+          </Link>
+        )}
       </div>
     </main>
   )

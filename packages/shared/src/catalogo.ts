@@ -6,6 +6,14 @@ export const createCategoriaSchema = z.object({
 })
 export type CreateCategoriaInput = z.infer<typeof createCategoriaSchema>
 
+export const updateCategoriaSchema = z
+  .object({
+    nome: z.string().min(1).max(120).optional(),
+    ordem: z.number().int().min(0).optional(),
+  })
+  .refine((d) => d.nome !== undefined || d.ordem !== undefined, { message: 'Nada para atualizar' })
+export type UpdateCategoriaInput = z.infer<typeof updateCategoriaSchema>
+
 /** Linha de import de produto (vinda de Excel — grupo = nome da categoria). */
 export const produtoImportSchema = z.object({
   codigo: z.string().max(40).optional(),
