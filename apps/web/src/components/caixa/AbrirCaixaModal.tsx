@@ -1,18 +1,19 @@
 import { formatBRL } from '@pdv-udv/core'
-import Link from 'next/link'
 import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Field, Input } from '@/components/ui/Input'
 
-export function AbrirCaixa({
+export function AbrirCaixaModal({
   submitting,
   sugestaoFundoCents,
   onAbrir,
+  onClose,
 }: {
   submitting: boolean
   sugestaoFundoCents: number | null
   onAbrir: (fundoCents: number) => void
+  onClose: () => void
 }) {
   const [fundo, setFundo] = useState(
     sugestaoFundoCents != null ? (sugestaoFundoCents / 100).toFixed(2) : '',
@@ -20,9 +21,12 @@ export function AbrirCaixa({
   const cents = Math.round((Number.parseFloat(fundo.replace(',', '.')) || 0) * 100)
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-sm p-6">
-        <h1 className="text-2xl font-bold text-brand">Abrir caixa</h1>
+    <div
+      className="fixed inset-0 z-10 flex items-center justify-center bg-black/40 p-4"
+      onClick={onClose}
+    >
+      <Card className="w-full max-w-sm p-6" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-2xl font-bold text-brand">Abrir caixa</h2>
         <p className="mb-5 text-ink-muted">Informe o fundo de troco para começar.</p>
         <Field label="Fundo de troco (R$)" htmlFor="fundo">
           <Input
@@ -46,17 +50,19 @@ export function AbrirCaixa({
             </button>
           </p>
         )}
-        <Button
-          className="mt-5 w-full min-h-touch-lg"
-          onClick={() => onAbrir(cents)}
-          disabled={submitting}
-        >
-          {submitting ? 'Abrindo…' : 'Abrir caixa'}
-        </Button>
-        <Link href="/" className="mt-4 block text-center text-sm text-ink-light">
-          voltar
-        </Link>
+        <div className="mt-5 flex gap-2">
+          <Button variant="ghost" className="flex-1" onClick={onClose} disabled={submitting}>
+            Cancelar
+          </Button>
+          <Button
+            className="min-h-touch-lg flex-1"
+            onClick={() => onAbrir(cents)}
+            disabled={submitting}
+          >
+            {submitting ? 'Abrindo…' : 'Abrir caixa'}
+          </Button>
+        </div>
       </Card>
-    </main>
+    </div>
   )
 }

@@ -1,12 +1,12 @@
 'use client'
 
 import { calcularTotais, formatBRL, reaisToCents } from '@pdv-udv/core'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
-import { AbrirCaixa } from '@/components/caixa/AbrirCaixa'
+import { AbrirCaixaModal } from '@/components/caixa/AbrirCaixaModal'
 import { Cart } from '@/components/caixa/Cart'
 import { FecharCaixaModal } from '@/components/caixa/FecharCaixaModal'
+import { GearMenu } from '@/components/caixa/GearMenu'
 import { MovimentoModal, type MovimentoPayload } from '@/components/caixa/MovimentoModal'
 import { ProductGrid } from '@/components/caixa/ProductGrid'
 import { QtyStepper } from '@/components/caixa/QtyStepper'
@@ -26,6 +26,7 @@ export default function CaixaPage() {
   const [expediente, setExpediente] = useState<Expediente | null>(null)
   const [sugestaoFundo, setSugestaoFundo] = useState<number | null>(null)
   const [fecharOpen, setFecharOpen] = useState(false)
+  const [abrirOpen, setAbrirOpen] = useState(false)
   const [movimentoTipo, setMovimentoTipo] = useState<'sangria' | 'suprimento' | null>(null)
   const [carregando, setCarregando] = useState(true)
 
@@ -134,11 +135,21 @@ export default function CaixaPage() {
       })
       const r = await api<{ aberto: Expediente | null }>('/expedientes/atual')
       setExpediente(r.aberto)
+      setAbrirOpen(false)
     } catch {
       setMsg('Erro ao abrir o caixa.')
     } finally {
       setSubmitting(false)
     }
+  }
+
+  function pedirReceber() {
+    if (cart.length === 0) return
+    if (!expediente) {
+      setMsg('Abra o caixa (engrenagem ⚙️) para registrar vendas.')
+      return
+    }
+    setReceberOpen(true)
   }
 
   async function pedirFechamento() {
@@ -215,22 +226,11 @@ export default function CaixaPage() {
 
   if (carregando) return <main className="p-8 text-ink-muted">Carregando caixa…</main>
 
-  if (!expediente)
-    return (
-      <AbrirCaixa
-        submitting={submitting}
-        sugestaoFundoCents={sugestaoFundo}
-        onAbrir={abrirCaixa}
-      />
-    )
-
   return (
     <main className="flex h-screen flex-col">
       <header className="flex items-center justify-between gap-3 border-b border-line bg-surface px-4 py-2">
         <div className="flex items-center gap-3">
-          <Link href="/" className="text-xl font-bold text-brand no-underline">
-            PDV UDV
-          </Link>
+          <span className="text-xl font-bold text-brand">PDV UDV</span>
           <IdentBar
             ident={ident}
             onSocio={() => setSocioOpen(true)}
@@ -239,28 +239,14 @@ export default function CaixaPage() {
           />
         </div>
         <div className="flex items-center gap-2">
-          <span className="hidden text-sm text-success lg:inline">● Caixa aberto</span>
-          <button
-            type="button"
-            onClick={() => abrirMovimento('sangria')}
-            className="min-h-touch rounded border border-line bg-white px-3 text-sm font-semibold text-ink-muted hover:bg-canvas"
-          >
-            Sangria
-          </button>
-          <button
-            type="button"
-            onClick={() => abrirMovimento('suprimento')}
-            className="min-h-touch rounded border border-line bg-white px-3 text-sm font-semibold text-ink-muted hover:bg-canvas"
-          >
-            Suprimento
-          </button>
-          <button
-            type="button"
-            onClick={pedirFechamento}
-            className="min-h-touch rounded border border-line bg-white px-3 text-sm font-semibold text-ink-muted hover:bg-canvas"
-          >
-            Fechar caixa
-          </button>
+          <CaixaStatus aberto={!!expediente} />
+          <GearMenu
+            caixaAberto={!!expediente}
+            onAbrir={() => setAbrirOpen(true)}
+            onSangria={() => abrirMovimento('sangria')}
+            onSuprimento={() => abrirMovimento('suprimento')}
+            onFechar={pedirFechamento}
+          />
         </div>
       </header>
 
@@ -291,7 +277,7 @@ export default function CaixaPage() {
             onDec={dec}
             onRemove={remove}
             onClear={clear}
-            onReceber={() => cart.length > 0 && setReceberOpen(true)}
+            onReceber={pedirReceber}
           />
         </aside>
       </div>
@@ -323,7 +309,16 @@ export default function CaixaPage() {
         />
       )}
 
-      {fecharOpen && (
+      {abrirOpen && (
+        <AbrirCaixaModal
+          submitting={submitting}
+          sugestaoFundoCents={sugestaoFundo}
+          onAbrir={abrirCaixa}
+          onClose={() => setAbrirOpen(false)}
+        />
+      )}
+
+      {fecharOpen && expediente && (
         <FecharCaixaModal
           esperadoCents={expediente.esperadoCents}
           submitting={submitting}
@@ -332,7 +327,7 @@ export default function CaixaPage() {
         />
       )}
 
-      {movimentoTipo && (
+      {movimentoTipo && expediente && (
         <MovimentoModal
           tipo={movimentoTipo}
           esperadoCents={expediente.esperadoCents}
@@ -342,6 +337,20 @@ export default function CaixaPage() {
         />
       )}
     </main>
+  )
+}
+
+function CaixaStatus({ aberto }: { aberto: boolean }) {
+  return (
+    <span
+      className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide text-white ${
+        aberto
+          ? 'bg-success shadow-[0_0_12px_2px_rgba(39,174,96,0.75)]'
+          : 'bg-danger shadow-[0_0_12px_2px_rgba(231,76,60,0.75)]'
+      }`}
+    >
+      {aberto ? 'Caixa Aberto' : 'Caixa Fechado'}
+    </span>
   )
 }
 

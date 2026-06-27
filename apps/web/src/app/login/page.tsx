@@ -7,6 +7,12 @@ import { Card } from '@/components/ui/Card'
 import { Field, Input } from '@/components/ui/Input'
 import { ApiError, api } from '@/lib/api'
 import { type TokenPair, setTokens } from '@/lib/auth'
+import { landingFor } from '@/lib/nav'
+
+async function irParaArea(replace: (href: string) => void) {
+  const me = await api<{ role: string }>('/auth/me')
+  replace(landingFor(me.role))
+}
 
 export default function LoginPage() {
   const router = useRouter()
@@ -26,7 +32,7 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       })
       setTokens(t)
-      router.push('/')
+      await irParaArea((href) => router.replace(href))
     } catch (err) {
       if (err instanceof ApiError && err.status === 403)
         setErro('Sua conta não tem cargo autorizado para o empório.')
@@ -47,7 +53,7 @@ export default function LoginPage() {
         body: JSON.stringify({ email: devEmail }),
       })
       setTokens(t)
-      router.push('/')
+      await irParaArea((href) => router.replace(href))
     } catch {
       setErro('dev-login indisponível.')
     } finally {
