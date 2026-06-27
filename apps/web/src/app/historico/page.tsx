@@ -4,6 +4,8 @@ import { formatBRL, reaisToCents } from '@pdv-udv/core'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
+import * as XLSX from 'xlsx'
+import { Button } from '@/components/ui/Button'
 import { ApiError, api } from '@/lib/api'
 import { getToken } from '@/lib/auth'
 
@@ -40,6 +42,8 @@ export default function HistoricoPage() {
   const [carregando, setCarregando] = useState(true)
   const [tipo, setTipo] = useState<'todos' | 'sangria' | 'suprimento'>('todos')
   const [destino, setDestino] = useState<'todos' | 'tesouraria' | 'compra'>('todos')
+  const [de, setDe] = useState('')
+  const [ate, setAte] = useState('')
 
   useEffect(() => {
     if (!getToken()) {
@@ -60,12 +64,37 @@ export default function HistoricoPage() {
 
   const lista = useMemo(
     () =>
-      movs.filter(
-        (m) =>
-          (tipo === 'todos' || m.tipo === tipo) && (destino === 'todos' || m.destino === destino),
-      ),
-    [movs, tipo, destino],
+      movs.filter((m) => {
+        if (tipo !== 'todos' && m.tipo !== tipo) return false
+        if (destino !== 'todos' && m.destino !== destino) return false
+        const dia = new Date(m.createdAt)
+        if (de && dia < new Date(`${de}T00:00:00`)) return false
+        if (ate && dia > new Date(`${ate}T23:59:59`)) return false
+        return true
+      }),
+    [movs, tipo, destino, de, ate],
   )
+
+  function exportar() {
+    const rows = lista.map((m) => ({
+      Data: new Date(m.createdAt).toLocaleString('pt-BR'),
+      Tipo: m.tipo === 'suprimento' ? 'Suprimento' : 'Sangria',
+      Destino: m.destino ?? '',
+      'Fornecedor/Recebedor': m.recebedor ?? '',
+      Descrição: m.descricao ?? '',
+      Valor: Number(m.valor),
+      Situação:
+        m.destino === 'tesouraria'
+          ? m.status === 'validada'
+            ? `Validado (${TES_LABEL[m.validadorRole ?? ''] ?? ''})`
+            : 'Pendente'
+          : '',
+    }))
+    const ws = XLSX.utils.json_to_sheet(rows)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Histórico')
+    XLSX.writeFile(wb, 'historico-caixa.xlsx')
+  }
 
   if (carregando) return <main className="p-8 text-ink-muted">Carregando…</main>
   if (me && !ALLOWED.includes(me.role))
@@ -81,11 +110,16 @@ export default function HistoricoPage() {
 
   return (
     <main className="mx-auto max-w-4xl p-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-brand">Histórico de caixa</h1>
-        <Link href="/" className="text-sm text-ink-muted">
-          ← início
-        </Link>
+        <div className="flex items-center gap-3">
+          <Button onClick={exportar} disabled={lista.length === 0} className="text-sm">
+            Exportar Excel
+          </Button>
+          <Link href="/" className="whitespace-nowrap text-sm text-ink-muted">
+            ← início
+          </Link>
+        </div>
       </div>
       <p className="mt-1 text-ink-muted">Sangrias e suprimentos do empório (acesso permanente).</p>
 
@@ -101,6 +135,36 @@ export default function HistoricoPage() {
             {d}
           </button>
         ))}
+      </div>
+
+      <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-ink-muted">
+        <span>De</span>
+        <input
+          type="date"
+          value={de}
+          onChange={(e) => setDe(e.target.value)}
+          className="min-h-touch rounded border border-line bg-white px-2"
+        />
+        <span>até</span>
+        <input
+          type="date"
+          value={ate}
+          onChange={(e) => setAte(e.target.value)}
+          className="min-h-touch rounded border border-line bg-white px-2"
+        />
+        {(de || ate) && (
+          <button
+            type="button"
+            onClick={() => {
+              setDe('')
+              setAte('')
+            }}
+            className="text-brand underline"
+          >
+            limpar
+          </button>
+        )}
+        <span className="ml-auto text-ink-light">{lista.length} registro(s)</span>
       </div>
 
       <div className="mt-4 overflow-auto rounded-lg border border-line bg-surface">
