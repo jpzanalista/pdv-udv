@@ -34,3 +34,7 @@ export type TerminalType = (typeof TERMINAL_TYPES)[number]
 
 export const EXPEDIENTE_STATUS = ['aberto', 'fechado'] as const
 export type ExpedienteStatus = (typeof EXPEDIENTE_STATUS)[number]
+
+/** Tipo de núcleo na estrutura da UDV (type 1/2/3 nos dados oficiais). */
+export const NUCLEO_TYPES = ['sede', 'nucleo', 'dav'] as const
+export type NucleoType = (typeof NUCLEO_TYPES)[number]

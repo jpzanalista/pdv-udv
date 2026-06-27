@@ -1,8 +1,27 @@
+import { readFileSync } from 'node:fs'
 import { eq } from 'drizzle-orm'
 import { createDb } from './client.js'
-import { nucleos, pessoaNucleo, pessoas, usuarios } from './schema.js'
+import { nucleos, pessoaNucleo, pessoas, regioes, usuarios } from './schema.js'
 
 const url = process.env.DATABASE_URL ?? 'postgresql://pdv:pdv@localhost:5440/pdv'
+
+type RegiaoJson = { id: number; name: string }
+type NucleoJson = {
+  id: number
+  name: string
+  type: number
+  region_id: number
+  pres_email: string
+  repres_email: string
+  tes_email: string
+  sec_email: string
+}
+
+const TYPE_MAP: Record<number, 'sede' | 'nucleo' | 'dav'> = { 1: 'sede', 2: 'nucleo', 3: 'dav' }
+
+function readJson<T>(file: string): T {
+  return JSON.parse(readFileSync(new URL(`../data/${file}`, import.meta.url), 'utf8')) as T
+}
 
 function req<T>(v: T | undefined, msg: string): T {
   if (v === undefined) throw new Error(msg)
@@ -12,17 +31,43 @@ function req<T>(v: T | undefined, msg: string): T {
 async function main() {
   const db = createDb(url)
 
-  // Núcleo de teste
+  // 1) Regiões (idempotente por udv_id)
+  const regioesData = readJson<RegiaoJson[]>('regioes.json')
+  await db
+    .insert(regioes)
+    .values(regioesData.map((r) => ({ udvId: r.id, nome: r.name })))
+    .onConflictDoNothing({ target: regioes.udvId })
+
+  const regioesRows = await db.select().from(regioes)
+  const regiaoByUdvId = new Map(regioesRows.map((r) => [r.udvId, r.id]))
+
+  // 2) Núcleos (idempotente por udv_id)
+  const nucleosData = readJson<NucleoJson[]>('nucleos.json')
   await db
     .insert(nucleos)
-    .values({ nome: 'Núcleo Teste', cnpj: '00000000000191', regiao: 'Sede' })
-    .onConflictDoNothing({ target: nucleos.cnpj })
-  const nucleo = req(
-    (await db.select().from(nucleos).where(eq(nucleos.cnpj, '00000000000191')).limit(1))[0],
-    'núcleo não criado',
+    .values(
+      nucleosData.map((n) => ({
+        udvId: n.id,
+        nome: n.name,
+        type: TYPE_MAP[n.type] ?? 'nucleo',
+        regionId: regiaoByUdvId.get(n.region_id) ?? null,
+        presEmail: n.pres_email,
+        represEmail: n.repres_email,
+        tesEmail: n.tes_email,
+        secEmail: n.sec_email,
+      })),
+    )
+    .onConflictDoNothing({ target: nucleos.udvId })
+
+  const totalReg = (await db.select().from(regioes)).length
+  const totalNuc = (await db.select().from(nucleos)).length
+
+  // 3) Dev users (admin global + operador em um núcleo real)
+  const nucleoDev = req(
+    (await db.select().from(nucleos).where(eq(nucleos.type, 'nucleo')).limit(1))[0],
+    'nenhum núcleo importado',
   )
 
-  // Pessoas (admin + operador)
   await db
     .insert(pessoas)
     .values([
@@ -30,6 +75,7 @@ async function main() {
       { cpf: '11111111111', nome: 'Operador', email: 'caixa@pdv.local' },
     ])
     .onConflictDoNothing({ target: pessoas.cpf })
+
   const admin = req(
     (await db.select().from(pessoas).where(eq(pessoas.email, 'admin@pdv.local')).limit(1))[0],
     'pessoa admin não criada',
@@ -39,7 +85,6 @@ async function main() {
     'pessoa operador não criada',
   )
 
-  // Usuários (idempotente: só insere se não existir)
   const ensureUsuario = async (
     pessoaId: string,
     role: 'admin' | 'responsavel_emporio',
@@ -51,17 +96,15 @@ async function main() {
     if (!exists) await db.insert(usuarios).values({ pessoaId, role, nucleoId })
   }
   await ensureUsuario(admin.id, 'admin', null)
-  await ensureUsuario(operador.id, 'responsavel_emporio', nucleo.id)
-
+  await ensureUsuario(operador.id, 'responsavel_emporio', nucleoDev.id)
   await db
     .insert(pessoaNucleo)
-    .values({ pessoaId: operador.id, nucleoId: nucleo.id })
+    .values({ pessoaId: operador.id, nucleoId: nucleoDev.id })
     .onConflictDoNothing()
 
-  console.log('Seed OK:')
-  console.log('  núcleo:', nucleo.id, nucleo.nome)
-  console.log('  admin  -> dev-login com email: admin@pdv.local (role admin, sem núcleo)')
-  console.log('  caixa  -> dev-login com email: caixa@pdv.local (role responsavel_emporio, com núcleo)')
+  console.log(`Seed OK: ${totalReg} regiões, ${totalNuc} núcleos`)
+  console.log(`  dev núcleo (operador): ${nucleoDev.nome} (${nucleoDev.id})`)
+  console.log('  dev-login: admin@pdv.local (admin) / caixa@pdv.local (responsavel_emporio)')
   process.exit(0)
 }
 

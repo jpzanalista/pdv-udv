@@ -39,15 +39,30 @@ export const cobrancaStatusEnum = pgEnum('cobranca_status', [
   'cancelada',
   'estornada',
 ])
+export const nucleoTypeEnum = pgEnum('nucleo_type', ['sede', 'nucleo', 'dav'])
 
 const money = (name: string) => numeric(name, { precision: 12, scale: 2 })
+
+// ---------- estrutura UDV ----------
+export const regioes = pgTable('regioes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  udvId: integer('udv_id').notNull().unique(),
+  nome: varchar('nome', { length: 120 }).notNull(),
+})
 
 // ---------- tenant ----------
 export const nucleos = pgTable('nucleos', {
   id: uuid('id').primaryKey().defaultRandom(),
+  udvId: integer('udv_id').unique(),
   nome: varchar('nome', { length: 160 }).notNull(),
-  cnpj: varchar('cnpj', { length: 14 }).notNull().unique(),
-  regiao: varchar('regiao', { length: 120 }),
+  type: nucleoTypeEnum('type').notNull().default('nucleo'),
+  regionId: uuid('region_id').references(() => regioes.id),
+  // CNPJ entra depois (quando o núcleo for ter subconta ASAAS) — por isso nullable.
+  cnpj: varchar('cnpj', { length: 14 }).unique(),
+  presEmail: varchar('pres_email', { length: 160 }),
+  represEmail: varchar('repres_email', { length: 160 }),
+  tesEmail: varchar('tes_email', { length: 160 }),
+  secEmail: varchar('sec_email', { length: 160 }),
   asaasWalletId: varchar('asaas_wallet_id', { length: 80 }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })

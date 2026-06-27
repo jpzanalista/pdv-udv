@@ -6,12 +6,14 @@ import { DbModule } from './db/db.module'
 import { HealthController } from './health/health.controller'
 import { NucleosModule } from './nucleos/nucleos.module'
 import { PessoasModule } from './pessoas/pessoas.module'
+import { RegioesModule } from './regioes/regioes.module'
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     DbModule,
     AuthModule,
+    RegioesModule,
     NucleosModule,
     PessoasModule,
     ContasModule,

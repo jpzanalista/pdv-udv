@@ -1,0 +1,1 @@
+ALTER TABLE "nucleos" DROP COLUMN "regiao";
