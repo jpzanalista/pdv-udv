@@ -97,7 +97,7 @@ export class CobrancasService {
   /** Status dos visitantes para a tela do responsável. */
   async statusVisitantes(nucleoId: string) {
     const lista = await this.db
-      .select({ id: contas.id, nome: contas.nome, titular: contas.titularPessoaId })
+      .select({ id: contas.id, nome: contas.nome, ativa: contas.ativa, titular: contas.titularPessoaId })
       .from(contas)
       .where(and(eq(contas.nucleoId, nucleoId), eq(contas.tipo, 'visitante')))
 
@@ -127,19 +127,23 @@ export class CobrancasService {
       else status = cob.dueDate && cob.dueDate < hoje ? 'inadimplente' : 'enviado'
 
       let whatsapp: string | null = null
+      let titularCpf: string | null = null
       if (conta.titular) {
         const [p] = await this.db
-          .select({ whatsapp: pessoas.whatsapp })
+          .select({ whatsapp: pessoas.whatsapp, cpf: pessoas.cpf })
           .from(pessoas)
           .where(eq(pessoas.id, conta.titular))
           .limit(1)
         whatsapp = p?.whatsapp ?? null
+        titularCpf = p?.cpf ?? null
       }
 
       out.push({
         id: conta.id,
         nome: conta.nome,
+        ativa: conta.ativa,
         whatsapp,
+        titularCpf,
         saldoCents,
         status,
         vencimento: cob?.dueDate ?? null,

@@ -1,12 +1,16 @@
 import { formatBRL } from '@pdv-udv/core'
 import { useCallback, useEffect, useState } from 'react'
+import { ContaFormModal } from '@/components/contas/ContaFormModal'
 import { Button } from '@/components/ui/Button'
 import { ApiError, api } from '@/lib/api'
+import type { ContaRow } from '@/lib/types'
 
 type VisitanteStatus = {
   id: string
   nome: string
+  ativa: boolean
   whatsapp: string | null
+  titularCpf: string | null
   saldoCents: number
   status: 'pago' | 'a_cobrar' | 'enviado' | 'inadimplente'
   vencimento: string | null
@@ -37,6 +41,7 @@ export function VisitantesView() {
   const [cobrando, setCobrando] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
   const [aberto, setAberto] = useState<string | null>(null)
+  const [editar, setEditar] = useState<ContaRow | null>(null)
 
   const carregar = useCallback(async () => {
     setCarregando(true)
@@ -110,15 +115,36 @@ export function VisitantesView() {
                     <span className="w-20 text-right font-bold text-ink">{formatBRL(v.saldoCents)}</span>
                   </div>
                 </div>
-                {v.itensAbertos.length > 0 && (
+                <div className="mt-2 flex items-center gap-4">
                   <button
                     type="button"
-                    onClick={() => setAberto(expandido ? null : v.id)}
-                    className="mt-2 text-xs font-semibold text-brand"
+                    onClick={() =>
+                      setEditar({
+                        id: v.id,
+                        nome: v.nome,
+                        tipo: 'visitante',
+                        descontoPct: '0',
+                        ativa: v.ativa,
+                        createdAt: '',
+                        titularNome: v.nome,
+                        titularCpf: v.titularCpf,
+                        titularWhatsapp: v.whatsapp,
+                      })
+                    }
+                    className="text-xs font-semibold text-brand"
                   >
-                    {expandido ? 'ocultar itens' : `ver ${v.itensAbertos.length} item(ns) em aberto`}
+                    editar
                   </button>
-                )}
+                  {v.itensAbertos.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setAberto(expandido ? null : v.id)}
+                      className="text-xs font-semibold text-brand"
+                    >
+                      {expandido ? 'ocultar itens' : `ver ${v.itensAbertos.length} item(ns) em aberto`}
+                    </button>
+                  )}
+                </div>
                 {expandido && (
                   <ul className="mt-2 divide-y divide-line border-t border-line pt-2 text-sm">
                     {v.itensAbertos.map((it, i) => (
@@ -135,6 +161,17 @@ export function VisitantesView() {
             )
           })}
         </div>
+      )}
+
+      {editar && (
+        <ContaFormModal
+          conta={editar}
+          onClose={() => setEditar(null)}
+          onSaved={async () => {
+            setEditar(null)
+            await carregar()
+          }}
+        />
       )}
     </div>
   )

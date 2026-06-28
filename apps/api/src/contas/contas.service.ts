@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common'
 import { type Database, contaMembros, contas, lancamentos, pessoas, vendaItens, vendas } from '@pdv-udv/db'
 import type {
   CreateContaInput,
@@ -6,7 +6,7 @@ import type {
   RegistrarPagamentoInput,
   UpdateContaInput,
 } from '@pdv-udv/shared'
-import { and, asc, desc, eq, inArray } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, ne } from 'drizzle-orm'
 import { DB } from '../db/db.module'
 
 const toCents = (v: string | null) => Math.round(Number(v ?? 0) * 100)
@@ -50,7 +50,7 @@ export class ContasService {
 
   async atualizar(nucleoId: string, id: string, patch: UpdateContaInput) {
     const [atual] = await this.db
-      .select({ id: contas.id, nome: contas.nome })
+      .select({ id: contas.id, nome: contas.nome, titularPessoaId: contas.titularPessoaId })
       .from(contas)
       .where(and(eq(contas.nucleoId, nucleoId), eq(contas.id, id)))
       .limit(1)
@@ -61,11 +61,40 @@ export class ContasService {
     if (patch.tipo !== undefined) set.tipo = patch.tipo
     if (patch.ativa !== undefined) set.ativa = patch.ativa
     if (patch.descontoPct !== undefined) set.descontoPct = String(patch.descontoPct)
-    if (patch.cpf) {
+
+    const cpfDigits = patch.cpf?.replace(/\D/g, '')
+    if (atual.titularPessoaId) {
+      // edita a pessoa titular existente (nome/CPF/WhatsApp do sócio/visitante)
+      const pset: Partial<typeof pessoas.$inferInsert> = {}
+      if (patch.nome !== undefined) pset.nome = patch.nome
+      if (patch.whatsapp !== undefined) pset.whatsapp = patch.whatsapp
+      if (cpfDigits) {
+        if (cpfDigits.length !== 11) throw new BadRequestException('CPF deve ter 11 dígitos')
+        const [outro] = await this.db
+          .select({ id: pessoas.id })
+          .from(pessoas)
+          .where(and(eq(pessoas.cpf, cpfDigits), ne(pessoas.id, atual.titularPessoaId)))
+          .limit(1)
+        if (outro) throw new BadRequestException('CPF já cadastrado para outra pessoa')
+        pset.cpf = cpfDigits
+      }
+      if (Object.keys(pset).length) {
+        await this.db.update(pessoas).set(pset).where(eq(pessoas.id, atual.titularPessoaId))
+      }
+    } else if (cpfDigits) {
+      // sem titular ainda → cria e vincula
       const titularPessoaId = await this.resolverTitular(patch.cpf, patch.whatsapp, patch.nome ?? atual.nome)
       if (titularPessoaId) set.titularPessoaId = titularPessoaId
     }
 
+    if (Object.keys(set).length === 0) {
+      const [row] = await this.db
+        .select()
+        .from(contas)
+        .where(and(eq(contas.nucleoId, nucleoId), eq(contas.id, id)))
+        .limit(1)
+      return row
+    }
     const [row] = await this.db
       .update(contas)
       .set(set)
