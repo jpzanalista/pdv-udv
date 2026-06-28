@@ -44,6 +44,7 @@ export const updateProdutoSchema = z
     precoVenda: z.number().min(0).optional(),
     precoCusto: z.number().min(0).optional(),
     estoqueAtual: z.number().optional(),
+    estoqueMinimo: z.number().min(0).optional(),
     controlaEstoque: z.boolean().optional(),
     ativo: z.boolean().optional(),
     exibirVenda: z.boolean().optional(),
@@ -60,7 +61,21 @@ export const createProdutoSchema = z.object({
   precoCusto: z.number().min(0).optional(),
   controlaEstoque: z.boolean().optional(),
   estoqueAtual: z.number().optional(),
+  estoqueMinimo: z.number().min(0).optional(),
   ativo: z.boolean().optional(),
   exibirVenda: z.boolean().optional(),
 })
 export type CreateProdutoInput = z.infer<typeof createProdutoSchema>
+
+/** Movimentação manual de estoque (entrada soma; ajuste define o saldo). */
+export const estoqueMovimentoSchema = z
+  .object({
+    tipo: z.enum(['entrada', 'ajuste']),
+    qtde: z.number().min(0),
+    motivo: z.string().max(200).optional(),
+  })
+  .refine((d) => d.tipo !== 'entrada' || d.qtde > 0, {
+    message: 'Entrada exige quantidade maior que zero',
+    path: ['qtde'],
+  })
+export type EstoqueMovimentoInput = z.infer<typeof estoqueMovimentoSchema>

@@ -1,7 +1,12 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common'
-import { type Database, categorias, produtos } from '@pdv-udv/db'
-import type { CreateProdutoInput, ImportProdutosInput, UpdateProdutoInput } from '@pdv-udv/shared'
-import { and, asc, eq } from 'drizzle-orm'
+import { type Database, categorias, estoqueMovimentos, produtos } from '@pdv-udv/db'
+import type {
+  CreateProdutoInput,
+  EstoqueMovimentoInput,
+  ImportProdutosInput,
+  UpdateProdutoInput,
+} from '@pdv-udv/shared'
+import { and, asc, desc, eq } from 'drizzle-orm'
 import { DB } from '../db/db.module'
 
 @Injectable()
@@ -21,6 +26,7 @@ export class ProdutosService {
         precoCusto: input.precoCusto != null ? String(input.precoCusto) : undefined,
         controlaEstoque: input.controlaEstoque,
         estoqueAtual: input.estoqueAtual != null ? String(input.estoqueAtual) : undefined,
+        estoqueMinimo: input.estoqueMinimo != null ? String(input.estoqueMinimo) : undefined,
         ativo: input.ativo,
         exibirVenda: input.exibirVenda,
       })
@@ -44,6 +50,7 @@ export class ProdutosService {
     if (patch.precoVenda !== undefined) set.precoVenda = String(patch.precoVenda)
     if (patch.precoCusto !== undefined) set.precoCusto = String(patch.precoCusto)
     if (patch.estoqueAtual !== undefined) set.estoqueAtual = String(patch.estoqueAtual)
+    if (patch.estoqueMinimo !== undefined) set.estoqueMinimo = String(patch.estoqueMinimo)
     if (patch.controlaEstoque !== undefined) set.controlaEstoque = patch.controlaEstoque
     if (patch.ativo !== undefined) set.ativo = patch.ativo
     if (patch.exibirVenda !== undefined) set.exibirVenda = patch.exibirVenda
@@ -55,6 +62,50 @@ export class ProdutosService {
       .returning()
     if (!row) throw new NotFoundException('Produto não encontrado')
     return row
+  }
+
+  /** Movimentação manual de estoque: entrada (soma) ou ajuste (define o saldo). */
+  async movimentarEstoque(nucleoId: string, produtoId: string, input: EstoqueMovimentoInput) {
+    const [prod] = await this.db
+      .select({ id: produtos.id, estoqueAtual: produtos.estoqueAtual })
+      .from(produtos)
+      .where(and(eq(produtos.nucleoId, nucleoId), eq(produtos.id, produtoId)))
+      .limit(1)
+    if (!prod) throw new NotFoundException('Produto não encontrado')
+
+    const atual = Number(prod.estoqueAtual)
+    const saldo = input.tipo === 'entrada' ? atual + input.qtde : input.qtde
+
+    await this.db
+      .update(produtos)
+      .set({ estoqueAtual: String(saldo) })
+      .where(eq(produtos.id, produtoId))
+    await this.db.insert(estoqueMovimentos).values({
+      nucleoId,
+      produtoId,
+      tipo: input.tipo,
+      qtde: String(input.qtde),
+      saldoApos: String(saldo),
+      motivo: input.motivo,
+    })
+    return { estoqueAtual: saldo }
+  }
+
+  /** Histórico de movimentações manuais de estoque do produto. */
+  async historicoEstoque(nucleoId: string, produtoId: string) {
+    return this.db
+      .select({
+        id: estoqueMovimentos.id,
+        tipo: estoqueMovimentos.tipo,
+        qtde: estoqueMovimentos.qtde,
+        saldoApos: estoqueMovimentos.saldoApos,
+        motivo: estoqueMovimentos.motivo,
+        data: estoqueMovimentos.createdAt,
+      })
+      .from(estoqueMovimentos)
+      .where(and(eq(estoqueMovimentos.nucleoId, nucleoId), eq(estoqueMovimentos.produtoId, produtoId)))
+      .orderBy(desc(estoqueMovimentos.createdAt))
+      .limit(50)
   }
 
   /** Import em massa via Excel: casa por código; cria categoria a partir do grupo. */

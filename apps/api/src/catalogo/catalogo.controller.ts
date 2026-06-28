@@ -13,12 +13,14 @@ import {
 import {
   type CreateCategoriaInput,
   type CreateProdutoInput,
+  type EstoqueMovimentoInput,
   type ImportProdutosInput,
   type JwtClaims,
   type UpdateCategoriaInput,
   type UpdateProdutoInput,
   createCategoriaSchema,
   createProdutoSchema,
+  estoqueMovimentoSchema,
   importProdutosSchema,
   updateCategoriaSchema,
   updateProdutoSchema,
@@ -112,5 +114,23 @@ export class ProdutosController {
     @Body(new ZodValidationPipe(updateProdutoSchema)) body: UpdateProdutoInput,
   ) {
     return this.produtos.atualizar(nucleoOf(user), id, body)
+  }
+
+  @Post(':id/estoque')
+  @UseGuards(RolesGuard)
+  @Roles('responsavel_emporio', 'admin')
+  movimentarEstoque(
+    @CurrentUser() user: JwtClaims,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(estoqueMovimentoSchema)) body: EstoqueMovimentoInput,
+  ) {
+    return this.produtos.movimentarEstoque(nucleoOf(user), id, body)
+  }
+
+  @Get(':id/estoque')
+  @UseGuards(RolesGuard)
+  @Roles('responsavel_emporio', 'admin')
+  historicoEstoque(@CurrentUser() user: JwtClaims, @Param('id') id: string) {
+    return this.produtos.historicoEstoque(nucleoOf(user), id)
   }
 }

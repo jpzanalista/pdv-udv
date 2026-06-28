@@ -64,6 +64,13 @@
       "when": 1782670745012,
       "tag": "0008_auth_responsavel",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1782689778173,
+      "tag": "0009_estoque",
+      "breakpoints": true
     }
   ]
 }

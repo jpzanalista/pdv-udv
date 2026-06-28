@@ -161,6 +161,7 @@ export const produtos = pgTable('produtos', {
   precoCusto: money('preco_custo').default('0').notNull(),
   controlaEstoque: boolean('controla_estoque').default(false).notNull(),
   estoqueAtual: numeric('estoque_atual', { precision: 12, scale: 3 }).default('0').notNull(),
+  estoqueMinimo: numeric('estoque_minimo', { precision: 12, scale: 3 }).default('0').notNull(),
   imagemUrl: text('imagem_url'),
   ativo: boolean('ativo').default(true).notNull(),
   exibirVenda: boolean('exibir_venda').default(true).notNull(),
@@ -335,5 +336,23 @@ export const senhaResets = pgTable('senha_resets', {
   tokenHash: varchar('token_hash', { length: 64 }).notNull(), // sha256 hex
   expiraEm: timestamp('expira_em', { withTimezone: true }).notNull(),
   usadoEm: timestamp('usado_em', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+})
+
+// ---------- estoque ----------
+export const estoqueMovimentoTipoEnum = pgEnum('estoque_movimento_tipo', ['entrada', 'ajuste'])
+
+export const estoqueMovimentos = pgTable('estoque_movimentos', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  nucleoId: uuid('nucleo_id')
+    .notNull()
+    .references(() => nucleos.id),
+  produtoId: uuid('produto_id')
+    .notNull()
+    .references(() => produtos.id),
+  tipo: estoqueMovimentoTipoEnum('tipo').notNull(),
+  qtde: numeric('qtde', { precision: 12, scale: 3 }).notNull(),
+  saldoApos: numeric('saldo_apos', { precision: 12, scale: 3 }).notNull(),
+  motivo: varchar('motivo', { length: 200 }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
