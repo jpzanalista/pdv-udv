@@ -2,7 +2,8 @@
 
 import { formatBRL } from '@pdv-udv/core'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { QuitarModal } from '@/components/portal/QuitarModal'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ApiError, api } from '@/lib/api'
@@ -33,21 +34,28 @@ export default function PortalPage() {
   const [carregando, setCarregando] = useState(true)
   const [aberta, setAberta] = useState<string | null>(null)
   const [extratos, setExtratos] = useState<Record<string, ContaExtrato>>({})
+  const [quitar, setQuitar] = useState<{ id: string; nome: string; saldoCents: number } | null>(null)
+
+  const carregar = useCallback(async () => {
+    try {
+      setContas(await api<PortalConta[]>('/portal/contas'))
+      setExtratos({}) // força recarregar o extrato ao reabrir
+    } catch (e) {
+      if (e instanceof ApiError && (e.status === 401 || e.status === 403)) {
+        router.replace('/portal/login')
+      }
+    } finally {
+      setCarregando(false)
+    }
+  }, [router])
 
   useEffect(() => {
     if (!getToken()) {
       router.replace('/portal/login')
       return
     }
-    api<PortalConta[]>('/portal/contas')
-      .then(setContas)
-      .catch((e) => {
-        if (e instanceof ApiError && (e.status === 401 || e.status === 403)) {
-          router.replace('/portal/login')
-        }
-      })
-      .finally(() => setCarregando(false))
-  }, [router])
+    carregar()
+  }, [router, carregar])
 
   async function alternar(id: string) {
     if (aberta === id) {
@@ -111,10 +119,10 @@ export default function PortalPage() {
                   </Button>
                   <Button
                     className="flex-1 text-sm"
-                    disabled
-                    title="Disponível em breve"
+                    disabled={c.saldoCents <= 0}
+                    onClick={() => setQuitar({ id: c.id, nome: c.nome, saldoCents: c.saldoCents })}
                   >
-                    Quitar (em breve)
+                    Quitar via Pix
                   </Button>
                 </div>
 
@@ -163,6 +171,16 @@ export default function PortalPage() {
             )
           })}
         </div>
+      )}
+
+      {quitar && (
+        <QuitarModal
+          contaId={quitar.id}
+          contaNome={quitar.nome}
+          saldoCents={quitar.saldoCents}
+          onAtualizar={carregar}
+          onClose={() => setQuitar(null)}
+        />
       )}
     </main>
   )
