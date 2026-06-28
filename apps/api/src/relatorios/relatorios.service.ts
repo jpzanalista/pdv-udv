@@ -1,0 +1,229 @@
+import { Inject, Injectable } from '@nestjs/common'
+import {
+  type Database,
+  caixaMovimentos,
+  cobrancas,
+  contas,
+  expedientes,
+  lancamentos,
+  pagamentos,
+  vendas,
+} from '@pdv-udv/db'
+import { and, eq, inArray } from 'drizzle-orm'
+import { DB } from '../db/db.module'
+
+const TZ = 'America/Sao_Paulo' // UTC-3, sem horário de verão
+const toCents = (v: string | null) => Math.round(Number(v ?? 0) * 100)
+/** Data local (YYYY-MM-DD) de um timestamp, no fuso do empório. */
+const diaLocal = (d: Date) => d.toLocaleDateString('en-CA', { timeZone: TZ })
+
+type Periodo = { de: string; ate: string }
+
+@Injectable()
+export class RelatoriosService {
+  constructor(@Inject(DB) private readonly db: Database) {}
+
+  /** Período padrão: do dia 1 do mês corrente até hoje (fuso local). */
+  private periodo(de?: string, ate?: string): Periodo {
+    const hoje = diaLocal(new Date())
+    const fim = ate || hoje
+    const ini = de || `${fim.slice(0, 7)}-01`
+    return { de: ini, ate: fim }
+  }
+
+  private async expedientesPorDia(nucleoId: string) {
+    const exps = await this.db
+      .select({ id: expedientes.id, abertoEm: expedientes.abertoEm })
+      .from(expedientes)
+      .where(eq(expedientes.nucleoId, nucleoId))
+    const map = new Map<string, string>() // expedienteId → diaLocal
+    for (const e of exps) map.set(e.id, diaLocal(e.abertoEm))
+    return map
+  }
+
+  async vendas(nucleoId: string, de?: string, ate?: string) {
+    const p = this.periodo(de, ate)
+    const expDia = await this.expedientesPorDia(nucleoId)
+
+    const todas = await this.db
+      .select({
+        id: vendas.id,
+        total: vendas.total,
+        expedienteId: vendas.expedienteId,
+        occurredAt: vendas.occurredAt,
+      })
+      .from(vendas)
+      .where(and(eq(vendas.nucleoId, nucleoId), eq(vendas.cancelada, false)))
+
+    const noPeriodo = todas
+      .map((v) => ({
+        ...v,
+        dia: (v.expedienteId && expDia.get(v.expedienteId)) || diaLocal(v.occurredAt),
+      }))
+      .filter((v) => v.dia >= p.de && v.dia <= p.ate)
+
+    let totalCents = 0
+    const porDiaMap = new Map<string, { totalCents: number; qtd: number }>()
+    for (const v of noPeriodo) {
+      const c = toCents(v.total)
+      totalCents += c
+      const d = porDiaMap.get(v.dia) ?? { totalCents: 0, qtd: 0 }
+      d.totalCents += c
+      d.qtd++
+      porDiaMap.set(v.dia, d)
+    }
+    const qtdVendas = noPeriodo.length
+    const ticketMedioCents = qtdVendas ? Math.round(totalCents / qtdVendas) : 0
+
+    // por forma de pagamento. À vista vem da tabela `pagamentos`; "na conta" (crediário)
+    // não tem linha lá (vira lançamento) → é o resto: total − à vista.
+    const porFormaMap = new Map<string, { totalCents: number; qtd: number }>()
+    const ids = noPeriodo.map((v) => v.id)
+    const comPagamento = new Set<string>()
+    if (ids.length) {
+      const pgs = await this.db
+        .select({ vendaId: pagamentos.vendaId, metodo: pagamentos.metodo, valor: pagamentos.valor })
+        .from(pagamentos)
+        .where(inArray(pagamentos.vendaId, ids))
+      for (const pg of pgs) {
+        comPagamento.add(pg.vendaId)
+        const f = porFormaMap.get(pg.metodo) ?? { totalCents: 0, qtd: 0 }
+        f.totalCents += toCents(pg.valor)
+        f.qtd++
+        porFormaMap.set(pg.metodo, f)
+      }
+    }
+    const avistaCents = [...porFormaMap.values()].reduce((s, f) => s + f.totalCents, 0)
+    const contaCents = totalCents - avistaCents
+    if (contaCents > 0) {
+      porFormaMap.set('conta', { totalCents: contaCents, qtd: noPeriodo.length - comPagamento.size })
+    }
+
+    return {
+      periodo: p,
+      totalCents,
+      qtdVendas,
+      ticketMedioCents,
+      porForma: [...porFormaMap.entries()]
+        .map(([metodo, v]) => ({ metodo, ...v }))
+        .sort((a, b) => b.totalCents - a.totalCents),
+      porDia: [...porDiaMap.entries()]
+        .map(([dia, v]) => ({ dia, ...v }))
+        .sort((a, b) => a.dia.localeCompare(b.dia)),
+    }
+  }
+
+  async financeiro(nucleoId: string, de?: string, ate?: string) {
+    const p = this.periodo(de, ate)
+    const expDia = await this.expedientesPorDia(nucleoId)
+
+    // ----- a receber (snapshot atual) + saldo por conta -----
+    const movs = await this.db
+      .select({
+        contaId: lancamentos.contaId,
+        contaTipo: contas.tipo,
+        tipo: lancamentos.tipo,
+        valor: lancamentos.valor,
+      })
+      .from(lancamentos)
+      .innerJoin(contas, eq(contas.id, lancamentos.contaId))
+      .where(eq(contas.nucleoId, nucleoId))
+
+    const saldoConta = new Map<string, number>()
+    const aReceber = { socioCents: 0, visitanteCents: 0, institucionalCents: 0, totalCents: 0 }
+    for (const m of movs) {
+      const sign = m.tipo === 'debito' ? 1 : -1
+      const c = sign * toCents(m.valor)
+      saldoConta.set(m.contaId, (saldoConta.get(m.contaId) ?? 0) + c)
+      if (m.contaTipo === 'socio') aReceber.socioCents += c
+      else if (m.contaTipo === 'visitante') aReceber.visitanteCents += c
+      else aReceber.institucionalCents += c
+    }
+    aReceber.totalCents = aReceber.socioCents + aReceber.visitanteCents + aReceber.institucionalCents
+
+    // ----- inadimplência de visitantes (saldo>0 + cobrança pendente vencida) -----
+    const hoje = diaLocal(new Date())
+    const visitantes = await this.db
+      .select({ id: contas.id })
+      .from(contas)
+      .where(and(eq(contas.nucleoId, nucleoId), eq(contas.tipo, 'visitante')))
+    const cobsPend = await this.db
+      .select({ contaId: cobrancas.contaId, dueDate: cobrancas.dueDate })
+      .from(cobrancas)
+      .where(and(eq(cobrancas.nucleoId, nucleoId), eq(cobrancas.status, 'pendente')))
+    const vencidaPorConta = new Set<string>()
+    for (const c of cobsPend) if (c.contaId && c.dueDate && c.dueDate < hoje) vencidaPorConta.add(c.contaId)
+    const inadimplencia = { qtd: 0, valorCents: 0 }
+    for (const v of visitantes) {
+      const saldo = saldoConta.get(v.id) ?? 0
+      if (saldo > 0 && vencidaPorConta.has(v.id)) {
+        inadimplencia.qtd++
+        inadimplencia.valorCents += saldo
+      }
+    }
+
+    // ----- caixa no período (por dia do expediente) -----
+    const movsCaixa = await this.db
+      .select({
+        tipo: caixaMovimentos.tipo,
+        destino: caixaMovimentos.destino,
+        valor: caixaMovimentos.valor,
+        expedienteId: caixaMovimentos.expedienteId,
+      })
+      .from(caixaMovimentos)
+      .where(eq(caixaMovimentos.nucleoId, nucleoId))
+    const caixa = { sangriaTesourariaCents: 0, sangriaCompraCents: 0, suprimentoCents: 0 }
+    for (const m of movsCaixa) {
+      const dia = expDia.get(m.expedienteId)
+      if (!dia || dia < p.de || dia > p.ate) continue
+      const c = toCents(m.valor)
+      if (m.tipo === 'suprimento') caixa.suprimentoCents += c
+      else if (m.destino === 'compra') caixa.sangriaCompraCents += c
+      else caixa.sangriaTesourariaCents += c
+    }
+
+    // fechamentos no período (diferença)
+    const exps = await this.db
+      .select({ id: expedientes.id, abertoEm: expedientes.abertoEm, status: expedientes.status, diferenca: expedientes.diferenca })
+      .from(expedientes)
+      .where(eq(expedientes.nucleoId, nucleoId))
+    const fechamentos: { dia: string; diferencaCents: number }[] = []
+    let diferencaTotalCents = 0
+    for (const e of exps) {
+      if (e.status !== 'fechado') continue
+      const dia = diaLocal(e.abertoEm)
+      if (dia < p.de || dia > p.ate) continue
+      const dif = toCents(e.diferenca)
+      diferencaTotalCents += dif
+      fechamentos.push({ dia, diferencaCents: dif })
+    }
+    fechamentos.sort((a, b) => a.dia.localeCompare(b.dia))
+
+    // ----- cobranças ASAAS no período -----
+    const cobs = await this.db
+      .select({ status: cobrancas.status, valor: cobrancas.valor, createdAt: cobrancas.createdAt })
+      .from(cobrancas)
+      .where(eq(cobrancas.nucleoId, nucleoId))
+    const cobrancasResumo = { pendentes: 0, pendentesCents: 0, confirmadas: 0, confirmadasCents: 0 }
+    for (const c of cobs) {
+      const dia = diaLocal(c.createdAt)
+      if (dia < p.de || dia > p.ate) continue
+      const cents = toCents(c.valor)
+      if (c.status === 'confirmada') {
+        cobrancasResumo.confirmadas++
+        cobrancasResumo.confirmadasCents += cents
+      } else if (c.status === 'pendente') {
+        cobrancasResumo.pendentes++
+        cobrancasResumo.pendentesCents += cents
+      }
+    }
+
+    return {
+      periodo: p,
+      aReceber,
+      inadimplencia,
+      caixa: { ...caixa, fechamentos, diferencaTotalCents },
+      cobrancas: cobrancasResumo,
+    }
+  }
+}

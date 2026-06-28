@@ -11,6 +11,7 @@ import { NucleosModule } from './nucleos/nucleos.module'
 import { PessoasModule } from './pessoas/pessoas.module'
 import { PortalModule } from './portal/portal.module'
 import { RegioesModule } from './regioes/regioes.module'
+import { RelatoriosModule } from './relatorios/relatorios.module'
 import { VendasModule } from './vendas/vendas.module'
 
 @Module({
@@ -27,6 +28,7 @@ import { VendasModule } from './vendas/vendas.module'
     ExpedientesModule,
     PortalModule,
     AsaasModule,
+    RelatoriosModule,
   ],
   controllers: [HealthController],
 })
