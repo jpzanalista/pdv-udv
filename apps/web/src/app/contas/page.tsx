@@ -6,6 +6,7 @@ import { type ChangeEvent, useRef, useState } from 'react'
 import { useEffect } from 'react'
 import * as XLSX from 'xlsx'
 import { ContaFormModal } from '@/components/contas/ContaFormModal'
+import { ExtratoModal } from '@/components/contas/ExtratoModal'
 import { Button } from '@/components/ui/Button'
 import { ApiError, api } from '@/lib/api'
 import { getToken } from '@/lib/auth'
@@ -28,6 +29,7 @@ export default function ContasPage() {
   const [msg, setMsg] = useState<string | null>(null)
   const [importando, setImportando] = useState(false)
   const [form, setForm] = useState<{ conta: ContaRow | null } | null>(null)
+  const [extrato, setExtrato] = useState<{ id: string; nome: string } | null>(null)
   const [tipoFiltro, setTipoFiltro] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -134,7 +136,9 @@ export default function ContasPage() {
         </div>
       </div>
       {msg && <p className="mt-2 text-sm font-semibold text-ink">{msg}</p>}
-      <p className="mt-1 text-ink-muted">{visiveis.length} conta(s).</p>
+      <p className="mt-1 text-ink-muted">
+        {visiveis.length} conta(s). <span className="text-ink-light">Clique no nome para ver o extrato.</span>
+      </p>
 
       <div className="mt-4 overflow-auto rounded-lg border border-line bg-surface">
         <table className="w-full text-sm">
@@ -151,7 +155,15 @@ export default function ContasPage() {
           <tbody>
             {visiveis.map((c) => (
               <tr key={c.id} className="border-b border-line last:border-0">
-                <td className="p-3 font-semibold">{c.nome}</td>
+                <td className="p-3">
+                  <button
+                    type="button"
+                    onClick={() => setExtrato({ id: c.id, nome: c.nome })}
+                    className="text-left font-semibold text-ink hover:text-brand hover:underline"
+                  >
+                    {c.nome}
+                  </button>
+                </td>
                 <td className="p-3">{TIPO_LABEL[c.tipo] ?? c.tipo}</td>
                 <td className="p-3">{c.titularCpf ?? '—'}</td>
                 <td className="p-3">{c.titularWhatsapp ?? '—'}</td>
@@ -186,6 +198,14 @@ export default function ContasPage() {
             setForm(null)
             await carregar()
           }}
+        />
+      )}
+
+      {extrato && (
+        <ExtratoModal
+          contaId={extrato.id}
+          contaNome={extrato.nome}
+          onClose={() => setExtrato(null)}
         />
       )}
     </main>

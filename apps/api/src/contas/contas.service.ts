@@ -1,8 +1,10 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common'
-import { type Database, contaMembros, contas, pessoas } from '@pdv-udv/db'
+import { type Database, contaMembros, contas, lancamentos, pessoas, vendaItens, vendas } from '@pdv-udv/db'
 import type { CreateContaInput, ImportContasInput, UpdateContaInput } from '@pdv-udv/shared'
-import { and, asc, eq } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray } from 'drizzle-orm'
 import { DB } from '../db/db.module'
+
+const toCents = (v: string | null) => Math.round(Number(v ?? 0) * 100)
 
 @Injectable()
 export class ContasService {
@@ -84,6 +86,52 @@ export class ContasService {
       .from(contas)
       .where(and(eq(contas.nucleoId, nucleoId), eq(contas.id, id)))
       .limit(1)
+  }
+
+  /** Extrato: saldo em aberto + movimentos (compras com itens, e pagamentos). */
+  async extrato(nucleoId: string, id: string) {
+    const [conta] = await this.db
+      .select({ id: contas.id, nome: contas.nome, tipo: contas.tipo })
+      .from(contas)
+      .where(and(eq(contas.nucleoId, nucleoId), eq(contas.id, id)))
+      .limit(1)
+    if (!conta) throw new NotFoundException('Conta não encontrada')
+
+    const movs = await this.db
+      .select()
+      .from(lancamentos)
+      .where(and(eq(lancamentos.nucleoId, nucleoId), eq(lancamentos.contaId, id)))
+      .orderBy(desc(lancamentos.createdAt))
+
+    // Busca os itens das vendas vinculadas (o "o que comprou"), em uma tacada só.
+    const vendaIds = movs.map((m) => m.vendaId).filter((v): v is string => !!v)
+    const numeroByVenda = new Map<string, number>()
+    const itensByVenda = new Map<string, { descricao: string; qtde: number; totalCents: number }[]>()
+    if (vendaIds.length) {
+      const vs = await this.db
+        .select({ id: vendas.id, numero: vendas.numero })
+        .from(vendas)
+        .where(inArray(vendas.id, vendaIds))
+      for (const v of vs) numeroByVenda.set(v.id, v.numero)
+      const its = await this.db.select().from(vendaItens).where(inArray(vendaItens.vendaId, vendaIds))
+      for (const it of its) {
+        const arr = itensByVenda.get(it.vendaId) ?? []
+        arr.push({ descricao: it.descricao, qtde: Number(it.qtde), totalCents: toCents(it.total) })
+        itensByVenda.set(it.vendaId, arr)
+      }
+    }
+
+    let saldoCents = 0
+    const movimentos = movs.map((m) => {
+      const valorCents = toCents(m.valor)
+      saldoCents += m.tipo === 'debito' ? valorCents : -valorCents
+      const venda = m.vendaId
+        ? { numero: numeroByVenda.get(m.vendaId) ?? null, itens: itensByVenda.get(m.vendaId) ?? [] }
+        : null
+      return { id: m.id, data: m.createdAt, tipo: m.tipo, valorCents, descricao: m.descricao, venda }
+    })
+
+    return { conta, saldoCents, movimentos }
   }
 
   /**

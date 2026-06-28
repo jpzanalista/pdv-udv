@@ -63,6 +63,13 @@ export class ContasController {
     return this.contas.atualizar(this.requireNucleo(user), id, body)
   }
 
+  @Get(':id/extrato')
+  @UseGuards(RolesGuard)
+  @Roles('responsavel_emporio', 'admin')
+  extrato(@CurrentUser() user: JwtClaims, @Param('id') id: string) {
+    return this.contas.extrato(this.requireNucleo(user), id)
+  }
+
   @Get(':id')
   get(@CurrentUser() user: JwtClaims, @Param('id') id: string) {
     return this.contas.get(this.requireNucleo(user), id)

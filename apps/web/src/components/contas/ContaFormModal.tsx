@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Field, Input } from '@/components/ui/Input'
 import { ApiError, api } from '@/lib/api'
+import { maskTelefone, telefoneCompleto, telefoneParaSalvar } from '@/lib/telefone'
 import type { ContaRow } from '@/lib/types'
 
 const TIPOS = [
@@ -25,7 +26,7 @@ export function ContaFormModal({
   const [nome, setNome] = useState(conta?.nome ?? '')
   const [tipo, setTipo] = useState(conta?.tipo ?? tipoInicial ?? 'socio')
   const [cpf, setCpf] = useState(conta?.titularCpf ?? '')
-  const [whatsapp, setWhatsapp] = useState(conta?.titularWhatsapp ?? '')
+  const [whatsapp, setWhatsapp] = useState(maskTelefone(conta?.titularWhatsapp ?? ''))
   const [ativa, setAtiva] = useState(conta?.ativa ?? true)
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
@@ -36,13 +37,17 @@ export function ContaFormModal({
       setErro('Informe o nome da conta.')
       return
     }
+    if (tipo === 'visitante' && !telefoneCompleto(whatsapp)) {
+      setErro('Visitante exige WhatsApp (recebe o link de pagamento por lá).')
+      return
+    }
     setSalvando(true)
     setErro(null)
     const payload = {
       nome: nome.trim(),
       tipo,
       cpf: cpf.trim() || undefined,
-      whatsapp: whatsapp.trim() || undefined,
+      whatsapp: telefoneParaSalvar(whatsapp),
       ativa,
     }
     try {
@@ -90,8 +95,18 @@ export function ContaFormModal({
             <Field label="CPF do titular" htmlFor="cpf">
               <Input id="cpf" inputMode="numeric" value={cpf} onChange={(e) => setCpf(e.target.value)} />
             </Field>
-            <Field label="WhatsApp do titular" htmlFor="whatsapp">
-              <Input id="whatsapp" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
+            <Field
+              label={tipo === 'visitante' ? 'WhatsApp (obrigatório)' : 'WhatsApp do titular'}
+              htmlFor="whatsapp"
+            >
+              <Input
+                id="whatsapp"
+                inputMode="tel"
+                placeholder="+55 (00) 00000-0000"
+                value={whatsapp}
+                onChange={(e) => setWhatsapp(e.target.value)}
+                onBlur={() => setWhatsapp(maskTelefone(whatsapp))}
+              />
             </Field>
           </div>
           <p className="-mt-1 text-xs text-ink-light">

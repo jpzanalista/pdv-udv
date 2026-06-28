@@ -16,6 +16,21 @@ export type Produto = {
 
 export type Conta = { id: string; nome: string; tipo: string }
 
+export type ExtratoMovimento = {
+  id: string
+  data: string
+  tipo: 'debito' | 'credito'
+  valorCents: number
+  descricao: string | null
+  venda: { numero: number | null; itens: { descricao: string; qtde: number; totalCents: number }[] } | null
+}
+
+export type ContaExtrato = {
+  conta: { id: string; nome: string; tipo: string }
+  saldoCents: number
+  movimentos: ExtratoMovimento[]
+}
+
 /** Conta enriquecida com titular (para a página de gestão/exportação). */
 export type ContaRow = {
   id: string

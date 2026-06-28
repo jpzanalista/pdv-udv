@@ -1,16 +1,22 @@
 import { z } from 'zod'
 import { ACCOUNT_TYPES } from './enums.js'
 
-export const createContaSchema = z.object({
-  tipo: z.enum(ACCOUNT_TYPES),
-  nome: z.string().min(1).max(160),
-  titularPessoaId: z.string().uuid().optional(),
-  membros: z.array(z.string().uuid()).optional(),
-  descontoPct: z.number().min(0).max(100).optional(),
-  ativa: z.boolean().optional(),
-  cpf: z.string().max(20).optional(),
-  whatsapp: z.string().max(20).optional(),
-})
+export const createContaSchema = z
+  .object({
+    tipo: z.enum(ACCOUNT_TYPES),
+    nome: z.string().min(1).max(160),
+    titularPessoaId: z.string().uuid().optional(),
+    membros: z.array(z.string().uuid()).optional(),
+    descontoPct: z.number().min(0).max(100).optional(),
+    ativa: z.boolean().optional(),
+    cpf: z.string().max(20).optional(),
+    whatsapp: z.string().max(20).optional(),
+  })
+  // Visitante recebe o link de pagamento (Pix/ASAAS) por WhatsApp → obrigatório.
+  .refine((d) => d.tipo !== 'visitante' || !!d.whatsapp?.trim(), {
+    message: 'Visitante exige WhatsApp',
+    path: ['whatsapp'],
+  })
 export type CreateContaInput = z.infer<typeof createContaSchema>
 
 /** Atualização parcial de conta (edição manual). */

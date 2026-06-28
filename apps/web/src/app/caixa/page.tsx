@@ -10,11 +10,10 @@ import { GearMenu } from '@/components/caixa/GearMenu'
 import { MovimentoModal, type MovimentoPayload } from '@/components/caixa/MovimentoModal'
 import { ProductGrid } from '@/components/caixa/ProductGrid'
 import { QtyStepper } from '@/components/caixa/QtyStepper'
-import { ReceberModal } from '@/components/caixa/ReceberModal'
-import { SocioModal } from '@/components/caixa/SocioModal'
+import { ReceberModal, type ReceberPayload } from '@/components/caixa/ReceberModal'
 import { ApiError, api } from '@/lib/api'
 import { getToken } from '@/lib/auth'
-import type { CartItem, Categoria, Conta, Expediente, Ident, Produto } from '@/lib/types'
+import type { CartItem, Categoria, Conta, Expediente, Produto } from '@/lib/types'
 
 const TODOS = '__todos__'
 
@@ -34,8 +33,6 @@ export default function CaixaPage() {
   const [activeCat, setActiveCat] = useState<string>(TODOS)
   const [qtde, setQtde] = useState(1)
   const [cart, setCart] = useState<CartItem[]>([])
-  const [ident, setIdent] = useState<Ident>(null)
-  const [socioOpen, setSocioOpen] = useState(false)
   const [receberOpen, setReceberOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
@@ -90,27 +87,40 @@ export default function CaixaPage() {
       ),
     )
   const remove = (id: string) => setCart((p) => p.filter((i) => i.produtoId !== id))
-  const clear = () => {
-    setCart([])
-    setIdent(null)
-  }
+  const clear = () => setCart([])
 
   const totalCents = calcularTotais(cart).total
 
-  async function confirmarVenda(metodo: string) {
+  async function carregarContas() {
+    try {
+      setContas(await api<Conta[]>('/contas'))
+    } catch {
+      // silencioso — a lista atual continua válida
+    }
+  }
+
+  // A identificação (sócio/visitante/institucional) é decidida no Receber.
+  async function confirmarVenda(p: ReceberPayload) {
     setSubmitting(true)
     try {
+      let contaId = p.contaId
+      if (p.novaConta) {
+        const c = await api<{ id: string }>('/contas', {
+          method: 'POST',
+          body: JSON.stringify(p.novaConta),
+        })
+        contaId = c.id
+      }
       const payload = {
-        personKind:
-          ident?.kind === 'socio' ? 'socio' : ident?.kind === 'visitante' ? 'visitante' : undefined,
-        contaId: ident?.kind === 'socio' ? ident.conta.id : undefined,
+        personKind: p.personKind,
+        contaId,
         itens: cart.map((i) => ({
           produtoId: i.produtoId,
           descricao: i.descricao,
           qtde: i.qtde,
           unitarioCents: i.unitario,
         })),
-        pagamentos: [{ metodo, valorCents: totalCents }],
+        pagamentos: [{ metodo: p.metodo, valorCents: totalCents }],
       }
       const r = await api<{ numero: number }>('/vendas', {
         method: 'POST',
@@ -118,8 +128,8 @@ export default function CaixaPage() {
       })
       setMsg(`Venda #${r.numero} registrada ✓`)
       setCart([])
-      setIdent(null)
       setReceberOpen(false)
+      if (p.novaConta) await carregarContas() // conta nova aparece nas próximas vendas
     } catch {
       setMsg('Erro ao registrar a venda.')
     } finally {
@@ -196,7 +206,6 @@ export default function CaixaPage() {
       setExpediente(null)
       setFecharOpen(false)
       setCart([])
-      setIdent(null)
       setMsg(`Caixa fechado. Diferença: ${formatBRL(r.diferencaCents)}`)
     } catch {
       setMsg('Erro ao fechar o caixa.')
@@ -235,12 +244,6 @@ export default function CaixaPage() {
       <header className="flex items-center justify-between gap-3 border-b border-line bg-surface px-4 py-2">
         <div className="flex items-center gap-3">
           <span className="text-xl font-bold text-brand">PDV UDV</span>
-          <IdentBar
-            ident={ident}
-            onSocio={() => setSocioOpen(true)}
-            onVisitante={() => setIdent({ kind: 'visitante' })}
-            onTrocar={() => setIdent(null)}
-          />
         </div>
         <div className="flex items-center gap-2">
           <CaixaStatus aberto={!!expediente} />
@@ -292,21 +295,10 @@ export default function CaixaPage() {
         </div>
       )}
 
-      {socioOpen && (
-        <SocioModal
-          contas={contas}
-          onPick={(c) => {
-            setIdent({ kind: 'socio', conta: c })
-            setSocioOpen(false)
-          }}
-          onClose={() => setSocioOpen(false)}
-        />
-      )}
-
       {receberOpen && (
         <ReceberModal
           totalCents={totalCents}
-          ident={ident}
+          contas={contas}
           submitting={submitting}
           onConfirm={confirmarVenda}
           onClose={() => setReceberOpen(false)}
@@ -383,46 +375,3 @@ function Tab({
   )
 }
 
-function IdentBar({
-  ident,
-  onSocio,
-  onVisitante,
-  onTrocar,
-}: {
-  ident: Ident
-  onSocio: () => void
-  onVisitante: () => void
-  onTrocar: () => void
-}) {
-  if (ident === null) {
-    return (
-      <div className="flex items-center gap-2 text-sm">
-        <span className="text-ink-muted">Quem é?</span>
-        <button
-          type="button"
-          onClick={onSocio}
-          className="min-h-touch rounded border border-brand bg-white px-3 font-semibold text-brand"
-        >
-          Sócio
-        </button>
-        <button
-          type="button"
-          onClick={onVisitante}
-          className="min-h-touch rounded border border-line bg-white px-3 font-semibold text-ink-muted"
-        >
-          Visitante
-        </button>
-      </div>
-    )
-  }
-  return (
-    <div className="flex items-center gap-2 text-sm">
-      <span className="rounded bg-brand-bg px-2 py-1 font-semibold text-brand-dark">
-        {ident.kind === 'socio' ? ident.conta.nome : 'Visitante'}
-      </span>
-      <button type="button" onClick={onTrocar} className="text-ink-light underline">
-        trocar
-      </button>
-    </div>
-  )
-}
