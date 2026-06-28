@@ -131,6 +131,33 @@ export default function LoginPage() {
               Dev: admin
             </Button>
           </div>
+          <p className="mb-1 mt-3 text-xs text-ink-light">Diretoria · Senhora Santana:</p>
+          <div className="grid grid-cols-3 gap-2">
+            <Button
+              variant="ghost"
+              className="text-sm"
+              onClick={() => devEntrar('pres.senhorasantana@udv.org.br')}
+              disabled={loading}
+            >
+              Presidente
+            </Button>
+            <Button
+              variant="ghost"
+              className="text-sm"
+              onClick={() => devEntrar('repres.senhorasantana@udv.org.br')}
+              disabled={loading}
+            >
+              Representante
+            </Button>
+            <Button
+              variant="ghost"
+              className="text-sm"
+              onClick={() => devEntrar('tes.senhorasantana@udv.org.br')}
+              disabled={loading}
+            >
+              Tesoureiro
+            </Button>
+          </div>
           <div className="mt-2 flex gap-2">
             <Input
               value={devEmail}
