@@ -12,9 +12,11 @@ import {
   type CreateContaInput,
   type ImportContasInput,
   type JwtClaims,
+  type RegistrarPagamentoInput,
   type UpdateContaInput,
   createContaSchema,
   importContasSchema,
+  registrarPagamentoSchema,
   updateContaSchema,
 } from '@pdv-udv/shared'
 import { CurrentUser } from '../auth/current-user.decorator'
@@ -68,6 +70,17 @@ export class ContasController {
   @Roles('responsavel_emporio', 'admin')
   extrato(@CurrentUser() user: JwtClaims, @Param('id') id: string) {
     return this.contas.extrato(this.requireNucleo(user), id)
+  }
+
+  @Post(':id/pagamento')
+  @UseGuards(RolesGuard)
+  @Roles('responsavel_emporio', 'admin')
+  registrarPagamento(
+    @CurrentUser() user: JwtClaims,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(registrarPagamentoSchema)) body: RegistrarPagamentoInput,
+  ) {
+    return this.contas.registrarPagamento(this.requireNucleo(user), id, body)
   }
 
   @Get(':id')

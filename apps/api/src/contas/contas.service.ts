@@ -1,10 +1,23 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common'
 import { type Database, contaMembros, contas, lancamentos, pessoas, vendaItens, vendas } from '@pdv-udv/db'
-import type { CreateContaInput, ImportContasInput, UpdateContaInput } from '@pdv-udv/shared'
+import type {
+  CreateContaInput,
+  ImportContasInput,
+  RegistrarPagamentoInput,
+  UpdateContaInput,
+} from '@pdv-udv/shared'
 import { and, asc, desc, eq, inArray } from 'drizzle-orm'
 import { DB } from '../db/db.module'
 
 const toCents = (v: string | null) => Math.round(Number(v ?? 0) * 100)
+const toReais = (cents: number) => (cents / 100).toFixed(2)
+
+const METODO_LABEL: Record<string, string> = {
+  dinheiro: 'Dinheiro',
+  pix: 'Pix',
+  cartao_credito: 'Cartão Crédito',
+  cartao_debito: 'Cartão Débito',
+}
 
 @Injectable()
 export class ContasService {
@@ -132,6 +145,32 @@ export class ContasService {
     })
 
     return { conta, saldoCents, movimentos }
+  }
+
+  /** Registra um pagamento presencial (baixa) → lançamento crédito que abate o saldo. */
+  async registrarPagamento(nucleoId: string, id: string, input: RegistrarPagamentoInput) {
+    const [conta] = await this.db
+      .select({ id: contas.id })
+      .from(contas)
+      .where(and(eq(contas.nucleoId, nucleoId), eq(contas.id, id)))
+      .limit(1)
+    if (!conta) throw new NotFoundException('Conta não encontrada')
+
+    const descricao =
+      input.descricao ??
+      `Pagamento${input.metodo ? ` — ${METODO_LABEL[input.metodo] ?? input.metodo}` : ''}`
+
+    const [row] = await this.db
+      .insert(lancamentos)
+      .values({
+        nucleoId,
+        contaId: id,
+        tipo: 'credito',
+        valor: toReais(input.valorCents),
+        descricao,
+      })
+      .returning({ id: lancamentos.id })
+    return { ok: true, lancamentoId: row.id }
   }
 
   /**

@@ -19,6 +19,14 @@ export const createContaSchema = z
   })
 export type CreateContaInput = z.infer<typeof createContaSchema>
 
+/** Registrar pagamento presencial (baixa) → crédito que abate o saldo. */
+export const registrarPagamentoSchema = z.object({
+  valorCents: z.number().int().positive(),
+  metodo: z.enum(['dinheiro', 'pix', 'cartao_credito', 'cartao_debito']).optional(),
+  descricao: z.string().max(200).optional(),
+})
+export type RegistrarPagamentoInput = z.infer<typeof registrarPagamentoSchema>
+
 /** Atualização parcial de conta (edição manual). */
 export const updateContaSchema = z
   .object({

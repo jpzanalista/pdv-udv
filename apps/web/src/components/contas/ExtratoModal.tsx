@@ -1,8 +1,17 @@
 import { formatBRL } from '@pdv-udv/core'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { api } from '@/lib/api'
+import { Field, Input } from '@/components/ui/Input'
+import { ApiError, api } from '@/lib/api'
 import type { ContaExtrato } from '@/lib/types'
+
+const METODOS = [
+  { id: 'dinheiro', label: 'Dinheiro' },
+  { id: 'pix', label: 'Pix' },
+  { id: 'cartao_debito', label: 'Cartão Débito' },
+  { id: 'cartao_credito', label: 'Cartão Crédito' },
+] as const
 
 function dataBR(iso: string): string {
   return new Date(iso).toLocaleString('pt-BR', {
@@ -25,14 +34,55 @@ export function ExtratoModal({
 }) {
   const [extrato, setExtrato] = useState<ContaExtrato | null>(null)
   const [carregando, setCarregando] = useState(true)
-  const [erro, setErro] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
+
+  const [pagando, setPagando] = useState(false) // mostra o formulário de pagamento
+  const [valor, setValor] = useState('')
+  const [metodo, setMetodo] = useState<string | null>(null)
+  const [salvando, setSalvando] = useState(false)
+
+  const carregar = useCallback(async () => {
+    try {
+      setExtrato(await api<ContaExtrato>(`/contas/${contaId}/extrato`))
+    } catch {
+      setErro('Não foi possível carregar o extrato.')
+    } finally {
+      setCarregando(false)
+    }
+  }, [contaId])
 
   useEffect(() => {
-    api<ContaExtrato>(`/contas/${contaId}/extrato`)
-      .then(setExtrato)
-      .catch(() => setErro(true))
-      .finally(() => setCarregando(false))
-  }, [contaId])
+    carregar()
+  }, [carregar])
+
+  function abrirPagamento() {
+    setValor(((extrato?.saldoCents ?? 0) / 100).toFixed(2)) // default = saldo em aberto
+    setMetodo(null)
+    setPagando(true)
+  }
+
+  async function confirmarPagamento() {
+    const reais = Number(valor.replace(',', '.'))
+    const valorCents = Math.round(reais * 100)
+    if (!Number.isFinite(reais) || valorCents <= 0) {
+      setErro('Informe um valor válido.')
+      return
+    }
+    setSalvando(true)
+    setErro(null)
+    try {
+      await api(`/contas/${contaId}/pagamento`, {
+        method: 'POST',
+        body: JSON.stringify({ valorCents, metodo: metodo ?? undefined }),
+      })
+      setPagando(false)
+      await carregar()
+    } catch (e) {
+      setErro(e instanceof ApiError ? e.message : 'Erro ao registrar o pagamento.')
+    } finally {
+      setSalvando(false)
+    }
+  }
 
   return (
     <div
@@ -51,11 +101,10 @@ export function ExtratoModal({
         </div>
 
         {carregando && <p className="text-ink-muted">Carregando…</p>}
-        {erro && <p className="text-danger">Não foi possível carregar o extrato.</p>}
 
         {extrato && (
           <>
-            <div className="mb-4 flex items-baseline justify-between rounded-lg bg-canvas p-3">
+            <div className="mb-3 flex items-baseline justify-between rounded-lg bg-canvas p-3">
               <span className="font-semibold text-ink-muted">Saldo em aberto</span>
               <span
                 className={`text-2xl font-bold ${extrato.saldoCents > 0 ? 'text-danger' : 'text-success'}`}
@@ -63,6 +112,58 @@ export function ExtratoModal({
                 {formatBRL(extrato.saldoCents)}
               </span>
             </div>
+
+            {pagando ? (
+              <div className="mb-4 rounded-lg border border-line p-3">
+                <p className="mb-2 font-semibold">Registrar pagamento</p>
+                <Field label="Valor (R$)" htmlFor="pg-valor">
+                  <Input
+                    id="pg-valor"
+                    inputMode="decimal"
+                    autoFocus
+                    value={valor}
+                    onChange={(e) => setValor(e.target.value)}
+                  />
+                </Field>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  {METODOS.map((m) => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => setMetodo(m.id)}
+                      className={`min-h-touch rounded border px-3 text-sm font-semibold ${
+                        metodo === m.id
+                          ? 'border-brand bg-brand-bg text-brand-dark'
+                          : 'border-line bg-white text-ink-muted hover:bg-canvas'
+                      }`}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-4 flex gap-2">
+                  <Button
+                    variant="ghost"
+                    className="flex-1"
+                    onClick={() => setPagando(false)}
+                    disabled={salvando}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button className="flex-1" onClick={confirmarPagamento} disabled={salvando}>
+                    {salvando ? 'Registrando…' : 'Registrar'}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              extrato.saldoCents > 0 && (
+                <Button className="mb-4 w-full" onClick={abrirPagamento}>
+                  Registrar pagamento
+                </Button>
+              )
+            )}
+
+            {erro && <p className="mb-2 text-sm text-danger">{erro}</p>}
 
             {extrato.movimentos.length === 0 ? (
               <p className="text-ink-light">Nenhuma compra ou pagamento ainda.</p>
@@ -101,6 +202,8 @@ export function ExtratoModal({
             )}
           </>
         )}
+
+        {!extrato && erro && <p className="text-danger">{erro}</p>}
       </Card>
     </div>
   )
