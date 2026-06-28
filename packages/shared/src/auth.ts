@@ -31,6 +31,8 @@ export const jwtClaimsSchema = z.object({
   sub: z.string().uuid(),
   nucleoId: z.string().uuid().nullable(),
   role: z.enum(ROLES),
+  // Só no token do sócio (portal): aponta para a pessoa dona da conta.
+  pessoaId: z.string().uuid().nullish(),
 })
 export type JwtClaims = z.infer<typeof jwtClaimsSchema>
 

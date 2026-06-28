@@ -8,5 +8,6 @@ import { ContasService } from './contas.service'
   imports: [AuthModule],
   controllers: [ContasController],
   providers: [ContasService, RolesGuard],
+  exports: [ContasService],
 })
 export class ContasModule {}

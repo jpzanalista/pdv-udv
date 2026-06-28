@@ -291,3 +291,16 @@ export const cobrancas = pgTable('cobrancas', {
   dueDate: varchar('due_date', { length: 10 }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
+
+// ---------- OTP do portal do sócio ----------
+export const otpCodigos = pgTable('otp_codigos', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  pessoaId: uuid('pessoa_id')
+    .notNull()
+    .references(() => pessoas.id),
+  codeHash: varchar('code_hash', { length: 64 }).notNull(), // sha256 hex
+  expiraEm: timestamp('expira_em', { withTimezone: true }).notNull(),
+  tentativas: integer('tentativas').default(0).notNull(),
+  consumidoEm: timestamp('consumido_em', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+})

@@ -8,6 +8,7 @@ import { ExpedientesModule } from './expedientes/expedientes.module'
 import { HealthController } from './health/health.controller'
 import { NucleosModule } from './nucleos/nucleos.module'
 import { PessoasModule } from './pessoas/pessoas.module'
+import { PortalModule } from './portal/portal.module'
 import { RegioesModule } from './regioes/regioes.module'
 import { VendasModule } from './vendas/vendas.module'
 
@@ -23,6 +24,7 @@ import { VendasModule } from './vendas/vendas.module'
     CatalogoModule,
     VendasModule,
     ExpedientesModule,
+    PortalModule,
   ],
   controllers: [HealthController],
 })

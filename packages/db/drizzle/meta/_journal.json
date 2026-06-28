@@ -43,6 +43,13 @@
       "when": 1782588634787,
       "tag": "0005_rename_familiar_socio",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1782657534486,
+      "tag": "0006_otp_codigos",
+      "breakpoints": true
     }
   ]
 }
