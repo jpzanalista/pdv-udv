@@ -6,6 +6,7 @@ import {
   contas,
   expedientes,
   lancamentos,
+  nucleos,
   pagamentos,
   vendas,
 } from '@pdv-udv/db'
@@ -29,6 +30,49 @@ export class RelatoriosService {
     const fim = ate || hoje
     const ini = de || `${fim.slice(0, 7)}-01`
     return { de: ini, ate: fim }
+  }
+
+  /** Panorama do núcleo (independe de período). */
+  async resumo(nucleoId: string) {
+    const [nucleo] = await this.db
+      .select({ nome: nucleos.nome })
+      .from(nucleos)
+      .where(eq(nucleos.id, nucleoId))
+      .limit(1)
+
+    const contasRows = await this.db
+      .select({ id: contas.id, tipo: contas.tipo })
+      .from(contas)
+      .where(eq(contas.nucleoId, nucleoId))
+    const socios = contasRows.filter((c) => c.tipo === 'socio').length
+    const visitantes = contasRows.filter((c) => c.tipo === 'visitante').length
+
+    const movs = await this.db
+      .select({ contaId: lancamentos.contaId, tipo: lancamentos.tipo, valor: lancamentos.valor })
+      .from(lancamentos)
+      .innerJoin(contas, eq(contas.id, lancamentos.contaId))
+      .where(eq(contas.nucleoId, nucleoId))
+    const saldoConta = new Map<string, number>()
+    let aReceberCents = 0
+    for (const m of movs) {
+      const c = (m.tipo === 'debito' ? 1 : -1) * toCents(m.valor)
+      saldoConta.set(m.contaId, (saldoConta.get(m.contaId) ?? 0) + c)
+      aReceberCents += c
+    }
+
+    const hoje = diaLocal(new Date())
+    const cobsPend = await this.db
+      .select({ contaId: cobrancas.contaId, dueDate: cobrancas.dueDate })
+      .from(cobrancas)
+      .where(and(eq(cobrancas.nucleoId, nucleoId), eq(cobrancas.status, 'pendente')))
+    const vencida = new Set<string>()
+    for (const c of cobsPend) if (c.contaId && c.dueDate && c.dueDate < hoje) vencida.add(c.contaId)
+    let inadimplentes = 0
+    for (const c of contasRows) {
+      if (c.tipo === 'visitante' && (saldoConta.get(c.id) ?? 0) > 0 && vencida.has(c.id)) inadimplentes++
+    }
+
+    return { nucleoNome: nucleo?.nome ?? null, socios, visitantes, aReceberCents, inadimplentes }
   }
 
   private async expedientesPorDia(nucleoId: string) {

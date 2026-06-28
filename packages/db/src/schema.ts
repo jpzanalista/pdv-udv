@@ -103,6 +103,9 @@ export const usuarios = pgTable('usuarios', {
   nucleoId: uuid('nucleo_id').references(() => nucleos.id), // null = admin global
   pessoaId: uuid('pessoa_id').references(() => pessoas.id),
   cognitoSub: varchar('cognito_sub', { length: 80 }).unique(),
+  // Responsável do empório: login próprio (e-mail + senha), sem Cognito/REUNI.
+  email: varchar('email', { length: 160 }).unique(),
+  passwordHash: varchar('password_hash', { length: 255 }),
   role: roleEnum('role').notNull(),
   ativo: boolean('ativo').default(true).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -322,3 +325,15 @@ export const asaasCustomers = pgTable(
   },
   (t) => ({ uq: unique().on(t.pessoaId, t.nucleoId) }),
 )
+
+// Tokens de "definir/redefinir senha" do responsável do empório.
+export const senhaResets = pgTable('senha_resets', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  usuarioId: uuid('usuario_id')
+    .notNull()
+    .references(() => usuarios.id),
+  tokenHash: varchar('token_hash', { length: 64 }).notNull(), // sha256 hex
+  expiraEm: timestamp('expira_em', { withTimezone: true }).notNull(),
+  usadoEm: timestamp('usado_em', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+})

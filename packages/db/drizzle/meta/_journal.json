@@ -57,6 +57,13 @@
       "when": 1782660648283,
       "tag": "0007_asaas_subcontas",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1782670745012,
+      "tag": "0008_auth_responsavel",
+      "breakpoints": true
     }
   ]
 }

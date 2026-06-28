@@ -11,6 +11,12 @@ import { RelatoriosService } from './relatorios.service'
 export class RelatoriosController {
   constructor(private readonly relatorios: RelatoriosService) {}
 
+  @Get('resumo')
+  @Roles('responsavel_emporio', 'presidencia', 'representante_nucleo', 'tesoureiro_1', 'tesoureiro_2', 'admin')
+  resumo(@CurrentUser() user: JwtClaims) {
+    return this.relatorios.resumo(this.nucleo(user))
+  }
+
   @Get('vendas')
   @Roles('responsavel_emporio', 'presidencia', 'representante_nucleo', 'admin')
   vendas(@CurrentUser() user: JwtClaims, @Query('de') de?: string, @Query('ate') ate?: string) {

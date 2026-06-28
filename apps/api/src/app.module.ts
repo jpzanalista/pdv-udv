@@ -12,6 +12,7 @@ import { PessoasModule } from './pessoas/pessoas.module'
 import { PortalModule } from './portal/portal.module'
 import { RegioesModule } from './regioes/regioes.module'
 import { RelatoriosModule } from './relatorios/relatorios.module'
+import { ResponsavelModule } from './responsavel/responsavel.module'
 import { VendasModule } from './vendas/vendas.module'
 
 @Module({
@@ -29,6 +30,7 @@ import { VendasModule } from './vendas/vendas.module'
     PortalModule,
     AsaasModule,
     RelatoriosModule,
+    ResponsavelModule,
   ],
   controllers: [HealthController],
 })
