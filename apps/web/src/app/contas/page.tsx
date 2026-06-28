@@ -7,6 +7,7 @@ import { useEffect } from 'react'
 import * as XLSX from 'xlsx'
 import { ContaFormModal } from '@/components/contas/ContaFormModal'
 import { ExtratoModal } from '@/components/contas/ExtratoModal'
+import { VisitantesView } from '@/components/contas/VisitantesView'
 import { Button } from '@/components/ui/Button'
 import { ApiError, api } from '@/lib/api'
 import { getToken } from '@/lib/auth'
@@ -136,6 +137,13 @@ export default function ContasPage() {
         </div>
       </div>
       {msg && <p className="mt-2 text-sm font-semibold text-ink">{msg}</p>}
+
+      {tipoFiltro === 'visitante' ? (
+        <div className="mt-4">
+          <VisitantesView />
+        </div>
+      ) : (
+        <>
       <p className="mt-1 text-ink-muted">
         {visiveis.length} conta(s). <span className="text-ink-light">Clique no nome para ver o extrato.</span>
       </p>
@@ -188,6 +196,8 @@ export default function ContasPage() {
           </tbody>
         </table>
       </div>
+        </>
+      )}
 
       {form && (
         <ContaFormModal
