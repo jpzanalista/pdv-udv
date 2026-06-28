@@ -5,11 +5,6 @@ import { Field, Input } from '@/components/ui/Input'
 import { ApiError, api } from '@/lib/api'
 import type { ContaRow } from '@/lib/types'
 
-function num(s: string): number | undefined {
-  const n = Number.parseFloat(s.replace(',', '.'))
-  return Number.isNaN(n) ? undefined : n
-}
-
 const TIPOS = [
   { value: 'socio', label: 'Sócio' },
   { value: 'visitante', label: 'Visitante' },
@@ -29,7 +24,6 @@ export function ContaFormModal({
 }) {
   const [nome, setNome] = useState(conta?.nome ?? '')
   const [tipo, setTipo] = useState(conta?.tipo ?? tipoInicial ?? 'socio')
-  const [descontoPct, setDescontoPct] = useState(conta ? String(Number(conta.descontoPct)) : '')
   const [cpf, setCpf] = useState(conta?.titularCpf ?? '')
   const [whatsapp, setWhatsapp] = useState(conta?.titularWhatsapp ?? '')
   const [ativa, setAtiva] = useState(conta?.ativa ?? true)
@@ -47,7 +41,6 @@ export function ContaFormModal({
     const payload = {
       nome: nome.trim(),
       tipo,
-      descontoPct: num(descontoPct) ?? 0,
       cpf: cpf.trim() || undefined,
       whatsapp: whatsapp.trim() || undefined,
       ativa,
@@ -78,30 +71,20 @@ export function ContaFormModal({
             <Input id="nome" value={nome} onChange={(e) => setNome(e.target.value)} autoFocus />
           </Field>
 
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Tipo" htmlFor="tipo">
-              <select
-                id="tipo"
-                value={tipo}
-                onChange={(e) => setTipo(e.target.value)}
-                className="min-h-touch w-full rounded border border-line bg-white px-3 text-ink"
-              >
-                {TIPOS.map((t) => (
-                  <option key={t.value} value={t.value}>
-                    {t.label}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Desconto (%)" htmlFor="desconto">
-              <Input
-                id="desconto"
-                inputMode="decimal"
-                value={descontoPct}
-                onChange={(e) => setDescontoPct(e.target.value)}
-              />
-            </Field>
-          </div>
+          <Field label="Tipo" htmlFor="tipo">
+            <select
+              id="tipo"
+              value={tipo}
+              onChange={(e) => setTipo(e.target.value)}
+              className="min-h-touch w-full rounded border border-line bg-white px-3 text-ink"
+            >
+              {TIPOS.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+          </Field>
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="CPF do titular" htmlFor="cpf">

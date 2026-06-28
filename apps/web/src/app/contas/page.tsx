@@ -60,7 +60,6 @@ export default function ContasPage() {
       Tipo: TIPO_LABEL[c.tipo] ?? c.tipo,
       CPF: c.titularCpf ?? '',
       WhatsApp: c.titularWhatsapp ?? '',
-      DescontoPct: Number(c.descontoPct),
       Ativa: c.ativa ? 'Sim' : 'Não',
     }))
     const ws = XLSX.utils.json_to_sheet(rows)
@@ -145,9 +144,8 @@ export default function ContasPage() {
               <th className="p-3">Tipo</th>
               <th className="p-3">CPF (titular)</th>
               <th className="p-3">WhatsApp</th>
-              <th className="p-3 text-right">Desc. %</th>
               <th className="p-3">Ativa</th>
-              <th className="p-3" />
+              <th className="p-3 text-right">Editar</th>
             </tr>
           </thead>
           <tbody>
@@ -157,7 +155,6 @@ export default function ContasPage() {
                 <td className="p-3">{TIPO_LABEL[c.tipo] ?? c.tipo}</td>
                 <td className="p-3">{c.titularCpf ?? '—'}</td>
                 <td className="p-3">{c.titularWhatsapp ?? '—'}</td>
-                <td className="p-3 text-right">{Number(c.descontoPct).toFixed(0)}%</td>
                 <td className="p-3">
                   {c.ativa ? (
                     <span className="text-success">Sim</span>
@@ -165,13 +162,13 @@ export default function ContasPage() {
                     <span className="text-ink-light">Não</span>
                   )}
                 </td>
-                <td className="p-3">
+                <td className="p-3 text-right">
                   <button
                     type="button"
                     onClick={() => setForm({ conta: c })}
-                    className="text-sm font-semibold text-brand"
+                    className="min-h-touch rounded border border-brand px-3 text-sm font-semibold text-brand hover:bg-brand-subtle"
                   >
-                    editar
+                    Editar
                   </button>
                 </td>
               </tr>
