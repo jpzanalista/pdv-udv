@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { type ReactNode, useState } from 'react'
+import { ContasTipoModal } from '@/components/contas/ContasTipoModal'
 import { clearTokens } from '@/lib/auth'
 
 export function GearMenu({
@@ -20,6 +21,7 @@ export function GearMenu({
 }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
+  const [contasOpen, setContasOpen] = useState(false)
 
   const close = () => setOpen(false)
   const act = (fn?: () => void) => {
@@ -72,9 +74,14 @@ export function GearMenu({
               <LinkItem href="/categorias" onNavigate={close}>
                 Categorias
               </LinkItem>
-              <LinkItem href="/contas" onNavigate={close}>
+              <ActionItem
+                onClick={() => {
+                  close()
+                  setContasOpen(true)
+                }}
+              >
                 Contas
-              </LinkItem>
+              </ActionItem>
             </Group>
             <Group title="Consultas">
               <LinkItem href="/historico" onNavigate={close}>
@@ -87,6 +94,8 @@ export function GearMenu({
           </div>
         </>
       )}
+
+      {contasOpen && <ContasTipoModal onClose={() => setContasOpen(false)} />}
     </div>
   )
 }

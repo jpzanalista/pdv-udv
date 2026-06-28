@@ -25,7 +25,7 @@ export const PERSON_KINDS = ['socio', 'visitante'] as const
 export type PersonKind = (typeof PERSON_KINDS)[number]
 
 /** Tipos de conta do empório. */
-export const ACCOUNT_TYPES = ['familiar', 'visitante', 'institucional'] as const
+export const ACCOUNT_TYPES = ['socio', 'visitante', 'institucional'] as const
 export type AccountType = (typeof ACCOUNT_TYPES)[number]
 
 /** Tipo de terminal/dispositivo. Offline só em desktop. */

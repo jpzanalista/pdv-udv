@@ -104,7 +104,7 @@ export class ContasService {
       const nome = r.nome.trim()
       const nomeKey = nome.toLowerCase()
       const titularPessoaId = await this.resolverTitular(r.cpf, r.whatsapp, nome)
-      const tipo = r.tipo ?? 'familiar'
+      const tipo = r.tipo ?? 'socio'
       const descontoPct = r.descontoPct != null ? String(r.descontoPct) : undefined
 
       const existingId = byNome.get(nomeKey)

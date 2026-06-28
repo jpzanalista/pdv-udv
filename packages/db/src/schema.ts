@@ -21,7 +21,7 @@ export const roleEnum = pgEnum('role', [
   'admin',
   'socio',
 ])
-export const accountTypeEnum = pgEnum('account_type', ['familiar', 'visitante', 'institucional'])
+export const accountTypeEnum = pgEnum('account_type', ['socio', 'visitante', 'institucional'])
 export const personKindEnum = pgEnum('person_kind', ['socio', 'visitante'])
 export const paymentMethodEnum = pgEnum('payment_method', [
   'dinheiro',

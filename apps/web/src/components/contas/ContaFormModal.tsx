@@ -11,22 +11,24 @@ function num(s: string): number | undefined {
 }
 
 const TIPOS = [
-  { value: 'familiar', label: 'Familiar' },
+  { value: 'socio', label: 'Sócio' },
   { value: 'visitante', label: 'Visitante' },
   { value: 'institucional', label: 'Institucional' },
 ]
 
 export function ContaFormModal({
   conta,
+  tipoInicial,
   onClose,
   onSaved,
 }: {
   conta: ContaRow | null // null = nova
+  tipoInicial?: string // tipo default ao criar (vem do filtro da página)
   onClose: () => void
   onSaved: () => void
 }) {
   const [nome, setNome] = useState(conta?.nome ?? '')
-  const [tipo, setTipo] = useState(conta?.tipo ?? 'familiar')
+  const [tipo, setTipo] = useState(conta?.tipo ?? tipoInicial ?? 'socio')
   const [descontoPct, setDescontoPct] = useState(conta ? String(Number(conta.descontoPct)) : '')
   const [cpf, setCpf] = useState(conta?.titularCpf ?? '')
   const [whatsapp, setWhatsapp] = useState(conta?.titularWhatsapp ?? '')

@@ -83,7 +83,7 @@ async function main() {
     await db.insert(contas).values(
       clientesData.map((c) => ({
         nucleoId: nucleo.id,
-        tipo: 'familiar' as const,
+        tipo: 'socio' as const,
         nome: c.nome,
       })),
     )

@@ -32,7 +32,7 @@ function tipoOf(v: unknown): ContaImportRow['tipo'] {
   const t = norm(v)
   if (t.startsWith('vis')) return 'visitante'
   if (t.startsWith('inst')) return 'institucional'
-  if (t.startsWith('fam')) return 'familiar'
+  if (t.startsWith('soc') || t.startsWith('fam')) return 'socio'
   return undefined
 }
 

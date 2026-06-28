@@ -15,7 +15,7 @@ import type { ContaRow } from '@/lib/types'
 const ALLOWED = ['responsavel_emporio', 'admin']
 
 const TIPO_LABEL: Record<string, string> = {
-  familiar: 'Familiar',
+  socio: 'Sócio',
   visitante: 'Visitante',
   institucional: 'Institucional',
 }
@@ -28,6 +28,7 @@ export default function ContasPage() {
   const [msg, setMsg] = useState<string | null>(null)
   const [importando, setImportando] = useState(false)
   const [form, setForm] = useState<{ conta: ContaRow | null } | null>(null)
+  const [tipoFiltro, setTipoFiltro] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   async function carregar() {
@@ -35,6 +36,8 @@ export default function ContasPage() {
   }
 
   useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get('tipo')
+    if (t && t in TIPO_LABEL) setTipoFiltro(t)
     if (!getToken()) {
       router.replace('/login')
       return
@@ -51,7 +54,8 @@ export default function ContasPage() {
   }, [router])
 
   function exportar() {
-    const rows = contas.map((c) => ({
+    const lista = tipoFiltro ? contas.filter((c) => c.tipo === tipoFiltro) : contas
+    const rows = lista.map((c) => ({
       Nome: c.nome,
       Tipo: TIPO_LABEL[c.tipo] ?? c.tipo,
       CPF: c.titularCpf ?? '',
@@ -102,10 +106,13 @@ export default function ContasPage() {
       </main>
     )
 
+  const visiveis = tipoFiltro ? contas.filter((c) => c.tipo === tipoFiltro) : contas
+  const titulo = tipoFiltro ? `Contas · ${TIPO_LABEL[tipoFiltro]}` : 'Contas'
+
   return (
     <main className="mx-auto max-w-4xl p-6">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-brand">Contas</h1>
+        <h1 className="text-2xl font-bold text-brand">{titulo}</h1>
         <div className="flex flex-wrap items-center gap-2">
           <Button className="text-sm" onClick={() => setForm({ conta: null })}>
             Nova conta
@@ -118,7 +125,7 @@ export default function ContasPage() {
           >
             {importando ? 'Importando…' : 'Importar'}
           </Button>
-          <Button variant="secondary" className="text-sm" onClick={exportar} disabled={!contas.length}>
+          <Button variant="secondary" className="text-sm" onClick={exportar} disabled={!visiveis.length}>
             Exportar
           </Button>
           <input ref={fileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={onImport} />
@@ -128,7 +135,7 @@ export default function ContasPage() {
         </div>
       </div>
       {msg && <p className="mt-2 text-sm font-semibold text-ink">{msg}</p>}
-      <p className="mt-1 text-ink-muted">{contas.length} conta(s).</p>
+      <p className="mt-1 text-ink-muted">{visiveis.length} conta(s).</p>
 
       <div className="mt-4 overflow-auto rounded-lg border border-line bg-surface">
         <table className="w-full text-sm">
@@ -144,7 +151,7 @@ export default function ContasPage() {
             </tr>
           </thead>
           <tbody>
-            {contas.map((c) => (
+            {visiveis.map((c) => (
               <tr key={c.id} className="border-b border-line last:border-0">
                 <td className="p-3 font-semibold">{c.nome}</td>
                 <td className="p-3">{TIPO_LABEL[c.tipo] ?? c.tipo}</td>
@@ -176,6 +183,7 @@ export default function ContasPage() {
       {form && (
         <ContaFormModal
           conta={form.conta}
+          tipoInicial={tipoFiltro ?? undefined}
           onClose={() => setForm(null)}
           onSaved={async () => {
             setForm(null)

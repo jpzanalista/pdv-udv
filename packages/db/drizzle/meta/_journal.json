@@ -36,6 +36,13 @@
       "when": 1782588534787,
       "tag": "0004_caixa_movimentos",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1782588634787,
+      "tag": "0005_rename_familiar_socio",
+      "breakpoints": true
     }
   ]
 }

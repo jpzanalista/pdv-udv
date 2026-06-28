@@ -53,7 +53,7 @@ const MENU: Secao[] = [
       {
         href: '/contas',
         titulo: 'Contas',
-        descricao: 'Sócios e contas familiares — importar e exportar.',
+        descricao: 'Sócio, visitante e institucional — importar, exportar e editar.',
         papeis: ['responsavel_emporio', 'admin'],
       },
     ],
