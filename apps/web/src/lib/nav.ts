@@ -6,6 +6,7 @@ const ROLE_LANDING: Record<string, string> = {
   tesoureiro_2: '/tesouraria',
   presidencia: '/historico', // provisório até existirem dashboards de relatório
   representante_nucleo: '/historico',
+  socio: '/portal',
 }
 
 export function landingFor(role: string): string {

@@ -93,6 +93,12 @@ export default function LoginPage() {
           </Button>
         </form>
 
+        <div className="mt-4 text-center">
+          <a href="/portal/login" className="text-sm font-semibold text-brand">
+            É sócio? Entrar pelo CPF →
+          </a>
+        </div>
+
         <div className="mt-6 border-t border-line pt-4">
           <p className="mb-2 text-xs text-ink-light">Atalhos de desenvolvimento:</p>
           <div className="grid grid-cols-3 gap-2">
