@@ -19,6 +19,7 @@ import {
   registrarPagamentoSchema,
   updateContaSchema,
 } from '@pdv-udv/shared'
+import { CobrancasService } from '../asaas/cobrancas.service'
 import { CurrentUser } from '../auth/current-user.decorator'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
 import { Roles } from '../common/roles.decorator'
@@ -29,7 +30,10 @@ import { ContasService } from './contas.service'
 @Controller('contas')
 @UseGuards(JwtAuthGuard)
 export class ContasController {
-  constructor(private readonly contas: ContasService) {}
+  constructor(
+    private readonly contas: ContasService,
+    private readonly cobrancas: CobrancasService,
+  ) {}
 
   @Post()
   create(
@@ -52,6 +56,21 @@ export class ContasController {
   @Get()
   list(@CurrentUser() user: JwtClaims) {
     return this.contas.list(this.requireNucleo(user))
+  }
+
+  // ⚠️ antes de @Get(':id') para 'visitantes' não cair na rota de id.
+  @Get('visitantes')
+  @UseGuards(RolesGuard)
+  @Roles('responsavel_emporio', 'admin')
+  statusVisitantes(@CurrentUser() user: JwtClaims) {
+    return this.cobrancas.statusVisitantes(this.requireNucleo(user))
+  }
+
+  @Post('cobrar-visitantes')
+  @UseGuards(RolesGuard)
+  @Roles('responsavel_emporio', 'admin')
+  cobrarVisitantes(@CurrentUser() user: JwtClaims) {
+    return this.cobrancas.cobrarVisitantes(this.requireNucleo(user))
   }
 
   @Patch(':id')

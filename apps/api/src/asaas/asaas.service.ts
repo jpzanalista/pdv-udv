@@ -91,12 +91,17 @@ export class AsaasService {
     return String(data.id)
   }
 
-  /** Cria a cobrança Pix na subconta e devolve copia-e-cola + QR. */
+  /**
+   * Cria a cobrança Pix na subconta e devolve copia-e-cola + QR.
+   * `dueDate` (YYYY-MM-DD) define o vencimento; as notificações do ASAAS (régua,
+   * incluindo reenvios de vencido por WhatsApp) ficam LIGADAS por padrão.
+   */
   async criarPix(
     apiKey: string,
     customerId: string,
     valorCents: number,
     descricao: string,
+    dueDate?: string,
   ): Promise<PixCharge> {
     if (this.isStub) {
       const id = `stub_pay_${Math.random().toString(36).slice(2, 10)}`
@@ -107,7 +112,7 @@ export class AsaasService {
         qrImage: null,
       }
     }
-    const dueDate = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10) // amanhã
+    const venc = dueDate ?? new Date(Date.now() + 86_400_000).toISOString().slice(0, 10)
     const pay = await this.call('/payments', {
       method: 'POST',
       apiKey,
@@ -115,7 +120,7 @@ export class AsaasService {
         customer: customerId,
         billingType: 'PIX',
         value: Number((valorCents / 100).toFixed(2)),
-        dueDate,
+        dueDate: venc,
         description: descricao,
       },
     })
