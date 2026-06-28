@@ -2,10 +2,10 @@
 // Papéis sem área própria ainda (admin, socio) caem no hub ('/').
 const ROLE_LANDING: Record<string, string> = {
   responsavel_emporio: '/caixa',
-  tesoureiro_1: '/tesouraria',
-  tesoureiro_2: '/tesouraria',
-  presidencia: '/historico', // provisório até existirem dashboards de relatório
-  representante_nucleo: '/historico',
+  presidencia: '/relatorios',
+  representante_nucleo: '/relatorios',
+  tesoureiro_1: '/relatorios',
+  tesoureiro_2: '/relatorios',
   socio: '/portal',
 }
 
