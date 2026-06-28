@@ -27,6 +27,7 @@ export default function CaixaPage() {
   const [sugestaoFundo, setSugestaoFundo] = useState<number | null>(null)
   const [fecharOpen, setFecharOpen] = useState(false)
   const [abrirOpen, setAbrirOpen] = useState(false)
+  const [receberAposAbrir, setReceberAposAbrir] = useState(false)
   const [movimentoTipo, setMovimentoTipo] = useState<'sangria' | 'suprimento' | null>(null)
   const [carregando, setCarregando] = useState(true)
 
@@ -136,6 +137,8 @@ export default function CaixaPage() {
       const r = await api<{ aberto: Expediente | null }>('/expedientes/atual')
       setExpediente(r.aberto)
       setAbrirOpen(false)
+      if (receberAposAbrir && cart.length > 0) setReceberOpen(true) // emenda venda
+      setReceberAposAbrir(false)
     } catch {
       setMsg('Erro ao abrir o caixa.')
     } finally {
@@ -146,7 +149,8 @@ export default function CaixaPage() {
   function pedirReceber() {
     if (cart.length === 0) return
     if (!expediente) {
-      setMsg('Abra o caixa (engrenagem ⚙️) para registrar vendas.')
+      setReceberAposAbrir(true) // caixa fechado: abre a abertura e emenda o Receber
+      setAbrirOpen(true)
       return
     }
     setReceberOpen(true)
@@ -314,7 +318,10 @@ export default function CaixaPage() {
           submitting={submitting}
           sugestaoFundoCents={sugestaoFundo}
           onAbrir={abrirCaixa}
-          onClose={() => setAbrirOpen(false)}
+          onClose={() => {
+            setAbrirOpen(false)
+            setReceberAposAbrir(false)
+          }}
         />
       )}
 
