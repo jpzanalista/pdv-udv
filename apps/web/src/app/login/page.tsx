@@ -18,6 +18,7 @@ export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [devEmail, setDevEmail] = useState('')
   const [erro, setErro] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -128,6 +129,22 @@ export default function LoginPage() {
               disabled={loading}
             >
               Dev: admin
+            </Button>
+          </div>
+          <div className="mt-2 flex gap-2">
+            <Input
+              value={devEmail}
+              onChange={(e) => setDevEmail(e.target.value)}
+              placeholder="dev-login por e-mail (ex.: pres.senhorasantana@udv.org.br)"
+              className="text-sm"
+            />
+            <Button
+              variant="ghost"
+              className="text-sm"
+              onClick={() => devEntrar(devEmail.trim())}
+              disabled={loading || !devEmail.trim()}
+            >
+              Entrar
             </Button>
           </div>
         </div>

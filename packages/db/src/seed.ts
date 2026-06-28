@@ -66,6 +66,10 @@ async function main() {
       { cpf: '00000000000', nome: 'Admin', email: 'admin@pdv.local' },
       { cpf: '11111111111', nome: 'Operador', email: 'caixa@pdv.local' },
       { cpf: '22222222222', nome: 'Tesoureiro', email: 'tesoureiro@pdv.local' },
+      // Diretoria do Senhora Santana (e-mails de cargo reais) — dev-login p/ demo.
+      { cpf: '33333333333', nome: 'Presidência NSS', email: 'pres.senhorasantana@udv.org.br' },
+      { cpf: '44444444444', nome: 'Representante NSS', email: 'repres.senhorasantana@udv.org.br' },
+      { cpf: '55555555555', nome: 'Tesouraria NSS', email: 'tes.senhorasantana@udv.org.br' },
     ])
     .onConflictDoNothing({ target: pessoas.cpf })
 
@@ -77,10 +81,18 @@ async function main() {
   const admin = await byEmail('admin@pdv.local')
   const operador = await byEmail('caixa@pdv.local')
   const tesoureiro = await byEmail('tesoureiro@pdv.local')
+  const presidente = await byEmail('pres.senhorasantana@udv.org.br')
+  const representante = await byEmail('repres.senhorasantana@udv.org.br')
+  const tesouraria = await byEmail('tes.senhorasantana@udv.org.br')
 
   const ensureUsuario = async (
     pessoaId: string,
-    role: 'admin' | 'responsavel_emporio' | 'tesoureiro_1',
+    role:
+      | 'admin'
+      | 'responsavel_emporio'
+      | 'tesoureiro_1'
+      | 'presidencia'
+      | 'representante_nucleo',
     nucleoId: string | null,
   ) => {
     const exists = (
@@ -91,18 +103,24 @@ async function main() {
   await ensureUsuario(admin.id, 'admin', null)
   await ensureUsuario(operador.id, 'responsavel_emporio', nucleoDev.id)
   await ensureUsuario(tesoureiro.id, 'tesoureiro_1', nucleoDev.id)
+  await ensureUsuario(presidente.id, 'presidencia', nucleoDev.id)
+  await ensureUsuario(representante.id, 'representante_nucleo', nucleoDev.id)
+  await ensureUsuario(tesouraria.id, 'tesoureiro_1', nucleoDev.id)
   await db
     .insert(pessoaNucleo)
-    .values([
-      { pessoaId: operador.id, nucleoId: nucleoDev.id },
-      { pessoaId: tesoureiro.id, nucleoId: nucleoDev.id },
-    ])
+    .values(
+      [operador, tesoureiro, presidente, representante, tesouraria].map((p) => ({
+        pessoaId: p.id,
+        nucleoId: nucleoDev.id,
+      })),
+    )
     .onConflictDoNothing()
 
   console.log(`Seed OK: ${totalReg} regiões, ${totalNuc} núcleos`)
   console.log(`  dev núcleo: ${nucleoDev.nome} (${nucleoDev.id})`)
+  console.log('  dev-login (.pdv.local): admin / caixa (responsável) / tesoureiro')
   console.log(
-    '  dev-login: admin@pdv.local / caixa@pdv.local / tesoureiro@pdv.local (tesoureiro_1)',
+    '  dev-login Senhora Santana: pres.senhorasantana@udv.org.br / repres… / tes… @udv.org.br',
   )
   process.exit(0)
 }
