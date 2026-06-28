@@ -67,6 +67,7 @@ export const nucleos = pgTable('nucleos', {
   tesEmail: varchar('tes_email', { length: 160 }),
   secEmail: varchar('sec_email', { length: 160 }),
   asaasWalletId: varchar('asaas_wallet_id', { length: 80 }),
+  asaasApiKey: varchar('asaas_api_key', { length: 200 }), // chave da subconta ASAAS do núcleo
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
 
@@ -304,3 +305,20 @@ export const otpCodigos = pgTable('otp_codigos', {
   consumidoEm: timestamp('consumido_em', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
+
+// Customer ASAAS é por subconta (núcleo): mapeia pessoa+núcleo → customerId.
+export const asaasCustomers = pgTable(
+  'asaas_customers',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    pessoaId: uuid('pessoa_id')
+      .notNull()
+      .references(() => pessoas.id),
+    nucleoId: uuid('nucleo_id')
+      .notNull()
+      .references(() => nucleos.id),
+    customerId: varchar('customer_id', { length: 60 }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({ uq: unique().on(t.pessoaId, t.nucleoId) }),
+)

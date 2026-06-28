@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
+import { AsaasModule } from './asaas/asaas.module'
 import { AuthModule } from './auth/auth.module'
 import { CatalogoModule } from './catalogo/catalogo.module'
 import { ContasModule } from './contas/contas.module'
@@ -25,6 +26,7 @@ import { VendasModule } from './vendas/vendas.module'
     VendasModule,
     ExpedientesModule,
     PortalModule,
+    AsaasModule,
   ],
   controllers: [HealthController],
 })

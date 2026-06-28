@@ -1,16 +1,21 @@
-import { Controller, ForbiddenException, Get, Param, UseGuards } from '@nestjs/common'
-import type { JwtClaims } from '@pdv-udv/shared'
+import { Body, Controller, ForbiddenException, Get, Param, Post, UseGuards } from '@nestjs/common'
+import { type JwtClaims, type QuitarContaInput, quitarContaSchema } from '@pdv-udv/shared'
 import { CurrentUser } from '../auth/current-user.decorator'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
+import { CobrancasService } from '../asaas/cobrancas.service'
 import { Roles } from '../common/roles.decorator'
 import { RolesGuard } from '../common/roles.guard'
+import { ZodValidationPipe } from '../common/zod-validation.pipe'
 import { PortalService } from './portal.service'
 
 @Controller('portal')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('socio')
 export class PortalController {
-  constructor(private readonly portal: PortalService) {}
+  constructor(
+    private readonly portal: PortalService,
+    private readonly cobrancas: CobrancasService,
+  ) {}
 
   @Get('contas')
   contas(@CurrentUser() user: JwtClaims) {
@@ -20,6 +25,15 @@ export class PortalController {
   @Get('contas/:id/extrato')
   extrato(@CurrentUser() user: JwtClaims, @Param('id') id: string) {
     return this.portal.extrato(this.pessoa(user), id)
+  }
+
+  @Post('contas/:id/quitar')
+  quitar(
+    @CurrentUser() user: JwtClaims,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(quitarContaSchema)) body: QuitarContaInput,
+  ) {
+    return this.cobrancas.quitar(this.pessoa(user), id, body.valorCents)
   }
 
   private pessoa(user: JwtClaims): string {

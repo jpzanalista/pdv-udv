@@ -50,6 +50,13 @@
       "when": 1782657534486,
       "tag": "0006_otp_codigos",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1782660648283,
+      "tag": "0007_asaas_subcontas",
+      "breakpoints": true
     }
   ]
 }

@@ -19,6 +19,12 @@ export const createContaSchema = z
   })
 export type CreateContaInput = z.infer<typeof createContaSchema>
 
+/** Sócio gera Pix para quitar a própria conta (valor opcional = saldo). */
+export const quitarContaSchema = z.object({
+  valorCents: z.number().int().positive().optional(),
+})
+export type QuitarContaInput = z.infer<typeof quitarContaSchema>
+
 /** Registrar pagamento presencial (baixa) → crédito que abate o saldo. */
 export const registrarPagamentoSchema = z.object({
   valorCents: z.number().int().positive(),
