@@ -93,7 +93,10 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <div className="mt-4 text-center">
+        <div className="mt-4 flex flex-col gap-1 text-center">
+          <a href="/login/emporio" className="text-sm font-semibold text-brand">
+            Responsável do empório? Entrar →
+          </a>
           <a href="/portal/login" className="text-sm font-semibold text-brand">
             É sócio? Entrar pelo CPF →
           </a>

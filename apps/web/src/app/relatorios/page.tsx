@@ -13,6 +13,7 @@ import { clearTokens, getToken } from '@/lib/auth'
 const VENDAS_ROLES = ['responsavel_emporio', 'presidencia', 'representante_nucleo', 'admin']
 const FIN_ROLES = [...VENDAS_ROLES, 'tesoureiro_1', 'tesoureiro_2']
 const TESOUREIRO = ['tesoureiro_1', 'tesoureiro_2', 'admin']
+const GESTAO = ['presidencia', 'representante_nucleo', 'admin']
 
 const FORMA: Record<string, string> = {
   dinheiro: 'Dinheiro',
@@ -104,6 +105,11 @@ export default function RelatoriosPage() {
           <Link href="/historico" className="text-ink-muted">
             Histórico
           </Link>
+          {GESTAO.includes(role) && (
+            <Link href="/responsaveis" className="text-ink-muted">
+              Responsáveis
+            </Link>
+          )}
           {TESOUREIRO.includes(role) && (
             <Link href="/tesouraria" className="text-ink-muted">
               Tesouraria
