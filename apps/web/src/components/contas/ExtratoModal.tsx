@@ -169,35 +169,56 @@ export function ExtratoModal({
               <p className="text-ink-light">Nenhuma compra ou pagamento ainda.</p>
             ) : (
               <ul className="divide-y divide-line">
-                {extrato.movimentos.map((m) => (
-                  <li key={m.id} className="py-3">
-                    <div className="flex items-baseline justify-between gap-3">
-                      <span className="text-sm text-ink-muted">{dataBR(m.data)}</span>
-                      <span
-                        className={`font-semibold ${m.tipo === 'debito' ? 'text-ink' : 'text-success'}`}
-                      >
-                        {m.tipo === 'debito' ? '' : '− '}
-                        {formatBRL(m.valorCents)}
-                      </span>
-                    </div>
-                    {m.venda ? (
-                      <ul className="mt-1 text-sm text-ink-muted">
-                        {m.venda.itens.map((it, i) => (
-                          <li key={i} className="flex justify-between">
-                            <span>
-                              {it.qtde}× {it.descricao}
+                {extrato.movimentos.map((m) => {
+                  // Débito de uma venda que foi cancelada por inteiro → marca a compra como cancelada.
+                  const compraCancelada = m.tipo === 'debito' && m.venda?.cancelada === true
+                  return (
+                    <li key={m.id} className="py-3">
+                      <div className="flex items-baseline justify-between gap-3">
+                        <span className="flex items-center gap-2 text-sm text-ink-muted">
+                          {dataBR(m.data)}
+                          {compraCancelada && (
+                            <span className="rounded-full bg-danger/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-danger">
+                              Cancelada
                             </span>
-                            <span>{formatBRL(it.totalCents)}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="mt-1 text-sm text-ink-muted">
-                        {m.descricao ?? (m.tipo === 'credito' ? 'Pagamento' : 'Lançamento')}
-                      </p>
-                    )}
-                  </li>
-                ))}
+                          )}
+                        </span>
+                        <span
+                          className={`font-semibold ${
+                            compraCancelada
+                              ? 'text-ink-light line-through'
+                              : m.tipo === 'debito'
+                                ? 'text-ink'
+                                : 'text-success'
+                          }`}
+                        >
+                          {m.tipo === 'debito' ? '' : '− '}
+                          {formatBRL(m.valorCents)}
+                        </span>
+                      </div>
+                      {/* Crédito de estorno/cancelamento vem com venda vinculada: mostra o motivo. */}
+                      {m.tipo === 'credito' && m.venda && m.descricao && (
+                        <p className="mt-1 text-sm font-medium text-success">{m.descricao}</p>
+                      )}
+                      {m.venda ? (
+                        <ul className="mt-1 text-sm text-ink-muted">
+                          {m.venda.itens.map((it, i) => (
+                            <li key={i} className="flex justify-between">
+                              <span>
+                                {it.qtde}× {it.descricao}
+                              </span>
+                              <span>{formatBRL(it.totalCents)}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="mt-1 text-sm text-ink-muted">
+                          {m.descricao ?? (m.tipo === 'credito' ? 'Pagamento' : 'Lançamento')}
+                        </p>
+                      )}
+                    </li>
+                  )
+                })}
               </ul>
             )}
           </>

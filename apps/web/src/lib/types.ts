@@ -23,7 +23,11 @@ export type ExtratoMovimento = {
   tipo: 'debito' | 'credito'
   valorCents: number
   descricao: string | null
-  venda: { numero: number | null; itens: { descricao: string; qtde: number; totalCents: number }[] } | null
+  venda: {
+    numero: number | null
+    cancelada: boolean
+    itens: { descricao: string; qtde: number; totalCents: number }[]
+  } | null
 }
 
 export type ContaExtrato = {

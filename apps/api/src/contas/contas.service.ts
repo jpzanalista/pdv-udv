@@ -148,13 +148,17 @@ export class ContasService {
     // Busca os itens das vendas vinculadas (o "o que comprou"), em uma tacada só.
     const vendaIds = movs.map((m) => m.vendaId).filter((v): v is string => !!v)
     const numeroByVenda = new Map<string, number>()
+    const canceladaByVenda = new Map<string, boolean>()
     const itensByVenda = new Map<string, { descricao: string; qtde: number; totalCents: number }[]>()
     if (vendaIds.length) {
       const vs = await this.db
-        .select({ id: vendas.id, numero: vendas.numero })
+        .select({ id: vendas.id, numero: vendas.numero, cancelada: vendas.cancelada })
         .from(vendas)
         .where(inArray(vendas.id, vendaIds))
-      for (const v of vs) numeroByVenda.set(v.id, v.numero)
+      for (const v of vs) {
+        numeroByVenda.set(v.id, v.numero)
+        canceladaByVenda.set(v.id, v.cancelada)
+      }
       const its = await this.db.select().from(vendaItens).where(inArray(vendaItens.vendaId, vendaIds))
       for (const it of its) {
         const arr = itensByVenda.get(it.vendaId) ?? []
@@ -168,7 +172,11 @@ export class ContasService {
       const valorCents = toCents(m.valor)
       saldoCents += m.tipo === 'debito' ? valorCents : -valorCents
       const venda = m.vendaId
-        ? { numero: numeroByVenda.get(m.vendaId) ?? null, itens: itensByVenda.get(m.vendaId) ?? [] }
+        ? {
+            numero: numeroByVenda.get(m.vendaId) ?? null,
+            cancelada: canceladaByVenda.get(m.vendaId) ?? false,
+            itens: itensByVenda.get(m.vendaId) ?? [],
+          }
         : null
       return { id: m.id, data: m.createdAt, tipo: m.tipo, valorCents, descricao: m.descricao, venda }
     })
