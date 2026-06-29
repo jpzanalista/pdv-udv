@@ -30,3 +30,9 @@ export const devolverVendaSchema = z.object({
   motivo: z.string().max(200).optional(),
 })
 export type DevolverVendaInput = z.infer<typeof devolverVendaSchema>
+
+/** Cancelamento da venda inteira (estorna o restante). */
+export const cancelarVendaSchema = z.object({
+  motivo: z.string().min(1).max(200),
+})
+export type CancelarVendaInput = z.infer<typeof cancelarVendaSchema>

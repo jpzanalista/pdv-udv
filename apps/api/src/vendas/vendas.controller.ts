@@ -1,8 +1,10 @@
-import { BadRequestException, Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common'
+import { BadRequestException, Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common'
 import {
+  type CancelarVendaInput,
   type CreateVendaInput,
   type DevolverVendaInput,
   type JwtClaims,
+  cancelarVendaSchema,
   createVendaSchema,
   devolverVendaSchema,
 } from '@pdv-udv/shared'
@@ -42,6 +44,28 @@ export class VendasController {
     return this.vendas.recentes(nucleoOf(user))
   }
 
+  /** Consultar vendas por período + filtros. */
+  @Get('consulta')
+  @UseGuards(RolesGuard)
+  @Roles('responsavel_emporio', 'admin')
+  consulta(
+    @CurrentUser() user: JwtClaims,
+    @Query('de') de?: string,
+    @Query('ate') ate?: string,
+    @Query('situacao') situacao?: string,
+    @Query('numero') numero?: string,
+    @Query('cliente') cliente?: string,
+  ) {
+    return this.vendas.consulta(nucleoOf(user), { de, ate, situacao, numero, cliente })
+  }
+
+  @Get(':id/itens')
+  @UseGuards(RolesGuard)
+  @Roles('responsavel_emporio', 'admin')
+  itens(@CurrentUser() user: JwtClaims, @Param('id') id: string) {
+    return this.vendas.itens(nucleoOf(user), id)
+  }
+
   @Post(':id/devolver')
   @UseGuards(RolesGuard)
   @Roles('responsavel_emporio', 'admin')
@@ -51,5 +75,16 @@ export class VendasController {
     @Body(new ZodValidationPipe(devolverVendaSchema)) body: DevolverVendaInput,
   ) {
     return this.vendas.devolver(nucleoOf(user), id, body)
+  }
+
+  @Post(':id/cancelar')
+  @UseGuards(RolesGuard)
+  @Roles('responsavel_emporio', 'admin')
+  cancelar(
+    @CurrentUser() user: JwtClaims,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(cancelarVendaSchema)) body: CancelarVendaInput,
+  ) {
+    return this.vendas.cancelar(nucleoOf(user), id, body.motivo)
   }
 }
