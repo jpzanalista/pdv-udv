@@ -2,17 +2,8 @@
 
 import { useState } from 'react'
 import { ApiError, api } from '@/lib/api'
+import { fmtDataHora } from '@/lib/datahora'
 import { TELEFONE_INICIAL, maskTelefone, telefoneCompleto } from '@/lib/telefone'
-
-function dataHora(iso: string): string {
-  return new Date(iso).toLocaleString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
 
 /**
  * Status do recibo + (re)envio por WhatsApp de uma venda. Reaproveitado em
@@ -22,11 +13,13 @@ export function EnviarReciboInline({
   vendaId,
   enviadoEm,
   telefoneSugerido,
+  timezone,
   onEnviado,
 }: {
   vendaId: string
   enviadoEm: string | null
   telefoneSugerido: string | null
+  timezone?: string
   onEnviado?: (enviadoEm: string) => void
 }) {
   const [enviadoLocal, setEnviadoLocal] = useState<string | null>(enviadoEm)
@@ -64,7 +57,7 @@ export function EnviarReciboInline({
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
       {enviadoLocal ? (
-        <span className="text-success">✓ Recibo enviado em {dataHora(enviadoLocal)}</span>
+        <span className="text-success">✓ Recibo enviado em {fmtDataHora(enviadoLocal, timezone)}</span>
       ) : (
         <span className="text-ink-light">Recibo não enviado</span>
       )}

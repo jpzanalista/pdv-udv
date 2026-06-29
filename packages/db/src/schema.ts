@@ -60,6 +60,8 @@ export const nucleos = pgTable('nucleos', {
   nome: varchar('nome', { length: 160 }).notNull(),
   type: nucleoTypeEnum('type').notNull().default('nucleo'),
   regionId: uuid('region_id').references(() => regioes.id),
+  timezone: varchar('timezone', { length: 40 }).notNull().default('America/Sao_Paulo'), // fuso local do empório
+
   // CNPJ entra depois (quando o núcleo for ter subconta ASAAS) — por isso nullable.
   cnpj: varchar('cnpj', { length: 14 }).unique(),
   presEmail: varchar('pres_email', { length: 160 }),

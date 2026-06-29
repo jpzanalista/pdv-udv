@@ -97,6 +97,11 @@ export function GearMenu({
                 Histórico
               </LinkItem>
             </Group>
+            <Group title="Empório">
+              <LinkItem href="/configuracoes" onNavigate={close}>
+                Configurações
+              </LinkItem>
+            </Group>
             <div className="border-t border-line p-1">
               <ActionItem onClick={sair}>Sair</ActionItem>
             </div>

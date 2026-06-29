@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Fragment, useEffect, useState } from 'react'
 import { EnviarReciboInline } from '@/components/recibo/EnviarReciboInline'
+import { fmtDataHora } from '@/lib/datahora'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { ApiError, api } from '@/lib/api'
@@ -45,19 +46,9 @@ function diasAtras(n: number) {
   d.setDate(d.getDate() - n)
   return d.toLocaleDateString('en-CA')
 }
-function dataBR(iso: string) {
-  return new Date(iso).toLocaleString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
 export default function VendasPage() {
   const router = useRouter()
-  const [me, setMe] = useState<{ role: string } | null>(null)
+  const [me, setMe] = useState<{ role: string; timezone: string } | null>(null)
   const [de, setDe] = useState(hoje())
   const [ate, setAte] = useState(hoje())
   const [situacao, setSituacao] = useState('todas')
@@ -90,7 +81,7 @@ export default function VendasPage() {
       router.replace('/login')
       return
     }
-    api<{ role: string }>('/auth/me')
+    api<{ role: string; timezone: string }>('/auth/me')
       .then((m) => {
         setMe(m)
         if (ALLOWED.includes(m.role)) return buscar()
@@ -234,7 +225,7 @@ export default function VendasPage() {
                   onClick={() => alternar(v.id)}
                   className="cursor-pointer border-b border-line last:border-0 hover:bg-canvas"
                 >
-                  <td className="p-2 text-ink-muted">{dataBR(v.data)}</td>
+                  <td className="p-2 text-ink-muted">{fmtDataHora(v.data, me?.timezone)}</td>
                   <td className="p-2 text-right font-semibold">{v.numero}</td>
                   <td className="p-2">
                     {v.situacao === 'cancelada' ? (
@@ -287,6 +278,7 @@ export default function VendasPage() {
                           vendaId={v.id}
                           enviadoEm={v.reciboEnviadoEm}
                           telefoneSugerido={v.telefoneSugerido}
+                          timezone={me?.timezone}
                           onEnviado={(em) => marcarReciboEnviado(v.id, em)}
                         />
                       </div>

@@ -24,7 +24,7 @@ const TIPO_LABEL: Record<string, string> = {
 
 export default function ContasPage() {
   const router = useRouter()
-  const [me, setMe] = useState<{ role: string } | null>(null)
+  const [me, setMe] = useState<{ role: string; timezone: string } | null>(null)
   const [contas, setContas] = useState<ContaRow[]>([])
   const [carregando, setCarregando] = useState(true)
   const [msg, setMsg] = useState<string | null>(null)
@@ -45,7 +45,7 @@ export default function ContasPage() {
       router.replace('/login')
       return
     }
-    api<{ role: string }>('/auth/me')
+    api<{ role: string; timezone: string }>('/auth/me')
       .then((m) => {
         setMe(m)
         if (ALLOWED.includes(m.role)) return carregar()
@@ -215,6 +215,7 @@ export default function ContasPage() {
         <ExtratoModal
           contaId={extrato.id}
           contaNome={extrato.nome}
+          timezone={me?.timezone}
           onClose={() => setExtrato(null)}
         />
       )}

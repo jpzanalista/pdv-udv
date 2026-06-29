@@ -1,0 +1,1 @@
+ALTER TABLE "nucleos" ADD COLUMN "timezone" varchar(40) DEFAULT 'America/Sao_Paulo' NOT NULL;

@@ -12,11 +12,11 @@ import {
 } from '@pdv-udv/db'
 import { and, eq, inArray } from 'drizzle-orm'
 import { DB } from '../db/db.module'
-import { APP_TZ } from '../common/timezone'
+import { timezoneDoNucleo } from '../common/timezone'
 
 const toCents = (v: string | null) => Math.round(Number(v ?? 0) * 100)
 /** Data local (YYYY-MM-DD) de um timestamp, no fuso do empório. */
-const diaLocal = (d: Date) => d.toLocaleDateString('en-CA', { timeZone: APP_TZ })
+const diaLocal = (d: Date, tz: string) => d.toLocaleDateString('en-CA', { timeZone: tz })
 
 type Periodo = { de: string; ate: string }
 
@@ -25,15 +25,15 @@ export class RelatoriosService {
   constructor(@Inject(DB) private readonly db: Database) {}
 
   /** Período padrão: do dia 1 do mês corrente até hoje (fuso local). */
-  private periodo(de?: string, ate?: string): Periodo {
-    const hoje = diaLocal(new Date())
-    const fim = ate || hoje
+  private periodo(tz: string, de?: string, ate?: string): Periodo {
+    const fim = ate || diaLocal(new Date(), tz)
     const ini = de || `${fim.slice(0, 7)}-01`
     return { de: ini, ate: fim }
   }
 
   /** Panorama do núcleo (independe de período). */
   async resumo(nucleoId: string) {
+    const tz = await timezoneDoNucleo(this.db, nucleoId)
     const [nucleo] = await this.db
       .select({ nome: nucleos.nome })
       .from(nucleos)
@@ -60,7 +60,7 @@ export class RelatoriosService {
       aReceberCents += c
     }
 
-    const hoje = diaLocal(new Date())
+    const hoje = diaLocal(new Date(), tz)
     const cobsPend = await this.db
       .select({ contaId: cobrancas.contaId, dueDate: cobrancas.dueDate })
       .from(cobrancas)
@@ -75,19 +75,20 @@ export class RelatoriosService {
     return { nucleoNome: nucleo?.nome ?? null, socios, visitantes, aReceberCents, inadimplentes }
   }
 
-  private async expedientesPorDia(nucleoId: string) {
+  private async expedientesPorDia(nucleoId: string, tz: string) {
     const exps = await this.db
       .select({ id: expedientes.id, abertoEm: expedientes.abertoEm })
       .from(expedientes)
       .where(eq(expedientes.nucleoId, nucleoId))
     const map = new Map<string, string>() // expedienteId → diaLocal
-    for (const e of exps) map.set(e.id, diaLocal(e.abertoEm))
+    for (const e of exps) map.set(e.id, diaLocal(e.abertoEm, tz))
     return map
   }
 
   async vendas(nucleoId: string, de?: string, ate?: string) {
-    const p = this.periodo(de, ate)
-    const expDia = await this.expedientesPorDia(nucleoId)
+    const tz = await timezoneDoNucleo(this.db, nucleoId)
+    const p = this.periodo(tz, de, ate)
+    const expDia = await this.expedientesPorDia(nucleoId, tz)
 
     const todas = await this.db
       .select({
@@ -102,7 +103,7 @@ export class RelatoriosService {
     const noPeriodo = todas
       .map((v) => ({
         ...v,
-        dia: (v.expedienteId && expDia.get(v.expedienteId)) || diaLocal(v.occurredAt),
+        dia: (v.expedienteId && expDia.get(v.expedienteId)) || diaLocal(v.occurredAt, tz),
       }))
       .filter((v) => v.dia >= p.de && v.dia <= p.ate)
 
@@ -158,8 +159,9 @@ export class RelatoriosService {
   }
 
   async financeiro(nucleoId: string, de?: string, ate?: string) {
-    const p = this.periodo(de, ate)
-    const expDia = await this.expedientesPorDia(nucleoId)
+    const tz = await timezoneDoNucleo(this.db, nucleoId)
+    const p = this.periodo(tz, de, ate)
+    const expDia = await this.expedientesPorDia(nucleoId, tz)
 
     // ----- a receber (snapshot atual) + saldo por conta -----
     const movs = await this.db
@@ -186,7 +188,7 @@ export class RelatoriosService {
     aReceber.totalCents = aReceber.socioCents + aReceber.visitanteCents + aReceber.institucionalCents
 
     // ----- inadimplência de visitantes (saldo>0 + cobrança pendente vencida) -----
-    const hoje = diaLocal(new Date())
+    const hoje = diaLocal(new Date(), tz)
     const visitantes = await this.db
       .select({ id: contas.id })
       .from(contas)
@@ -235,7 +237,7 @@ export class RelatoriosService {
     let diferencaTotalCents = 0
     for (const e of exps) {
       if (e.status !== 'fechado') continue
-      const dia = diaLocal(e.abertoEm)
+      const dia = diaLocal(e.abertoEm, tz)
       if (dia < p.de || dia > p.ate) continue
       const dif = toCents(e.diferenca)
       diferencaTotalCents += dif
@@ -250,7 +252,7 @@ export class RelatoriosService {
       .where(eq(cobrancas.nucleoId, nucleoId))
     const cobrancasResumo = { pendentes: 0, pendentesCents: 0, confirmadas: 0, confirmadasCents: 0 }
     for (const c of cobs) {
-      const dia = diaLocal(c.createdAt)
+      const dia = diaLocal(c.createdAt, tz)
       if (dia < p.de || dia > p.ate) continue
       const cents = toCents(c.valor)
       if (c.status === 'confirmada') {

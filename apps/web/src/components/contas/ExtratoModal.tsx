@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Field, Input } from '@/components/ui/Input'
 import { ApiError, api } from '@/lib/api'
+import { fmtDataHora } from '@/lib/datahora'
 import type { ContaExtrato } from '@/lib/types'
 
 const METODOS = [
@@ -14,23 +15,15 @@ const METODOS = [
   { id: 'cartao_credito', label: 'Cartão Crédito' },
 ] as const
 
-function dataBR(iso: string): string {
-  return new Date(iso).toLocaleString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
 export function ExtratoModal({
   contaId,
   contaNome,
+  timezone,
   onClose,
 }: {
   contaId: string
   contaNome: string
+  timezone?: string
   onClose: () => void
 }) {
   const [extrato, setExtrato] = useState<ContaExtrato | null>(null)
@@ -177,7 +170,7 @@ export function ExtratoModal({
                     <li key={m.id} className="py-3">
                       <div className="flex items-baseline justify-between gap-3">
                         <span className="flex items-center gap-2 text-sm text-ink-muted">
-                          {dataBR(m.data)}
+                          {fmtDataHora(m.data, timezone)}
                           {compraCancelada && (
                             <span className="rounded-full bg-danger/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-danger">
                               Cancelada
@@ -224,6 +217,7 @@ export function ExtratoModal({
                             vendaId={m.venda.id}
                             enviadoEm={m.venda.reciboEnviadoEm}
                             telefoneSugerido={m.venda.reciboTelefone ?? extrato.conta.whatsapp}
+                            timezone={timezone}
                           />
                         </div>
                       )}

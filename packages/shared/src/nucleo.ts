@@ -15,3 +15,24 @@ export const createNucleoSchema = z.object({
   secEmail: z.string().email().optional(),
 })
 export type CreateNucleoInput = z.infer<typeof createNucleoSchema>
+
+/** Fusos do Brasil (todos os offsets). `id` IANA + rótulo amigável p/ o seletor. */
+export const BR_TIMEZONES = [
+  { id: 'America/Sao_Paulo', label: 'Brasília (UTC−3) — SP, RJ, Sul, NE, Centro' },
+  { id: 'America/Campo_Grande', label: 'Campo Grande (UTC−4) — MS' },
+  { id: 'America/Cuiaba', label: 'Cuiabá (UTC−4) — MT' },
+  { id: 'America/Porto_Velho', label: 'Porto Velho (UTC−4) — RO' },
+  { id: 'America/Boa_Vista', label: 'Boa Vista (UTC−4) — RR' },
+  { id: 'America/Manaus', label: 'Manaus (UTC−4) — AM' },
+  { id: 'America/Rio_Branco', label: 'Rio Branco (UTC−5) — AC' },
+  { id: 'America/Noronha', label: 'Fernando de Noronha (UTC−2)' },
+] as const
+
+export const TIMEZONE_IDS = BR_TIMEZONES.map((t) => t.id) as [string, ...string[]]
+export const DEFAULT_TIMEZONE = 'America/Sao_Paulo'
+
+/** Configuração do empório editável pelo responsável. */
+export const nucleoConfigSchema = z.object({
+  timezone: z.enum(TIMEZONE_IDS),
+})
+export type NucleoConfigInput = z.infer<typeof nucleoConfigSchema>

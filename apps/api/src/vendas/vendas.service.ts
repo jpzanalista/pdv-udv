@@ -16,7 +16,7 @@ import {
 } from '@pdv-udv/db'
 import type { CreateVendaInput, DevolverVendaInput } from '@pdv-udv/shared'
 import { and, desc, eq, ilike, inArray, sql } from 'drizzle-orm'
-import { APP_TZ } from '../common/timezone'
+import { DEFAULT_TZ, timezoneDoNucleo } from '../common/timezone'
 import { DB } from '../db/db.module'
 import { WhatsappService } from '../whatsapp/whatsapp.service'
 
@@ -400,9 +400,10 @@ export class VendasService {
     nucleoId: string,
     f: { de?: string; ate?: string; situacao?: string; numero?: string; cliente?: string },
   ) {
+    const tz = await timezoneDoNucleo(this.db, nucleoId)
     const conds = [eq(vendas.nucleoId, nucleoId)]
-    if (f.de) conds.push(sql`(${vendas.occurredAt} at time zone ${APP_TZ})::date >= ${f.de}`)
-    if (f.ate) conds.push(sql`(${vendas.occurredAt} at time zone ${APP_TZ})::date <= ${f.ate}`)
+    if (f.de) conds.push(sql`(${vendas.occurredAt} at time zone ${tz})::date >= ${f.de}`)
+    if (f.ate) conds.push(sql`(${vendas.occurredAt} at time zone ${tz})::date <= ${f.ate}`)
     if (f.numero) conds.push(eq(vendas.numero, Number(f.numero)))
     if (f.situacao === 'autorizada') conds.push(eq(vendas.cancelada, false))
     if (f.situacao === 'cancelada') conds.push(eq(vendas.cancelada, true))
@@ -498,6 +499,7 @@ export class VendasService {
         clienteTipo: contas.tipo,
         titularWhatsapp: pessoas.whatsapp,
         nucleoNome: nucleos.nome,
+        nucleoTz: nucleos.timezone,
       })
       .from(vendas)
       .leftJoin(contas, eq(contas.id, vendas.contaId))
@@ -525,6 +527,7 @@ export class VendasService {
     const descontoCents = toCents(v.desconto)
     const texto = this.textoRecibo({
       nucleoNome: v.nucleoNome,
+      tz: v.nucleoTz ?? undefined,
       numero: v.numero,
       occurredAt: v.occurredAt,
       cancelada: v.cancelada,
@@ -555,6 +558,7 @@ export class VendasService {
   /** Monta o texto do recibo (markdown leve do WhatsApp: *negrito*, _itálico_). */
   private textoRecibo(d: {
     nucleoNome: string | null
+    tz?: string
     numero: number
     occurredAt: Date
     cancelada: boolean
@@ -569,7 +573,7 @@ export class VendasService {
     const brl = (c: number) => `R$ ${(c / 100).toFixed(2).replace('.', ',')}`
     const qt = (n: number) => (Number.isInteger(n) ? String(n) : n.toString().replace('.', ','))
     const dataBR = d.occurredAt.toLocaleString('pt-BR', {
-      timeZone: APP_TZ,
+      timeZone: d.tz ?? DEFAULT_TZ,
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
