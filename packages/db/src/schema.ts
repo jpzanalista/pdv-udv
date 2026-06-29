@@ -356,3 +356,26 @@ export const estoqueMovimentos = pgTable('estoque_movimentos', {
   motivo: varchar('motivo', { length: 200 }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
+
+// ---------- devoluções (estorno parcial item a item) ----------
+export const devolucoes = pgTable('devolucoes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  nucleoId: uuid('nucleo_id')
+    .notNull()
+    .references(() => nucleos.id),
+  expedienteId: uuid('expediente_id') // expediente em que o reembolso ocorre
+    .notNull()
+    .references(() => expedientes.id),
+  vendaId: uuid('venda_id')
+    .notNull()
+    .references(() => vendas.id),
+  vendaItemId: uuid('venda_item_id')
+    .notNull()
+    .references(() => vendaItens.id),
+  produtoId: uuid('produto_id').references(() => produtos.id),
+  qtde: numeric('qtde', { precision: 12, scale: 3 }).notNull(),
+  valor: money('valor').notNull(),
+  metodo: paymentMethodEnum('metodo').notNull(), // método da venda original (impacto no caixa)
+  motivo: varchar('motivo', { length: 200 }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+})

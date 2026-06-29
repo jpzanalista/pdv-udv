@@ -8,6 +8,7 @@ import {
 import {
   type Database,
   caixaMovimentos,
+  devolucoes,
   expedientes,
   nucleos,
   pagamentos,
@@ -34,13 +35,18 @@ export class ExpedientesService {
     return exp
   }
 
-  /** Esperado = fundo + vendas em dinheiro − sangrias + suprimentos. */
+  /** Esperado = fundo + vendas em dinheiro − devoluções em dinheiro − sangrias + suprimentos. */
   private async esperadoCents(exp: Expediente): Promise<number> {
     const [{ soma }] = await this.db
       .select({ soma: sql<string>`coalesce(sum(${pagamentos.valor}), 0)` })
       .from(pagamentos)
       .innerJoin(vendas, eq(vendas.id, pagamentos.vendaId))
       .where(and(eq(vendas.expedienteId, exp.id), eq(pagamentos.metodo, 'dinheiro')))
+
+    const [{ devol }] = await this.db
+      .select({ devol: sql<string>`coalesce(sum(${devolucoes.valor}), 0)` })
+      .from(devolucoes)
+      .where(and(eq(devolucoes.expedienteId, exp.id), eq(devolucoes.metodo, 'dinheiro')))
 
     const [mov] = await this.db
       .select({
@@ -52,7 +58,7 @@ export class ExpedientesService {
 
     const c = (v: string) => Math.round(Number(v) * 100)
     return (
-      c(exp.fundoTroco) + c(soma) - c(mov?.sangria ?? '0') + c(mov?.suprimento ?? '0')
+      c(exp.fundoTroco) + c(soma) - c(devol) - c(mov?.sangria ?? '0') + c(mov?.suprimento ?? '0')
     )
   }
 

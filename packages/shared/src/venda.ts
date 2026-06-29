@@ -23,3 +23,10 @@ export const createVendaSchema = z.object({
   pagamentos: z.array(pagamentoSchema).min(1),
 })
 export type CreateVendaInput = z.infer<typeof createVendaSchema>
+
+/** Devolução parcial: itens (e quantidades) a devolver de uma venda. */
+export const devolverVendaSchema = z.object({
+  itens: z.array(z.object({ vendaItemId: z.string().uuid(), qtde: z.number().positive() })).min(1),
+  motivo: z.string().max(200).optional(),
+})
+export type DevolverVendaInput = z.infer<typeof devolverVendaSchema>
