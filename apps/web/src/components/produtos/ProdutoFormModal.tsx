@@ -28,6 +28,7 @@ export function ProdutoFormModal({
   const [precoCusto, setPrecoCusto] = useState(produto ? String(produto.precoCusto) : '')
   const [precoVenda, setPrecoVenda] = useState(produto ? String(produto.precoVenda) : '')
   const [estoqueAtual, setEstoqueAtual] = useState(produto ? String(produto.estoqueAtual) : '')
+  const [estoqueMinimo, setEstoqueMinimo] = useState(produto ? String(produto.estoqueMinimo) : '')
   const [controlaEstoque, setControlaEstoque] = useState(produto?.controlaEstoque ?? false)
   const [ativo, setAtivo] = useState(produto?.ativo ?? true)
   const [exibirVenda, setExibirVenda] = useState(produto?.exibirVenda ?? true)
@@ -50,6 +51,7 @@ export function ProdutoFormModal({
       precoVenda: num(precoVenda) ?? 0,
       precoCusto: num(precoCusto),
       estoqueAtual: num(estoqueAtual),
+      estoqueMinimo: num(estoqueMinimo),
       controlaEstoque,
       ativo,
       exibirVenda,
@@ -102,17 +104,25 @@ export function ProdutoFormModal({
             </select>
           </Field>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <Field label="Custo (R$)" htmlFor="custo">
               <Input id="custo" inputMode="decimal" value={precoCusto} onChange={(e) => setPrecoCusto(e.target.value)} />
             </Field>
             <Field label="Venda (R$)" htmlFor="venda">
               <Input id="venda" inputMode="decimal" value={precoVenda} onChange={(e) => setPrecoVenda(e.target.value)} />
             </Field>
-            <Field label="Estoque" htmlFor="estoque">
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Estoque atual" htmlFor="estoque">
               <Input id="estoque" inputMode="decimal" value={estoqueAtual} onChange={(e) => setEstoqueAtual(e.target.value)} />
             </Field>
+            <Field label="Estoque mínimo (alerta)" htmlFor="estoque-min">
+              <Input id="estoque-min" inputMode="decimal" value={estoqueMinimo} onChange={(e) => setEstoqueMinimo(e.target.value)} />
+            </Field>
           </div>
+          <p className="-mt-1 text-xs text-ink-light">
+            Estoque só é controlado/baixado nos produtos com "Controlar estoque" marcado (consignados ficam de fora).
+          </p>
 
           <div className="flex flex-wrap gap-4 pt-1 text-sm">
             <label className="flex items-center gap-2">

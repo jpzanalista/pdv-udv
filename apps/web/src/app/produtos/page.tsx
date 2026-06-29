@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from 'react'
 import * as XLSX from 'xlsx'
+import { EstoqueModal } from '@/components/produtos/EstoqueModal'
 import { ProdutoFormModal } from '@/components/produtos/ProdutoFormModal'
 import { Button } from '@/components/ui/Button'
 import { ApiError, api } from '@/lib/api'
@@ -23,6 +24,7 @@ export default function ProdutosPage() {
   const [msg, setMsg] = useState<string | null>(null)
   const [importando, setImportando] = useState(false)
   const [form, setForm] = useState<{ produto: Produto | null } | null>(null)
+  const [estoqueProd, setEstoqueProd] = useState<Produto | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const catNome = useMemo(() => new Map(cats.map((c) => [c.id, c.nome])), [cats])
@@ -167,6 +169,7 @@ export default function ProdutosPage() {
               <th className="p-3">Grupo</th>
               <th className="p-3 text-right">Custo</th>
               <th className="p-3 text-right">Venda</th>
+              <th className="p-3 text-right">Estoque</th>
               <th className="p-3">Ativo</th>
               <th className="p-3">Exibir na venda</th>
               <th className="p-3" />
@@ -182,6 +185,21 @@ export default function ProdutosPage() {
                 <td className="p-3 text-right font-semibold">
                   {formatBRL(reaisToCents(Number(p.precoVenda)))}
                 </td>
+                <td className="p-3 text-right">
+                  {p.controlaEstoque ? (
+                    <span
+                      className={
+                        Number(p.estoqueAtual) <= Number(p.estoqueMinimo)
+                          ? 'font-semibold text-danger'
+                          : ''
+                      }
+                    >
+                      {Number(p.estoqueAtual).toLocaleString('pt-BR', { maximumFractionDigits: 3 })}
+                    </span>
+                  ) : (
+                    <span className="text-ink-light">—</span>
+                  )}
+                </td>
                 <td className="p-3">
                   <Toggle on={p.ativo} onClick={() => toggle(p, 'ativo')} />
                 </td>
@@ -189,13 +207,24 @@ export default function ProdutosPage() {
                   <Toggle on={p.exibirVenda} onClick={() => toggle(p, 'exibirVenda')} />
                 </td>
                 <td className="p-3">
-                  <button
-                    type="button"
-                    onClick={() => setForm({ produto: p })}
-                    className="text-sm font-semibold text-brand"
-                  >
-                    editar
-                  </button>
+                  <div className="flex justify-end gap-3">
+                    {p.controlaEstoque && (
+                      <button
+                        type="button"
+                        onClick={() => setEstoqueProd(p)}
+                        className="text-sm font-semibold text-brand"
+                      >
+                        estoque
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setForm({ produto: p })}
+                      className="text-sm font-semibold text-brand"
+                    >
+                      editar
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -212,6 +241,14 @@ export default function ProdutosPage() {
             setForm(null)
             await carregar()
           }}
+        />
+      )}
+
+      {estoqueProd && (
+        <EstoqueModal
+          produto={estoqueProd}
+          onClose={() => setEstoqueProd(null)}
+          onSaved={carregar}
         />
       )}
     </main>

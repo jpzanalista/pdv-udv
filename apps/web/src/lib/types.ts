@@ -7,6 +7,7 @@ export type Produto = {
   precoVenda: string
   precoCusto: string
   estoqueAtual: string
+  estoqueMinimo: string
   controlaEstoque: boolean
   categoriaId: string | null
   codigoBarras: string | null
