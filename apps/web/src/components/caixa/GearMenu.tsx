@@ -61,6 +61,9 @@ export function GearMenu({
                 <>
                   <ActionItem onClick={() => act(onSangria)}>Sangria</ActionItem>
                   <ActionItem onClick={() => act(onSuprimento)}>Suprimento</ActionItem>
+                  <LinkItem href="/devolucoes" onNavigate={close}>
+                    Devoluções
+                  </LinkItem>
                   <ActionItem onClick={() => act(onFechar)}>Fechar expediente</ActionItem>
                 </>
               ) : (
