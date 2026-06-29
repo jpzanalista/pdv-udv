@@ -6,19 +6,21 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { Field } from '@/components/ui/Input'
+import { Field, Input } from '@/components/ui/Input'
 import { ApiError, api } from '@/lib/api'
 import { getToken } from '@/lib/auth'
 
 const ALLOWED = ['responsavel_emporio', 'admin']
 
-type Config = { nome: string; timezone: string }
+type Config = { nome: string; timezone: string; corteDia: number; corteHora: string }
 
 export default function ConfiguracoesPage() {
   const router = useRouter()
   const [me, setMe] = useState<{ role: string } | null>(null)
   const [config, setConfig] = useState<Config | null>(null)
   const [timezone, setTimezone] = useState('America/Sao_Paulo')
+  const [corteDia, setCorteDia] = useState(28)
+  const [corteHora, setCorteHora] = useState('02:59')
   const [carregando, setCarregando] = useState(true)
   const [salvando, setSalvando] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
@@ -35,6 +37,8 @@ export default function ConfiguracoesPage() {
           const c = await api<Config>('/nucleos/config')
           setConfig(c)
           setTimezone(c.timezone)
+          setCorteDia(c.corteDia)
+          setCorteHora(c.corteHora)
         }
       })
       .catch((e) => {
@@ -49,7 +53,7 @@ export default function ConfiguracoesPage() {
     try {
       const c = await api<Config>('/nucleos/config', {
         method: 'PATCH',
-        body: JSON.stringify({ timezone }),
+        body: JSON.stringify({ timezone, corteDia, corteHora }),
       })
       setConfig(c)
       setMsg('Configurações salvas ✓')
@@ -72,7 +76,10 @@ export default function ConfiguracoesPage() {
       </main>
     )
 
-  const alterado = config?.timezone !== timezone
+  const alterado =
+    config?.timezone !== timezone ||
+    config?.corteDia !== corteDia ||
+    config?.corteHora !== corteHora
 
   return (
     <main className="mx-auto max-w-lg p-6">
@@ -104,7 +111,40 @@ export default function ConfiguracoesPage() {
           (São Paulo).
         </p>
 
-        <div className="mt-4 flex items-center gap-3">
+        <div className="mt-5 border-t border-line pt-4">
+          <p className="mb-1 font-semibold text-ink">Corte mensal do crediário</p>
+          <p className="mb-3 text-sm text-ink-light">
+            Fechamento dos sócios para a tesouraria. A hora segue o fuso acima.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <Field label="Dia do corte" htmlFor="corte-dia">
+              <Input
+                id="corte-dia"
+                type="number"
+                min={1}
+                max={28}
+                value={corteDia}
+                onChange={(e) => setCorteDia(Number(e.target.value))}
+                className="w-24"
+              />
+            </Field>
+            <Field label="Hora do corte" htmlFor="corte-hora">
+              <Input
+                id="corte-hora"
+                type="time"
+                value={corteHora}
+                onChange={(e) => setCorteHora(e.target.value)}
+                className="w-32"
+              />
+            </Field>
+          </div>
+          <p className="mt-2 text-sm text-ink-light">
+            A janela vai do dia {corteDia} às {corteHora} do mês anterior até o dia {corteDia} às{' '}
+            {corteHora} do mês atual.
+          </p>
+        </div>
+
+        <div className="mt-5 flex items-center gap-3">
           <Button onClick={salvar} disabled={salvando || !alterado}>
             {salvando ? 'Salvando…' : 'Salvar'}
           </Button>

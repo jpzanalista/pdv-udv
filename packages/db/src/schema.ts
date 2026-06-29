@@ -61,6 +61,8 @@ export const nucleos = pgTable('nucleos', {
   type: nucleoTypeEnum('type').notNull().default('nucleo'),
   regionId: uuid('region_id').references(() => regioes.id),
   timezone: varchar('timezone', { length: 40 }).notNull().default('America/Sao_Paulo'), // fuso local do empório
+  corteDia: integer('corte_dia').notNull().default(28), // dia do corte mensal do crediário
+  corteHora: varchar('corte_hora', { length: 5 }).notNull().default('02:59'), // HH:MM no fuso do núcleo
 
   // CNPJ entra depois (quando o núcleo for ter subconta ASAAS) — por isso nullable.
   cnpj: varchar('cnpj', { length: 14 }).unique(),
@@ -282,6 +284,7 @@ export const lancamentos = pgTable('lancamentos', {
   valor: money('valor').notNull(),
   vendaId: uuid('venda_id').references(() => vendas.id),
   cobrancaId: uuid('cobranca_id'),
+  corteId: uuid('corte_id'), // baixa do corte mensal (FK lógica p/ cortes; evita ciclo de import)
   descricao: varchar('descricao', { length: 200 }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
@@ -382,4 +385,35 @@ export const devolucoes = pgTable('devolucoes', {
   metodo: paymentMethodEnum('metodo').notNull(), // método da venda original (impacto no caixa)
   motivo: varchar('motivo', { length: 200 }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+})
+
+// ---------- corte mensal do crediário (sócios → tesouraria/Granatum) ----------
+export const cortes = pgTable(
+  'cortes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    nucleoId: uuid('nucleo_id')
+      .notNull()
+      .references(() => nucleos.id),
+    competencia: varchar('competencia', { length: 7 }).notNull(), // 'YYYY-MM' (mês do corte)
+    periodoDe: timestamp('periodo_de', { withTimezone: true }).notNull(),
+    periodoAte: timestamp('periodo_ate', { withTimezone: true }).notNull(), // limite exclusivo
+    totalCents: integer('total_cents').notNull().default(0),
+    qtdSocios: integer('qtd_socios').notNull().default(0),
+    executadoEm: timestamp('executado_em', { withTimezone: true }).defaultNow().notNull(),
+    executadoPor: uuid('executado_por').references(() => usuarios.id), // null = automático
+  },
+  (t) => ({ uq: unique().on(t.nucleoId, t.competencia) }), // idempotência
+)
+
+export const corteItens = pgTable('corte_itens', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  corteId: uuid('corte_id')
+    .notNull()
+    .references(() => cortes.id),
+  contaId: uuid('conta_id')
+    .notNull()
+    .references(() => contas.id),
+  clienteNome: varchar('cliente_nome', { length: 160 }).notNull(), // snapshot do nome no corte
+  valorCents: integer('valor_cents').notNull(),
 })

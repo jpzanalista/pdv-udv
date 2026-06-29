@@ -92,6 +92,13 @@
       "when": 1782765966456,
       "tag": "0012_military_sunfire",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1782773902013,
+      "tag": "0013_happy_rictor",
+      "breakpoints": true
     }
   ]
 }

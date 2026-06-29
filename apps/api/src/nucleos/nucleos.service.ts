@@ -20,7 +20,12 @@ export class NucleosService {
   /** Configuração do empório (fuso, etc.) — do núcleo do próprio usuário. */
   async getConfig(nucleoId: string) {
     const [n] = await this.db
-      .select({ nome: nucleos.nome, timezone: nucleos.timezone })
+      .select({
+        nome: nucleos.nome,
+        timezone: nucleos.timezone,
+        corteDia: nucleos.corteDia,
+        corteHora: nucleos.corteHora,
+      })
       .from(nucleos)
       .where(eq(nucleos.id, nucleoId))
       .limit(1)
@@ -31,9 +36,14 @@ export class NucleosService {
   async updateConfig(nucleoId: string, input: NucleoConfigInput) {
     const [n] = await this.db
       .update(nucleos)
-      .set({ timezone: input.timezone })
+      .set({ timezone: input.timezone, corteDia: input.corteDia, corteHora: input.corteHora })
       .where(eq(nucleos.id, nucleoId))
-      .returning({ nome: nucleos.nome, timezone: nucleos.timezone })
+      .returning({
+        nome: nucleos.nome,
+        timezone: nucleos.timezone,
+        corteDia: nucleos.corteDia,
+        corteHora: nucleos.corteHora,
+      })
     if (!n) throw new NotFoundException('Núcleo não encontrado')
     return n
   }

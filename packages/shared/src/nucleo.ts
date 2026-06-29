@@ -34,5 +34,8 @@ export const DEFAULT_TIMEZONE = 'America/Sao_Paulo'
 /** Configuração do empório editável pelo responsável. */
 export const nucleoConfigSchema = z.object({
   timezone: z.enum(TIMEZONE_IDS),
+  // Corte mensal do crediário: dia (1–28, seguro p/ todo mês) + hora HH:MM no fuso do núcleo.
+  corteDia: z.number().int().min(1).max(28),
+  corteHora: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Hora inválida (HH:MM)'),
 })
 export type NucleoConfigInput = z.infer<typeof nucleoConfigSchema>
