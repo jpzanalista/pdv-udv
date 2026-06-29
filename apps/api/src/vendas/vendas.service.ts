@@ -7,7 +7,9 @@ import {
   estoqueMovimentos,
   expedientes,
   lancamentos,
+  nucleos,
   pagamentos,
+  pessoas,
   produtos,
   vendaItens,
   vendas,
@@ -15,20 +17,24 @@ import {
 import type { CreateVendaInput, DevolverVendaInput } from '@pdv-udv/shared'
 import { and, desc, eq, ilike, inArray, sql } from 'drizzle-orm'
 import { DB } from '../db/db.module'
+import { WhatsappService } from '../whatsapp/whatsapp.service'
 
 const reais = (cents: number) => (cents / 100).toFixed(2)
 const toCents = (v: string | null) => Math.round(Number(v ?? 0) * 100)
 
 @Injectable()
 export class VendasService {
-  constructor(@Inject(DB) private readonly db: Database) {}
+  constructor(
+    @Inject(DB) private readonly db: Database,
+    private readonly whatsapp: WhatsappService,
+  ) {}
 
   async create(nucleoId: string, createdBy: string, input: CreateVendaInput) {
     const subtotal = input.itens.reduce((a, i) => a + Math.round(i.qtde * i.unitarioCents), 0)
     const desconto = input.descontoCents ?? 0
     const total = Math.max(0, subtotal - desconto)
 
-    return this.db.transaction(async (tx) => {
+    const result = await this.db.transaction(async (tx) => {
       const [exp] = await tx
         .select()
         .from(expedientes)
@@ -101,8 +107,29 @@ export class VendasService {
           .where(and(eq(produtos.id, i.produtoId), eq(produtos.controlaEstoque, true)))
       }
 
-      return { id: venda.id, numero: venda.numero, total: venda.total }
+      return {
+        id: venda.id,
+        numero: venda.numero,
+        total: venda.total,
+        occurredAt: venda.occurredAt,
+      }
     })
+
+    // WhatsApp do titular da conta (quando houver) para pré-preencher o envio do recibo.
+    const reciboTelefone = await this.telefoneDaConta(nucleoId, input.contaId)
+    return { ...result, reciboTelefone }
+  }
+
+  /** WhatsApp do titular de uma conta, ou null (avulso / sem titular / sem número). */
+  private async telefoneDaConta(nucleoId: string, contaId?: string): Promise<string | null> {
+    if (!contaId) return null
+    const [row] = await this.db
+      .select({ whatsapp: pessoas.whatsapp })
+      .from(contas)
+      .leftJoin(pessoas, eq(pessoas.id, contas.titularPessoaId))
+      .where(and(eq(contas.nucleoId, nucleoId), eq(contas.id, contaId)))
+      .limit(1)
+    return row?.whatsapp ?? null
   }
 
   list(nucleoId: string) {
@@ -449,5 +476,124 @@ export class VendasService {
     const total = toCents(totalStr)
     const bruto = total + toCents(descontoStr)
     return bruto > 0 ? total / bruto : 1
+  }
+
+  /** Envia o recibo da venda por WhatsApp. Sem número (override ou titular) → 400. */
+  async enviarRecibo(nucleoId: string, vendaId: string, telefoneOverride?: string) {
+    const [v] = await this.db
+      .select({
+        numero: vendas.numero,
+        occurredAt: vendas.occurredAt,
+        total: vendas.total,
+        desconto: vendas.desconto,
+        cancelada: vendas.cancelada,
+        clienteNome: contas.nome,
+        clienteTipo: contas.tipo,
+        titularWhatsapp: pessoas.whatsapp,
+        nucleoNome: nucleos.nome,
+      })
+      .from(vendas)
+      .leftJoin(contas, eq(contas.id, vendas.contaId))
+      .leftJoin(pessoas, eq(pessoas.id, contas.titularPessoaId))
+      .leftJoin(nucleos, eq(nucleos.id, vendas.nucleoId))
+      .where(and(eq(vendas.nucleoId, nucleoId), eq(vendas.id, vendaId)))
+      .limit(1)
+    if (!v) throw new NotFoundException('Venda não encontrada')
+
+    const telefone = (telefoneOverride?.trim() || v.titularWhatsapp || '').trim()
+    if (!telefone) throw new BadRequestException('Conta sem WhatsApp — informe um número')
+
+    const its = await this.db
+      .select({ descricao: vendaItens.descricao, qtde: vendaItens.qtde, total: vendaItens.total })
+      .from(vendaItens)
+      .where(eq(vendaItens.vendaId, vendaId))
+
+    const [pg] = await this.db
+      .select({ metodo: pagamentos.metodo })
+      .from(pagamentos)
+      .where(eq(pagamentos.vendaId, vendaId))
+      .limit(1)
+
+    const totalCents = toCents(v.total)
+    const descontoCents = toCents(v.desconto)
+    const texto = this.textoRecibo({
+      nucleoNome: v.nucleoNome,
+      numero: v.numero,
+      occurredAt: v.occurredAt,
+      cancelada: v.cancelada,
+      itens: its.map((i) => ({
+        descricao: i.descricao,
+        qtde: Number(i.qtde),
+        totalCents: toCents(i.total),
+      })),
+      subtotalCents: totalCents + descontoCents,
+      descontoCents,
+      totalCents,
+      metodo: pg?.metodo ?? 'conta',
+      clienteNome: v.clienteNome ?? null,
+      clienteTipo: v.clienteTipo ?? null,
+    })
+
+    await this.whatsapp.sendText(telefone, texto)
+    return { enviado: true, telefone }
+  }
+
+  /** Monta o texto do recibo (markdown leve do WhatsApp: *negrito*, _itálico_). */
+  private textoRecibo(d: {
+    nucleoNome: string | null
+    numero: number
+    occurredAt: Date
+    cancelada: boolean
+    itens: { descricao: string; qtde: number; totalCents: number }[]
+    subtotalCents: number
+    descontoCents: number
+    totalCents: number
+    metodo: string
+    clienteNome: string | null
+    clienteTipo: string | null
+  }): string {
+    const brl = (c: number) => `R$ ${(c / 100).toFixed(2).replace('.', ',')}`
+    const qt = (n: number) => (Number.isInteger(n) ? String(n) : n.toString().replace('.', ','))
+    const dataBR = d.occurredAt.toLocaleString('pt-BR', {
+      timeZone: 'America/Sao_Paulo',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+    const metodoLabel: Record<string, string> = {
+      dinheiro: 'Dinheiro',
+      pix: 'Pix',
+      cartao_credito: 'Cartão crédito',
+      cartao_debito: 'Cartão débito',
+      conta: 'Na conta',
+    }
+    const tipoLabel: Record<string, string> = {
+      socio: 'Sócio',
+      visitante: 'Visitante',
+      institucional: 'Institucional',
+    }
+
+    const L: string[] = []
+    L.push(`*Empório — ${d.nucleoNome ?? 'Núcleo UDV'}*`)
+    L.push(`Comprovante de venda #${d.numero}`)
+    L.push(dataBR)
+    if (d.cancelada) L.push('⚠️ *VENDA CANCELADA*')
+    L.push('')
+    for (const it of d.itens) L.push(`${qt(it.qtde)}× ${it.descricao} — ${brl(it.totalCents)}`)
+    L.push('')
+    if (d.descontoCents > 0) {
+      L.push(`Subtotal: ${brl(d.subtotalCents)}`)
+      L.push(`Desconto: ${brl(d.descontoCents)}`)
+    }
+    L.push(`*Total: ${brl(d.totalCents)}*`)
+    const cliente = d.clienteNome
+      ? ` (${tipoLabel[d.clienteTipo ?? ''] ?? 'Cliente'} — ${d.clienteNome})`
+      : ''
+    L.push(`Pagamento: ${metodoLabel[d.metodo] ?? d.metodo}${cliente}`)
+    L.push('')
+    L.push('_Comprovante não fiscal_')
+    return L.join('\n')
   }
 }

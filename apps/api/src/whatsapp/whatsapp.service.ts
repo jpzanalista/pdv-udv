@@ -18,15 +18,19 @@ export class WhatsappService {
   }
 
   async sendOtp(telefone: string, codigo: string): Promise<void> {
+    await this.sendText(telefone, `Seu código de acesso ao PDV UDV é ${codigo}. Expira em 5 minutos.`)
+  }
+
+  /** Envia uma mensagem de texto livre. Sem EVOLUTION_* configurado, loga no servidor (dev). */
+  async sendText(telefone: string, text: string): Promise<void> {
     const number = WhatsappService.numero(telefone)
-    const text = `Seu código de acesso ao PDV UDV é ${codigo}. Expira em 5 minutos.`
 
     const url = process.env.EVOLUTION_URL
     const instance = process.env.EVOLUTION_INSTANCE
     const apiKey = process.env.EVOLUTION_API_KEY
 
     if (!url || !instance || !apiKey) {
-      this.logger.warn(`[DEV] OTP p/ ${number}: ${codigo}  (configure EVOLUTION_* para enviar de verdade)`)
+      this.logger.warn(`[DEV] WhatsApp p/ ${number}:\n${text}\n(configure EVOLUTION_* para enviar de verdade)`)
       return
     }
 

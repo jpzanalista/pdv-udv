@@ -36,3 +36,9 @@ export const cancelarVendaSchema = z.object({
   motivo: z.string().min(1).max(200),
 })
 export type CancelarVendaInput = z.infer<typeof cancelarVendaSchema>
+
+/** Envio do recibo por WhatsApp. `telefone` opcional sobrepõe o do titular da conta. */
+export const enviarReciboSchema = z.object({
+  telefone: z.string().min(8).max(20).optional(),
+})
+export type EnviarReciboInput = z.infer<typeof enviarReciboSchema>

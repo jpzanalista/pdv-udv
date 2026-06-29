@@ -3,10 +3,12 @@ import {
   type CancelarVendaInput,
   type CreateVendaInput,
   type DevolverVendaInput,
+  type EnviarReciboInput,
   type JwtClaims,
   cancelarVendaSchema,
   createVendaSchema,
   devolverVendaSchema,
+  enviarReciboSchema,
 } from '@pdv-udv/shared'
 import { CurrentUser } from '../auth/current-user.decorator'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
@@ -86,5 +88,15 @@ export class VendasController {
     @Body(new ZodValidationPipe(cancelarVendaSchema)) body: CancelarVendaInput,
   ) {
     return this.vendas.cancelar(nucleoOf(user), id, body.motivo)
+  }
+
+  /** Envia o recibo da venda por WhatsApp (titular da conta ou número informado). */
+  @Post(':id/recibo')
+  recibo(
+    @CurrentUser() user: JwtClaims,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(enviarReciboSchema)) body: EnviarReciboInput,
+  ) {
+    return this.vendas.enviarRecibo(nucleoOf(user), id, body.telefone)
   }
 }

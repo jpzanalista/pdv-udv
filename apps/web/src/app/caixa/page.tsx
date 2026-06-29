@@ -11,6 +11,7 @@ import { MovimentoModal, type MovimentoPayload } from '@/components/caixa/Movime
 import { ProductGrid } from '@/components/caixa/ProductGrid'
 import { QtyStepper } from '@/components/caixa/QtyStepper'
 import { ReceberModal, type ReceberPayload } from '@/components/caixa/ReceberModal'
+import { ReciboModal, type ReciboData } from '@/components/caixa/ReciboModal'
 import { ApiError, api } from '@/lib/api'
 import { getToken } from '@/lib/auth'
 import type { CartItem, Categoria, Conta, Expediente, Produto } from '@/lib/types'
@@ -34,6 +35,7 @@ export default function CaixaPage() {
   const [qtde, setQtde] = useState(1)
   const [cart, setCart] = useState<CartItem[]>([])
   const [receberOpen, setReceberOpen] = useState(false)
+  const [recibo, setRecibo] = useState<ReciboData | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
 
@@ -124,11 +126,31 @@ export default function CaixaPage() {
         })),
         pagamentos: [{ metodo: p.metodo, valorCents: totalCents - descontoCents }],
       }
-      const r = await api<{ numero: number }>('/vendas', {
+      const r = await api<{ id: string; numero: number; reciboTelefone: string | null }>('/vendas', {
         method: 'POST',
         body: JSON.stringify(payload),
       })
-      setMsg(`Venda #${r.numero} registrada ✓`)
+      // Snapshot do recibo (cliente vem da conta existente ou da conta criada na hora).
+      const contaExistente = contaId ? contas.find((c) => c.id === contaId) : undefined
+      const clienteNome = p.novaConta?.nome ?? contaExistente?.nome ?? null
+      const clienteTipo = p.novaConta?.tipo ?? contaExistente?.tipo ?? null
+      const liquidoCents = totalCents - descontoCents
+      setRecibo({
+        vendaId: r.id,
+        numero: r.numero,
+        itens: cart.map((i) => ({
+          descricao: i.descricao,
+          qtde: i.qtde,
+          totalCents: Math.round(i.qtde * i.unitario),
+        })),
+        subtotalCents: totalCents,
+        descontoCents,
+        totalCents: liquidoCents,
+        metodo: p.metodo,
+        clienteNome,
+        clienteTipo,
+        telefone: r.reciboTelefone ?? p.novaConta?.whatsapp ?? null,
+      })
       setCart([])
       setReceberOpen(false)
       if (p.novaConta) await carregarContas() // conta nova aparece nas próximas vendas
@@ -306,6 +328,8 @@ export default function CaixaPage() {
           onClose={() => setReceberOpen(false)}
         />
       )}
+
+      {recibo && <ReciboModal recibo={recibo} onClose={() => setRecibo(null)} />}
 
       {abrirOpen && (
         <AbrirCaixaModal
