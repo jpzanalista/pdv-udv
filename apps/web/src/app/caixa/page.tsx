@@ -111,16 +111,18 @@ export default function CaixaPage() {
         })
         contaId = c.id
       }
+      const descontoCents = Math.min(totalCents, p.descontoCents ?? 0)
       const payload = {
         personKind: p.personKind,
         contaId,
+        descontoCents: descontoCents || undefined,
         itens: cart.map((i) => ({
           produtoId: i.produtoId,
           descricao: i.descricao,
           qtde: i.qtde,
           unitarioCents: i.unitario,
         })),
-        pagamentos: [{ metodo: p.metodo, valorCents: totalCents }],
+        pagamentos: [{ metodo: p.metodo, valorCents: totalCents - descontoCents }],
       }
       const r = await api<{ numero: number }>('/vendas', {
         method: 'POST',

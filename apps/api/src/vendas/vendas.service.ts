@@ -372,6 +372,7 @@ export class VendasService {
         desconto: vendas.desconto,
         total: vendas.total,
         cliente: contas.nome,
+        tipo: contas.tipo,
       })
       .from(vendas)
       .leftJoin(contas, eq(contas.id, vendas.contaId))
@@ -394,6 +395,7 @@ export class VendasService {
       data: r.occurredAt,
       situacao: r.cancelada ? ('cancelada' as const) : ('autorizada' as const),
       cliente: r.cliente ?? null,
+      tipo: r.tipo ?? null, // socio | visitante | institucional | null (avulso)
       descontoCents: toCents(r.desconto),
       totalCents: toCents(r.total),
       metodo: metodoByVenda.get(r.id) ?? 'conta',

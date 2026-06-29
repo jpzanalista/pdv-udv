@@ -87,6 +87,9 @@ export function GearMenu({
               </ActionItem>
             </Group>
             <Group title="Consultas">
+              <LinkItem href="/vendas" onNavigate={close}>
+                Consultar vendas
+              </LinkItem>
               <LinkItem href="/relatorios" onNavigate={close}>
                 Relatórios
               </LinkItem>

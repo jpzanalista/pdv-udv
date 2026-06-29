@@ -11,6 +11,7 @@ export type ReceberPayload = {
   contaId?: string
   novaConta?: { tipo: string; nome: string; cpf?: string; whatsapp?: string }
   personKind?: 'socio' | 'visitante'
+  descontoCents?: number
 }
 
 const AVISTA = [
@@ -49,6 +50,7 @@ export function ReceberModal({
   onClose: () => void
 }) {
   const [mode, setMode] = useState<Mode>('forma')
+  const [desconto, setDesconto] = useState('')
   // à vista
   const [metodo, setMetodo] = useState<string | null>(null)
   const [recebido, setRecebido] = useState('')
@@ -60,9 +62,15 @@ export function ReceberModal({
   const [cpf, setCpf] = useState('')
   const [whatsapp, setWhatsapp] = useState(TELEFONE_INICIAL)
 
+  const descontoCents = Math.min(
+    totalCents,
+    Math.max(0, Math.round((Number.parseFloat(desconto.replace(',', '.')) || 0) * 100)),
+  )
+  const aPagarCents = totalCents - descontoCents
+
   const recebidoCents = Math.round((Number.parseFloat(recebido.replace(',', '.')) || 0) * 100)
-  const troco = metodo === 'dinheiro' ? recebidoCents - totalCents : 0
-  const podeAvista = !!metodo && !submitting && (metodo !== 'dinheiro' || recebidoCents >= totalCents)
+  const troco = metodo === 'dinheiro' ? recebidoCents - aPagarCents : 0
+  const podeAvista = !!metodo && !submitting && (metodo !== 'dinheiro' || recebidoCents >= aPagarCents)
   const tipoLabel = TIPOS.find((t) => t.value === tipo)?.label ?? ''
 
   const contasFiltradas = useMemo(() => {
@@ -90,15 +98,33 @@ export function ReceberModal({
         whatsapp: telefoneParaSalvar(whatsapp),
       },
       personKind: PERSON_KIND[tipo],
+      descontoCents,
     })
   }
 
   return (
     <div className="fixed inset-0 z-10 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <Card className="w-full max-w-md p-5" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-3 flex items-baseline justify-between">
+        <div className="mb-2 flex items-baseline justify-between">
           <h2 className="text-lg font-semibold">Receber</h2>
-          <span className="text-2xl font-bold text-ink">{formatBRL(totalCents)}</span>
+          <span className={`text-2xl font-bold ${descontoCents > 0 ? 'text-ink-light line-through' : 'text-ink'}`}>
+            {formatBRL(totalCents)}
+          </span>
+        </div>
+        <div className="mb-3 flex items-center gap-2">
+          <span className="text-sm text-ink-muted">Desconto (R$)</span>
+          <Input
+            inputMode="decimal"
+            value={desconto}
+            onChange={(e) => setDesconto(e.target.value)}
+            placeholder="0,00"
+            className="w-24 text-right"
+          />
+          {descontoCents > 0 && (
+            <span className="ml-auto text-sm">
+              A pagar <b className="text-brand">{formatBRL(aPagarCents)}</b>
+            </span>
+          )}
         </div>
 
         {mode === 'forma' && (
@@ -153,7 +179,7 @@ export function ReceberModal({
               </Button>
               <Button
                 className="min-h-touch-lg flex-1"
-                onClick={() => metodo && onConfirm({ metodo })}
+                onClick={() => metodo && onConfirm({ metodo, descontoCents })}
                 disabled={!podeAvista}
               >
                 {submitting ? 'Registrando…' : 'Confirmar'}
@@ -211,7 +237,12 @@ export function ReceberModal({
                     type="button"
                     disabled={submitting}
                     onClick={() =>
-                      onConfirm({ metodo: 'conta', contaId: c.id, personKind: PERSON_KIND[c.tipo] })
+                      onConfirm({
+                        metodo: 'conta',
+                        contaId: c.id,
+                        personKind: PERSON_KIND[c.tipo],
+                        descontoCents,
+                      })
                     }
                     className="min-h-touch w-full px-1 py-2 text-left hover:bg-brand-subtle disabled:opacity-50"
                   >
