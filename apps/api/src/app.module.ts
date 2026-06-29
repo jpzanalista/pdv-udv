@@ -4,6 +4,7 @@ import { AsaasModule } from './asaas/asaas.module'
 import { AuthModule } from './auth/auth.module'
 import { CatalogoModule } from './catalogo/catalogo.module'
 import { ContasModule } from './contas/contas.module'
+import { CortesModule } from './cortes/cortes.module'
 import { DbModule } from './db/db.module'
 import { ExpedientesModule } from './expedientes/expedientes.module'
 import { HealthController } from './health/health.controller'
@@ -31,6 +32,7 @@ import { VendasModule } from './vendas/vendas.module'
     AsaasModule,
     RelatoriosModule,
     ResponsavelModule,
+    CortesModule,
   ],
   controllers: [HealthController],
 })

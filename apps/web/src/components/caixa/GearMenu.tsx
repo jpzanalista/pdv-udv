@@ -98,6 +98,9 @@ export function GearMenu({
               </LinkItem>
             </Group>
             <Group title="Empório">
+              <LinkItem href="/corte" onNavigate={close}>
+                Corte do crediário
+              </LinkItem>
               <LinkItem href="/configuracoes" onNavigate={close}>
                 Configurações
               </LinkItem>
