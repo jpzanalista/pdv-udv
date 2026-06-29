@@ -44,4 +44,11 @@ export class CortesController {
   ) {
     return this.cortes.fechar(nucleoOf(user), body.competencia, user.sub)
   }
+
+  /** Contingência: roda agora os cortes devidos de todos os núcleos (o que o agendador faz). */
+  @Post('agendados/executar')
+  @Roles('admin')
+  executarAgendados() {
+    return this.cortes.fecharDevidosAutomatico()
+  }
 }

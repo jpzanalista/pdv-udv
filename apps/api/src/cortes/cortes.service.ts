@@ -181,6 +181,39 @@ export class CortesService {
     })
   }
 
+  /**
+   * Fecha automaticamente o corte DEVIDO (último limite que já passou) de cada núcleo,
+   * pulando os já fechados e os sem sócios em aberto. Idempotente. `executadoPor` = null.
+   */
+  async fecharDevidosAutomatico() {
+    const ns = await this.db
+      .select({
+        id: nucleos.id,
+        timezone: nucleos.timezone,
+        corteDia: nucleos.corteDia,
+        corteHora: nucleos.corteHora,
+      })
+      .from(nucleos)
+
+    const feitos: { nucleoId: string; competencia: string; totalCents: number; qtdSocios: number }[] = []
+    for (const n of ns) {
+      const comp = this.competenciaDevida(n)
+      const [ex] = await this.db
+        .select({ id: cortes.id })
+        .from(cortes)
+        .where(and(eq(cortes.nucleoId, n.id), eq(cortes.competencia, comp)))
+        .limit(1)
+      if (ex) continue // já fechado
+      try {
+        const r = await this.fechar(n.id, comp, null)
+        feitos.push({ nucleoId: n.id, ...r })
+      } catch {
+        // período sem sócios em aberto (ou corrida com outro fechamento) → ignora
+      }
+    }
+    return feitos
+  }
+
   /** Cortes já fechados (mais recentes primeiro). */
   listar(nucleoId: string) {
     return this.db
