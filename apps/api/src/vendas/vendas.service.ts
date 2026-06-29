@@ -417,9 +417,13 @@ export class VendasService {
         total: vendas.total,
         cliente: contas.nome,
         tipo: contas.tipo,
+        reciboEnviadoEm: vendas.reciboEnviadoEm,
+        reciboTelefone: vendas.reciboTelefone,
+        titularWhatsapp: pessoas.whatsapp,
       })
       .from(vendas)
       .leftJoin(contas, eq(contas.id, vendas.contaId))
+      .leftJoin(pessoas, eq(pessoas.id, contas.titularPessoaId))
       .where(and(...conds))
       .orderBy(desc(vendas.occurredAt))
       .limit(300)
@@ -443,6 +447,8 @@ export class VendasService {
       descontoCents: toCents(r.desconto),
       totalCents: toCents(r.total),
       metodo: metodoByVenda.get(r.id) ?? 'conta',
+      reciboEnviadoEm: r.reciboEnviadoEm,
+      telefoneSugerido: r.reciboTelefone ?? r.titularWhatsapp ?? null,
     }))
   }
 
@@ -535,7 +541,14 @@ export class VendasService {
     })
 
     await this.whatsapp.sendText(telefone, texto)
-    return { enviado: true, telefone }
+
+    // Síncrono: só marca como enviado depois que o envio deu certo.
+    const enviadoEm = new Date()
+    await this.db
+      .update(vendas)
+      .set({ reciboEnviadoEm: enviadoEm, reciboTelefone: telefone })
+      .where(and(eq(vendas.nucleoId, nucleoId), eq(vendas.id, vendaId)))
+    return { enviado: true, telefone, enviadoEm }
   }
 
   /** Monta o texto do recibo (markdown leve do WhatsApp: *negrito*, _itálico_). */

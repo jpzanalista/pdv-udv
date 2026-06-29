@@ -1,5 +1,6 @@
 import { formatBRL } from '@pdv-udv/core'
 import { useCallback, useEffect, useState } from 'react'
+import { EnviarReciboInline } from '@/components/recibo/EnviarReciboInline'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Field, Input } from '@/components/ui/Input'
@@ -215,6 +216,16 @@ export function ExtratoModal({
                         <p className="mt-1 text-sm text-ink-muted">
                           {m.descricao ?? (m.tipo === 'credito' ? 'Pagamento' : 'Lançamento')}
                         </p>
+                      )}
+                      {/* Recibo só na compra (débito de venda). */}
+                      {m.tipo === 'debito' && m.venda && (
+                        <div className="mt-2">
+                          <EnviarReciboInline
+                            vendaId={m.venda.id}
+                            enviadoEm={m.venda.reciboEnviadoEm}
+                            telefoneSugerido={m.venda.reciboTelefone ?? extrato.conta.whatsapp}
+                          />
+                        </div>
                       )}
                     </li>
                   )

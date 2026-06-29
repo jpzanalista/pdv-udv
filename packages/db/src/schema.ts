@@ -236,6 +236,8 @@ export const vendas = pgTable(
     desconto: money('desconto').default('0').notNull(),
     cancelada: boolean('cancelada').default(false).notNull(),
     motivoCancelamento: text('motivo_cancelamento'),
+    reciboEnviadoEm: timestamp('recibo_enviado_em', { withTimezone: true }), // null = recibo não enviado
+    reciboTelefone: varchar('recibo_telefone', { length: 20 }), // número p/ onde o recibo foi enviado
     occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull(), // data real (retroativo)
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     createdBy: uuid('created_by').references(() => usuarios.id),

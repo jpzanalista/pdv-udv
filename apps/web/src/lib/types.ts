@@ -24,14 +24,17 @@ export type ExtratoMovimento = {
   valorCents: number
   descricao: string | null
   venda: {
+    id: string
     numero: number | null
     cancelada: boolean
+    reciboEnviadoEm: string | null
+    reciboTelefone: string | null
     itens: { descricao: string; qtde: number; totalCents: number }[]
   } | null
 }
 
 export type ContaExtrato = {
-  conta: { id: string; nome: string; tipo: string }
+  conta: { id: string; nome: string; tipo: string; whatsapp: string | null }
   saldoCents: number
   movimentos: ExtratoMovimento[]
 }

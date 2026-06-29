@@ -4,6 +4,7 @@ import { formatBRL } from '@pdv-udv/core'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Fragment, useEffect, useState } from 'react'
+import { EnviarReciboInline } from '@/components/recibo/EnviarReciboInline'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { ApiError, api } from '@/lib/api'
@@ -33,6 +34,8 @@ type VendaConsulta = {
   descontoCents: number
   totalCents: number
   metodo: string
+  reciboEnviadoEm: string | null
+  telefoneSugerido: string | null
 }
 type ItemVenda = { descricao: string; qtde: number; unitarioCents: number; totalCents: number }
 
@@ -113,6 +116,10 @@ export default function VendasPage() {
         // silencioso
       }
     }
+  }
+
+  function marcarReciboEnviado(id: string, enviadoEm: string) {
+    setVendas((p) => p.map((v) => (v.id === id ? { ...v, reciboEnviadoEm: enviadoEm } : v)))
   }
 
   async function cancelar(v: VendaConsulta) {
@@ -275,6 +282,14 @@ export default function VendasPage() {
                           ))}
                         </ul>
                       )}
+                      <div className="mt-3 border-t border-line pt-2">
+                        <EnviarReciboInline
+                          vendaId={v.id}
+                          enviadoEm={v.reciboEnviadoEm}
+                          telefoneSugerido={v.telefoneSugerido}
+                          onEnviado={(em) => marcarReciboEnviado(v.id, em)}
+                        />
+                      </div>
                     </td>
                   </tr>
                 )}

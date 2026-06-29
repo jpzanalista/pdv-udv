@@ -133,8 +133,14 @@ export class ContasService {
   /** Extrato: saldo em aberto + movimentos (compras com itens, e pagamentos). */
   async extrato(nucleoId: string, id: string) {
     const [conta] = await this.db
-      .select({ id: contas.id, nome: contas.nome, tipo: contas.tipo })
+      .select({
+        id: contas.id,
+        nome: contas.nome,
+        tipo: contas.tipo,
+        whatsapp: pessoas.whatsapp, // do titular — sugestão p/ (re)envio de recibo
+      })
       .from(contas)
+      .leftJoin(pessoas, eq(pessoas.id, contas.titularPessoaId))
       .where(and(eq(contas.nucleoId, nucleoId), eq(contas.id, id)))
       .limit(1)
     if (!conta) throw new NotFoundException('Conta não encontrada')
@@ -149,15 +155,23 @@ export class ContasService {
     const vendaIds = movs.map((m) => m.vendaId).filter((v): v is string => !!v)
     const numeroByVenda = new Map<string, number>()
     const canceladaByVenda = new Map<string, boolean>()
+    const reciboByVenda = new Map<string, { enviadoEm: Date | null; telefone: string | null }>()
     const itensByVenda = new Map<string, { descricao: string; qtde: number; totalCents: number }[]>()
     if (vendaIds.length) {
       const vs = await this.db
-        .select({ id: vendas.id, numero: vendas.numero, cancelada: vendas.cancelada })
+        .select({
+          id: vendas.id,
+          numero: vendas.numero,
+          cancelada: vendas.cancelada,
+          reciboEnviadoEm: vendas.reciboEnviadoEm,
+          reciboTelefone: vendas.reciboTelefone,
+        })
         .from(vendas)
         .where(inArray(vendas.id, vendaIds))
       for (const v of vs) {
         numeroByVenda.set(v.id, v.numero)
         canceladaByVenda.set(v.id, v.cancelada)
+        reciboByVenda.set(v.id, { enviadoEm: v.reciboEnviadoEm, telefone: v.reciboTelefone })
       }
       const its = await this.db.select().from(vendaItens).where(inArray(vendaItens.vendaId, vendaIds))
       for (const it of its) {
@@ -173,8 +187,11 @@ export class ContasService {
       saldoCents += m.tipo === 'debito' ? valorCents : -valorCents
       const venda = m.vendaId
         ? {
+            id: m.vendaId,
             numero: numeroByVenda.get(m.vendaId) ?? null,
             cancelada: canceladaByVenda.get(m.vendaId) ?? false,
+            reciboEnviadoEm: reciboByVenda.get(m.vendaId)?.enviadoEm ?? null,
+            reciboTelefone: reciboByVenda.get(m.vendaId)?.telefone ?? null,
             itens: itensByVenda.get(m.vendaId) ?? [],
           }
         : null
