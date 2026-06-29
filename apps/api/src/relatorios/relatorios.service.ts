@@ -12,11 +12,11 @@ import {
 } from '@pdv-udv/db'
 import { and, eq, inArray } from 'drizzle-orm'
 import { DB } from '../db/db.module'
+import { APP_TZ } from '../common/timezone'
 
-const TZ = 'America/Sao_Paulo' // UTC-3, sem horário de verão
 const toCents = (v: string | null) => Math.round(Number(v ?? 0) * 100)
 /** Data local (YYYY-MM-DD) de um timestamp, no fuso do empório. */
-const diaLocal = (d: Date) => d.toLocaleDateString('en-CA', { timeZone: TZ })
+const diaLocal = (d: Date) => d.toLocaleDateString('en-CA', { timeZone: APP_TZ })
 
 type Periodo = { de: string; ate: string }
 

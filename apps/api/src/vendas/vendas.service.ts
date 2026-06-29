@@ -16,6 +16,7 @@ import {
 } from '@pdv-udv/db'
 import type { CreateVendaInput, DevolverVendaInput } from '@pdv-udv/shared'
 import { and, desc, eq, ilike, inArray, sql } from 'drizzle-orm'
+import { APP_TZ } from '../common/timezone'
 import { DB } from '../db/db.module'
 import { WhatsappService } from '../whatsapp/whatsapp.service'
 
@@ -400,8 +401,8 @@ export class VendasService {
     f: { de?: string; ate?: string; situacao?: string; numero?: string; cliente?: string },
   ) {
     const conds = [eq(vendas.nucleoId, nucleoId)]
-    if (f.de) conds.push(sql`(${vendas.occurredAt} at time zone 'America/Sao_Paulo')::date >= ${f.de}`)
-    if (f.ate) conds.push(sql`(${vendas.occurredAt} at time zone 'America/Sao_Paulo')::date <= ${f.ate}`)
+    if (f.de) conds.push(sql`(${vendas.occurredAt} at time zone ${APP_TZ})::date >= ${f.de}`)
+    if (f.ate) conds.push(sql`(${vendas.occurredAt} at time zone ${APP_TZ})::date <= ${f.ate}`)
     if (f.numero) conds.push(eq(vendas.numero, Number(f.numero)))
     if (f.situacao === 'autorizada') conds.push(eq(vendas.cancelada, false))
     if (f.situacao === 'cancelada') conds.push(eq(vendas.cancelada, true))
@@ -568,7 +569,7 @@ export class VendasService {
     const brl = (c: number) => `R$ ${(c / 100).toFixed(2).replace('.', ',')}`
     const qt = (n: number) => (Number.isInteger(n) ? String(n) : n.toString().replace('.', ','))
     const dataBR = d.occurredAt.toLocaleString('pt-BR', {
-      timeZone: 'America/Sao_Paulo',
+      timeZone: APP_TZ,
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
