@@ -174,7 +174,13 @@ export class VendasService {
       if (!exp) throw new BadRequestException('Abra o caixa para registrar a devolução')
 
       const [venda] = await tx
-        .select({ id: vendas.id, numero: vendas.numero, contaId: vendas.contaId })
+        .select({
+          id: vendas.id,
+          numero: vendas.numero,
+          contaId: vendas.contaId,
+          total: vendas.total,
+          desconto: vendas.desconto,
+        })
         .from(vendas)
         .where(and(eq(vendas.nucleoId, nucleoId), eq(vendas.id, vendaId), eq(vendas.cancelada, false)))
         .limit(1)
@@ -187,6 +193,9 @@ export class VendasService {
         .where(eq(pagamentos.vendaId, vendaId))
         .limit(1)
       const metodo = (pg?.metodo ?? 'conta') as 'dinheiro' | 'pix' | 'cartao_credito' | 'cartao_debito' | 'conta'
+
+      // estorno proporcional ao desconto da venda (líquido, não o bruto do item)
+      const ratio = this.ratioLiquido(venda.total, venda.desconto)
 
       let totalCents = 0
       for (const it of input.itens) {
@@ -206,7 +215,7 @@ export class VendasService {
           throw new BadRequestException(`Quantidade indisponível para devolução (resta ${disponivel})`)
         }
 
-        const valorCents = Math.round(it.qtde * toCents(item.unitario))
+        const valorCents = Math.round(it.qtde * toCents(item.unitario) * ratio)
         totalCents += valorCents
 
         // devolve estoque (só produtos com controle) e registra movimento
@@ -270,7 +279,13 @@ export class VendasService {
       if (!exp) throw new BadRequestException('Abra o caixa para registrar o cancelamento')
 
       const [venda] = await tx
-        .select({ id: vendas.id, numero: vendas.numero, contaId: vendas.contaId })
+        .select({
+          id: vendas.id,
+          numero: vendas.numero,
+          contaId: vendas.contaId,
+          total: vendas.total,
+          desconto: vendas.desconto,
+        })
         .from(vendas)
         .where(and(eq(vendas.nucleoId, nucleoId), eq(vendas.id, vendaId), eq(vendas.cancelada, false)))
         .limit(1)
@@ -291,11 +306,13 @@ export class VendasService {
       const devByItem = new Map<string, number>()
       for (const d of devs) devByItem.set(d.vendaItemId, (devByItem.get(d.vendaItemId) ?? 0) + Number(d.qtde))
 
+      const ratio = this.ratioLiquido(venda.total, venda.desconto)
+
       let totalCents = 0
       for (const item of itens) {
         const restante = Number(item.qtde) - (devByItem.get(item.id) ?? 0)
         if (restante <= 1e-9) continue
-        const valorCents = Math.round(restante * toCents(item.unitario))
+        const valorCents = Math.round(restante * toCents(item.unitario) * ratio)
         totalCents += valorCents
 
         if (item.produtoId) {
@@ -425,5 +442,12 @@ export class VendasService {
       unitarioCents: toCents(i.unitario),
       totalCents: toCents(i.total),
     }))
+  }
+
+  /** Fator líquido/bruto da venda: total ÷ (total + desconto). Estorno usa o líquido. */
+  private ratioLiquido(totalStr: string, descontoStr: string): number {
+    const total = toCents(totalStr)
+    const bruto = total + toCents(descontoStr)
+    return bruto > 0 ? total / bruto : 1
   }
 }
