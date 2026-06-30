@@ -1,6 +1,6 @@
 'use client'
 
-import { Download, Pencil, Plus, Upload } from 'lucide-react'
+import { Download, Pencil, Plus, Trash2, Upload } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { type ChangeEvent, useEffect, useRef, useState } from 'react'
 import * as XLSX from 'xlsx'
@@ -62,10 +62,29 @@ export default function ContasPage() {
   const [extrato, setExtrato] = useState<{ id: string; nome: string } | null>(null)
   const [tipoFiltro, setTipoFiltro] = useState<string | null>(null)
   const [busca, setBusca] = useState('')
+  const [excluir, setExcluir] = useState<ContaRow | null>(null)
+  const [excluindo, setExcluindo] = useState(false)
+  const [erroExcluir, setErroExcluir] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   async function carregar() {
     setContas(await api<ContaRow[]>('/contas'))
+  }
+
+  async function excluirConta() {
+    if (!excluir) return
+    setExcluindo(true)
+    setErroExcluir(null)
+    try {
+      await api(`/contas/${excluir.id}`, { method: 'DELETE' })
+      setContas((prev) => prev.filter((x) => x.id !== excluir.id))
+      setMsg(`Conta "${excluir.nome}" excluída.`)
+      setExcluir(null)
+    } catch (e) {
+      setErroExcluir(e instanceof ApiError ? e.message : 'Não foi possível excluir a conta.')
+    } finally {
+      setExcluindo(false)
+    }
   }
 
   async function toggleAtiva(c: ContaRow) {
@@ -219,7 +238,7 @@ export default function ContasPage() {
                   <th className="px-4 py-2.5">CPF</th>
                   <th className="px-4 py-2.5">WhatsApp</th>
                   <th className="px-4 py-2.5">Situação</th>
-                  <th className="px-4 py-2.5">Editar</th>
+                  <th className="px-4 py-2.5">Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -252,13 +271,27 @@ export default function ContasPage() {
                       </label>
                     </td>
                     <td className="px-4 py-3">
-                      <button
-                        type="button"
-                        onClick={() => setForm({ conta: c })}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-brand/40 px-3 py-1.5 text-sm font-semibold text-brand hover:bg-brand-bg"
-                      >
-                        <Pencil size={14} /> Editar
-                      </button>
+                      <div className="inline-flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setForm({ conta: c })}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-brand/40 px-3 py-1.5 text-sm font-semibold text-brand hover:bg-brand-bg"
+                        >
+                          <Pencil size={14} /> Editar
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Excluir"
+                          title="Excluir conta"
+                          onClick={() => {
+                            setErroExcluir(null)
+                            setExcluir(c)
+                          }}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-line text-ink-light hover:border-danger hover:bg-danger/10 hover:text-danger"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -289,13 +322,26 @@ export default function ContasPage() {
                       <TipoBadge tipo={c.tipo} />
                     </p>
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setForm({ conta: c })}
-                    className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-brand/40 px-3 py-1.5 text-sm font-semibold text-brand hover:bg-brand-bg"
-                  >
-                    <Pencil size={14} /> Editar
-                  </button>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setForm({ conta: c })}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-brand/40 px-3 py-1.5 text-sm font-semibold text-brand hover:bg-brand-bg"
+                    >
+                      <Pencil size={14} /> Editar
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Excluir"
+                      onClick={() => {
+                        setErroExcluir(null)
+                        setExcluir(c)
+                      }}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-line text-ink-light hover:border-danger hover:bg-danger/10 hover:text-danger"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
                 <div className="mt-2 flex flex-wrap gap-x-4 gap-y-0.5 text-sm text-ink-muted">
                   <span>CPF: {c.titularCpf ?? '—'}</span>
@@ -314,6 +360,44 @@ export default function ContasPage() {
             )}
           </div>
         </>
+      )}
+
+      {excluir && (
+        <div
+          className="fixed inset-0 z-30 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => !excluindo && setExcluir(null)}
+        >
+          <Card className="w-full max-w-md p-5" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-bold text-ink">Excluir conta?</h2>
+            <p className="mt-2 text-sm text-ink-muted">
+              Tem certeza que deseja excluir <strong>{excluir.nome}</strong>? Esta ação não pode ser
+              desfeita.
+            </p>
+            <p className="mt-2 text-xs text-ink-light">
+              Contas com histórico (compras/pagamentos) não podem ser excluídas — nesse caso, use o
+              interruptor <strong>Situação</strong> para desativar.
+            </p>
+            {erroExcluir && <p className="mt-3 text-sm font-semibold text-danger">{erroExcluir}</p>}
+            <div className="mt-4 flex gap-2">
+              <Button
+                variant="ghost"
+                className="flex-1"
+                onClick={() => setExcluir(null)}
+                disabled={excluindo}
+              >
+                Cancelar
+              </Button>
+              <button
+                type="button"
+                onClick={excluirConta}
+                disabled={excluindo}
+                className="inline-flex min-h-touch flex-1 items-center justify-center gap-2 rounded-lg bg-danger px-4 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+              >
+                <Trash2 size={16} /> {excluindo ? 'Excluindo…' : 'Excluir'}
+              </button>
+            </div>
+          </Card>
+        </div>
       )}
 
       {form && (

@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -105,6 +106,14 @@ export class ContasController {
   @Get(':id')
   get(@CurrentUser() user: JwtClaims, @Param('id') id: string) {
     return this.contas.get(this.requireNucleo(user), id)
+  }
+
+  /** Exclui a conta — só se NÃO houver histórico (senão oriente a desativar). */
+  @Delete(':id')
+  @UseGuards(RolesGuard)
+  @Roles('responsavel_emporio', 'admin')
+  excluir(@CurrentUser() user: JwtClaims, @Param('id') id: string) {
+    return this.contas.excluir(this.requireNucleo(user), id)
   }
 
   private requireNucleo(user: JwtClaims): string {

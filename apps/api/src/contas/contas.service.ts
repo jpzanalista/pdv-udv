@@ -1,5 +1,15 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common'
-import { type Database, contaMembros, contas, lancamentos, pessoas, vendaItens, vendas } from '@pdv-udv/db'
+import {
+  type Database,
+  cobrancas,
+  contaMembros,
+  contas,
+  corteItens,
+  lancamentos,
+  pessoas,
+  vendaItens,
+  vendas,
+} from '@pdv-udv/db'
 import type {
   CreateContaInput,
   ImportContasInput,
@@ -139,6 +149,42 @@ export class ContasService {
       .where(and(eq(contas.nucleoId, nucleoId), eq(contas.id, id)))
       .returning()
     return row
+  }
+
+  /** Exclui a conta — só quando NÃO há histórico (vendas/lançamentos/cobranças/fechamento). */
+  async excluir(nucleoId: string, id: string) {
+    const [conta] = await this.db
+      .select({ id: contas.id })
+      .from(contas)
+      .where(and(eq(contas.nucleoId, nucleoId), eq(contas.id, id)))
+      .limit(1)
+    if (!conta) throw new NotFoundException('Conta não encontrada')
+
+    const [v] = await this.db.select({ id: vendas.id }).from(vendas).where(eq(vendas.contaId, id)).limit(1)
+    const [l] = await this.db
+      .select({ id: lancamentos.id })
+      .from(lancamentos)
+      .where(eq(lancamentos.contaId, id))
+      .limit(1)
+    const [cb] = await this.db
+      .select({ id: cobrancas.id })
+      .from(cobrancas)
+      .where(eq(cobrancas.contaId, id))
+      .limit(1)
+    const [ci] = await this.db
+      .select({ id: corteItens.id })
+      .from(corteItens)
+      .where(eq(corteItens.contaId, id))
+      .limit(1)
+    if (v || l || cb || ci) {
+      throw new BadRequestException(
+        'Conta com histórico não pode ser excluída. Desative-a em vez de excluir.',
+      )
+    }
+
+    await this.db.delete(contaMembros).where(eq(contaMembros.contaId, id))
+    await this.db.delete(contas).where(and(eq(contas.nucleoId, nucleoId), eq(contas.id, id)))
+    return { ok: true }
   }
 
   list(nucleoId: string) {
