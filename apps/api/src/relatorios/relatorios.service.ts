@@ -4,10 +4,12 @@ import {
   caixaMovimentos,
   cobrancas,
   contas,
+  devolucoes,
   expedientes,
   lancamentos,
   nucleos,
   pagamentos,
+  vendaItens,
   vendas,
 } from '@pdv-udv/db'
 import { and, eq, inArray } from 'drizzle-orm'
@@ -144,9 +146,49 @@ export class RelatoriosService {
       porFormaMap.set('conta', { totalCents: contaCents, qtd: noPeriodo.length - comPagamento.size })
     }
 
+    // top produtos (bruto dos itens − devoluções) + total devolvido + líquido
+    const porProduto = new Map<string, { descricao: string; qtde: number; totalCents: number }>()
+    let devolucoesCents = 0
+    if (ids.length) {
+      const its = await this.db
+        .select({
+          produtoId: vendaItens.produtoId,
+          descricao: vendaItens.descricao,
+          qtde: vendaItens.qtde,
+          total: vendaItens.total,
+        })
+        .from(vendaItens)
+        .where(inArray(vendaItens.vendaId, ids))
+      for (const it of its) {
+        const key = it.produtoId ?? it.descricao
+        const e = porProduto.get(key) ?? { descricao: it.descricao, qtde: 0, totalCents: 0 }
+        e.qtde += Number(it.qtde)
+        e.totalCents += toCents(it.total)
+        porProduto.set(key, e)
+      }
+      const devs = await this.db
+        .select({ produtoId: devolucoes.produtoId, qtde: devolucoes.qtde, valor: devolucoes.valor })
+        .from(devolucoes)
+        .where(inArray(devolucoes.vendaId, ids))
+      for (const d of devs) {
+        devolucoesCents += toCents(d.valor)
+        const e = d.produtoId ? porProduto.get(d.produtoId) : undefined
+        if (e) {
+          e.qtde -= Number(d.qtde)
+          e.totalCents -= toCents(d.valor)
+        }
+      }
+    }
+    const topProdutos = [...porProduto.values()]
+      .filter((e) => e.qtde > 0.0001 && e.totalCents > 0)
+      .sort((a, b) => b.totalCents - a.totalCents)
+    const liquidoCents = totalCents - devolucoesCents
+
     return {
       periodo: p,
       totalCents,
+      devolucoesCents,
+      liquidoCents,
       qtdVendas,
       ticketMedioCents,
       porForma: [...porFormaMap.entries()]
@@ -155,6 +197,7 @@ export class RelatoriosService {
       porDia: [...porDiaMap.entries()]
         .map(([dia, v]) => ({ dia, ...v }))
         .sort((a, b) => a.dia.localeCompare(b.dia)),
+      topProdutos,
     }
   }
 

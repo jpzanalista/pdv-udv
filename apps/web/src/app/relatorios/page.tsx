@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { ApiError, api } from '@/lib/api'
 import { clearTokens, getToken } from '@/lib/auth'
+import { exportarRelatoriosXlsx } from '@/lib/relatorios-xlsx'
 
 const VENDAS_ROLES = ['responsavel_emporio', 'presidencia', 'representante_nucleo', 'admin']
 const FIN_ROLES = [...VENDAS_ROLES, 'tesoureiro_1', 'tesoureiro_2']
@@ -33,10 +34,13 @@ type ResumoRel = {
 }
 type VendasRel = {
   totalCents: number
+  devolucoesCents: number
+  liquidoCents: number
   qtdVendas: number
   ticketMedioCents: number
   porForma: { metodo: string; totalCents: number; qtd: number }[]
   porDia: { dia: string; totalCents: number; qtd: number }[]
+  topProdutos: { descricao: string; qtde: number; totalCents: number }[]
 }
 type FinRel = {
   aReceber: { socioCents: number; visitanteCents: number; institucionalCents: number; totalCents: number }
@@ -154,6 +158,14 @@ export default function RelatoriosPage() {
         <Button className="text-sm" onClick={() => carregar(role)} disabled={carregando}>
           {carregando ? 'Atualizando…' : 'Atualizar'}
         </Button>
+        <Button
+          variant="secondary"
+          className="text-sm"
+          onClick={() => exportarRelatoriosXlsx({ periodo: { de, ate }, resumo, vendas, fin })}
+          disabled={!vendas}
+        >
+          Exportar Excel
+        </Button>
       </div>
 
       {vendas && (
@@ -162,7 +174,24 @@ export default function RelatoriosPage() {
             <Kpi label="Total vendido" valor={formatBRL(vendas.totalCents)} />
             <Kpi label="Nº de vendas" valor={String(vendas.qtdVendas)} />
             <Kpi label="Ticket médio" valor={formatBRL(vendas.ticketMedioCents)} />
+            <Kpi label="Devoluções" valor={formatBRL(vendas.devolucoesCents)} />
+            <Kpi label="Líquido" valor={formatBRL(vendas.liquidoCents)} />
           </div>
+          <Bloco titulo="Top produtos">
+            {vendas.topProdutos.length === 0 ? (
+              <Vazio />
+            ) : (
+              vendas.topProdutos
+                .slice(0, 10)
+                .map((pr) => (
+                  <Linha
+                    key={pr.descricao}
+                    label={`${pr.descricao} (${pr.qtde})`}
+                    valor={formatBRL(pr.totalCents)}
+                  />
+                ))
+            )}
+          </Bloco>
           <Bloco titulo="Por forma de pagamento">
             {vendas.porForma.length === 0 ? (
               <Vazio />
