@@ -120,7 +120,7 @@ export default function ContasPage() {
     .filter((c) => (q ? c.nome.toLowerCase().includes(q) || cod(c.codigo).includes(q) : true))
 
   return (
-    <AppShell title="Contas">
+    <AppShell title="Contas" fluid>
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2">
         <Button className="text-sm" onClick={() => setForm({ conta: null })}>
@@ -149,7 +149,7 @@ export default function ContasPage() {
               type="button"
               onClick={() => setTipoFiltro(chip.id)}
               className={cn(
-                'rounded-full border px-3 py-1 text-xs font-semibold transition-colors',
+                'rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-colors',
                 tipoFiltro === chip.id
                   ? 'border-brand bg-brand text-white'
                   : 'border-line bg-surface text-ink-muted hover:bg-canvas',
@@ -184,23 +184,26 @@ export default function ContasPage() {
 
           {/* Desktop: tabela */}
           <Card className="mt-2 hidden overflow-hidden md:block">
-            <table className="w-full text-sm">
+            <table className="w-full text-base">
               <thead>
                 <tr className="border-b border-line text-left text-ink-light">
-                  <th className="px-3 py-2 text-right">Cód.</th>
-                  <th className="px-3 py-2">Nome</th>
-                  <th className="px-3 py-2">Tipo</th>
-                  <th className="px-3 py-2">CPF</th>
-                  <th className="px-3 py-2">WhatsApp</th>
-                  <th className="px-3 py-2">Ativa</th>
-                  <th className="px-3 py-2 text-right">Editar</th>
+                  <th className="px-4 py-3 text-right">Cód.</th>
+                  <th className="px-4 py-3">Nome</th>
+                  <th className="px-4 py-3">Tipo</th>
+                  <th className="px-4 py-3">CPF</th>
+                  <th className="px-4 py-3">WhatsApp</th>
+                  <th className="px-4 py-3">Ativa</th>
+                  <th className="px-4 py-3 text-right">Editar</th>
                 </tr>
               </thead>
               <tbody>
                 {visiveis.map((c) => (
-                  <tr key={c.id} className="border-b border-line last:border-0 hover:bg-canvas">
-                    <td className="px-3 py-2 text-right font-mono text-ink-muted">{cod(c.codigo)}</td>
-                    <td className="px-3 py-2">
+                  <tr
+                    key={c.id}
+                    className="border-b border-line/60 last:border-0 even:bg-brand-bg/40 hover:bg-brand-bg/70"
+                  >
+                    <td className="px-4 py-3 text-right font-mono text-ink-muted">{cod(c.codigo)}</td>
+                    <td className="px-4 py-3">
                       <button
                         type="button"
                         onClick={() => setExtrato({ id: c.id, nome: c.nome })}
@@ -209,21 +212,21 @@ export default function ContasPage() {
                         {c.nome}
                       </button>
                     </td>
-                    <td className="px-3 py-2 text-ink-muted">{TIPO_LABEL[c.tipo] ?? c.tipo}</td>
-                    <td className="px-3 py-2 text-ink-muted">{c.titularCpf ?? '—'}</td>
-                    <td className="px-3 py-2 text-ink-muted">{c.titularWhatsapp ?? '—'}</td>
-                    <td className="px-3 py-2">
+                    <td className="px-4 py-3 text-ink-muted">{TIPO_LABEL[c.tipo] ?? c.tipo}</td>
+                    <td className="px-4 py-3 text-ink-muted">{c.titularCpf ?? '—'}</td>
+                    <td className="px-4 py-3 text-ink-muted">{c.titularWhatsapp ?? '—'}</td>
+                    <td className="px-4 py-3">
                       {c.ativa ? (
                         <span className="text-success">Sim</span>
                       ) : (
                         <span className="text-ink-light">Não</span>
                       )}
                     </td>
-                    <td className="px-3 py-2 text-right">
+                    <td className="px-4 py-3 text-right">
                       <button
                         type="button"
                         onClick={() => setForm({ conta: c })}
-                        className="rounded-lg border border-brand/40 px-3 py-1 text-xs font-semibold text-brand hover:bg-brand-bg"
+                        className="rounded-lg border border-brand/40 px-3.5 py-1.5 text-sm font-semibold text-brand hover:bg-brand-bg"
                       >
                         Editar
                       </button>
@@ -252,7 +255,7 @@ export default function ContasPage() {
                     className="min-w-0 text-left"
                   >
                     <p className="truncate font-semibold text-ink">{c.nome}</p>
-                    <p className="text-xs text-ink-light">
+                    <p className="text-sm text-ink-light">
                       <span className="font-mono">{cod(c.codigo)}</span> · {TIPO_LABEL[c.tipo] ?? c.tipo}
                       {!c.ativa && ' · inativa'}
                     </p>
@@ -260,12 +263,12 @@ export default function ContasPage() {
                   <button
                     type="button"
                     onClick={() => setForm({ conta: c })}
-                    className="shrink-0 rounded-lg border border-brand/40 px-3 py-1 text-xs font-semibold text-brand hover:bg-brand-bg"
+                    className="shrink-0 rounded-lg border border-brand/40 px-3.5 py-1.5 text-sm font-semibold text-brand hover:bg-brand-bg"
                   >
                     Editar
                   </button>
                 </div>
-                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-ink-muted">
+                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-0.5 text-sm text-ink-muted">
                   <span>CPF: {c.titularCpf ?? '—'}</span>
                   <span>WhatsApp: {c.titularWhatsapp ?? '—'}</span>
                 </div>
