@@ -14,14 +14,14 @@ export const devLoginSchema = z.object({
 })
 export type DevLoginInput = z.infer<typeof devLoginSchema>
 
-/** Sócio: solicita OTP por WhatsApp a partir do CPF. */
+/** Sócio: solicita OTP pelo número do WhatsApp (o código chega no próprio WhatsApp). */
 export const otpRequestSchema = z.object({
-  cpf: z.string().regex(/^\d{11}$/, 'CPF deve ter 11 dígitos'),
+  whatsapp: z.string().min(8).max(20),
 })
 export type OtpRequestInput = z.infer<typeof otpRequestSchema>
 
 export const otpVerifySchema = z.object({
-  cpf: z.string().regex(/^\d{11}$/),
+  whatsapp: z.string().min(8).max(20),
   code: z.string().regex(/^\d{4,6}$/),
 })
 export type OtpVerifyInput = z.infer<typeof otpVerifySchema>

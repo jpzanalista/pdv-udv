@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger, UnauthorizedException } from '@nestjs/commo
 import { createHash } from 'node:crypto'
 import { type Database, contas, otpCodigos, pessoas } from '@pdv-udv/db'
 import type { TokenPair } from '@pdv-udv/shared'
-import { and, desc, eq, isNull } from 'drizzle-orm'
+import { and, desc, eq, isNull, sql } from 'drizzle-orm'
 import { DB } from '../db/db.module'
 import { WhatsappService } from '../whatsapp/whatsapp.service'
 import { TokenService } from './token.service'
@@ -12,7 +12,13 @@ const MAX_TENTATIVAS = 5
 const REENVIO_SEGUNDOS = 60
 
 const hash = (code: string) => createHash('sha256').update(code).digest('hex')
-const gerarCodigo = () => String(Math.floor(100000 + Math.random() * 900000)) // 6 dígitos
+const gerarCodigo = () => String(Math.floor(1000 + Math.random() * 9000)) // 4 dígitos
+
+/** Só os 11 dígitos nacionais do número (tira máscara e o DDI 55). */
+function nacional(whatsapp: string): string {
+  const d = whatsapp.replace(/\D/g, '')
+  return (d.startsWith('55') ? d.slice(2) : d).slice(-11)
+}
 
 @Injectable()
 export class OtpService {
@@ -24,9 +30,22 @@ export class OtpService {
     private readonly whatsapp: WhatsappService,
   ) {}
 
-  /** Solicita OTP por CPF. Resposta sempre genérica (anti-enumeração). */
-  async request(cpf: string): Promise<{ enviado: true }> {
-    const [pessoa] = await this.db.select().from(pessoas).where(eq(pessoas.cpf, cpf)).limit(1)
+  /** Acha a pessoa pelo WhatsApp (compara só os 11 dígitos nacionais). Mais recente, se repetir. */
+  private async pessoaPorWhatsapp(whatsapp: string) {
+    const nac = nacional(whatsapp)
+    if (nac.length !== 11) return undefined
+    const [p] = await this.db
+      .select()
+      .from(pessoas)
+      .where(sql`right(regexp_replace(${pessoas.whatsapp}, '[^0-9]', '', 'g'), 11) = ${nac}`)
+      .orderBy(desc(pessoas.createdAt))
+      .limit(1)
+    return p
+  }
+
+  /** Solicita OTP pelo WhatsApp. Resposta sempre genérica (anti-enumeração). */
+  async request(whatsapp: string): Promise<{ enviado: true }> {
+    const pessoa = await this.pessoaPorWhatsapp(whatsapp)
     if (!pessoa?.whatsapp) return { enviado: true }
 
     // anti-flood: não reenvia se já houve um envio há menos de REENVIO_SEGUNDOS
@@ -55,9 +74,9 @@ export class OtpService {
   }
 
   /** Verifica o código e, se válido, emite o JWT de sócio. */
-  async verify(cpf: string, code: string): Promise<TokenPair> {
+  async verify(whatsapp: string, code: string): Promise<TokenPair> {
     const invalido = new UnauthorizedException('Código inválido ou expirado')
-    const [pessoa] = await this.db.select().from(pessoas).where(eq(pessoas.cpf, cpf)).limit(1)
+    const pessoa = await this.pessoaPorWhatsapp(whatsapp)
     if (!pessoa) throw invalido
 
     const [otp] = await this.db

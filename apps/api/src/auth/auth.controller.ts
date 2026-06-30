@@ -26,13 +26,13 @@ export class AuthController {
   /** Sócio: solicita o código OTP por WhatsApp a partir do CPF. */
   @Post('socio/otp')
   solicitarOtp(@Body(new ZodValidationPipe(otpRequestSchema)) body: OtpRequestInput) {
-    return this.otp.request(body.cpf)
+    return this.otp.request(body.whatsapp)
   }
 
   /** Sócio: verifica o código e devolve o JWT (role=socio). */
   @Post('socio/verify')
   verificarOtp(@Body(new ZodValidationPipe(otpVerifySchema)) body: OtpVerifyInput) {
-    return this.otp.verify(body.cpf, body.code)
+    return this.otp.verify(body.whatsapp, body.code)
   }
 
   /** Quem sou eu? (a partir do nosso JWT) */
