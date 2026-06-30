@@ -15,6 +15,7 @@ const VENDAS_ROLES = ['responsavel_emporio', 'presidencia', 'representante_nucle
 const FIN_ROLES = [...VENDAS_ROLES, 'tesoureiro_1', 'tesoureiro_2']
 const TESOUREIRO = ['tesoureiro_1', 'tesoureiro_2', 'admin']
 const GESTAO = ['presidencia', 'representante_nucleo', 'admin']
+const CORTE_ROLES = ['responsavel_emporio', 'tesoureiro_1', 'tesoureiro_2', 'admin']
 
 const FORMA: Record<string, string> = {
   dinheiro: 'Dinheiro',
@@ -109,6 +110,11 @@ export default function RelatoriosPage() {
           <Link href="/historico" className="text-ink-muted">
             Histórico
           </Link>
+          {CORTE_ROLES.includes(role) && (
+            <Link href="/corte" className="text-ink-muted">
+              Corte
+            </Link>
+          )}
           {GESTAO.includes(role) && (
             <Link href="/responsaveis" className="text-ink-muted">
               Responsáveis
