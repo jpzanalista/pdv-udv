@@ -9,6 +9,7 @@ import {
   lancamentos,
   nucleos,
   pagamentos,
+  produtos,
   vendaItens,
   vendas,
 } from '@pdv-udv/db'
@@ -98,8 +99,11 @@ export class RelatoriosService {
         total: vendas.total,
         expedienteId: vendas.expedienteId,
         occurredAt: vendas.occurredAt,
+        contaId: vendas.contaId,
+        tipo: contas.tipo,
       })
       .from(vendas)
+      .leftJoin(contas, eq(contas.id, vendas.contaId))
       .where(and(eq(vendas.nucleoId, nucleoId), eq(vendas.cancelada, false)))
 
     const noPeriodo = todas
@@ -121,6 +125,16 @@ export class RelatoriosService {
     }
     const qtdVendas = noPeriodo.length
     const ticketMedioCents = qtdVendas ? Math.round(totalCents / qtdVendas) : 0
+
+    // identificado × avulso (por tipo de cliente; sem conta = avulso)
+    const porTipoMap = new Map<string, { totalCents: number; qtd: number }>()
+    for (const v of noPeriodo) {
+      const tipo = v.tipo ?? 'avulso'
+      const e = porTipoMap.get(tipo) ?? { totalCents: 0, qtd: 0 }
+      e.totalCents += toCents(v.total)
+      e.qtd++
+      porTipoMap.set(tipo, e)
+    }
 
     // por forma de pagamento. À vista vem da tabela `pagamentos`; "na conta" (crediário)
     // não tem linha lá (vira lançamento) → é o resto: total − à vista.
@@ -149,6 +163,7 @@ export class RelatoriosService {
     // top produtos (bruto dos itens − devoluções) + total devolvido + líquido
     const porProduto = new Map<string, { descricao: string; qtde: number; totalCents: number }>()
     let devolucoesCents = 0
+    let custoCents = 0 // custo dos itens vendidos (p/ margem); custo 0 → 60% do preço
     if (ids.length) {
       const its = await this.db
         .select({
@@ -156,15 +171,25 @@ export class RelatoriosService {
           descricao: vendaItens.descricao,
           qtde: vendaItens.qtde,
           total: vendaItens.total,
+          precoVenda: produtos.precoVenda,
+          precoCusto: produtos.precoCusto,
         })
         .from(vendaItens)
+        .leftJoin(produtos, eq(produtos.id, vendaItens.produtoId))
         .where(inArray(vendaItens.vendaId, ids))
       for (const it of its) {
         const key = it.produtoId ?? it.descricao
         const e = porProduto.get(key) ?? { descricao: it.descricao, qtde: 0, totalCents: 0 }
-        e.qtde += Number(it.qtde)
-        e.totalCents += toCents(it.total)
+        const qtde = Number(it.qtde)
+        const totalLinha = toCents(it.total)
+        e.qtde += qtde
+        e.totalCents += totalLinha
         porProduto.set(key, e)
+        // custo: cadastrado se > 0; senão 60% do preço de venda (ou do unitário se sem produto)
+        const custoCad = toCents(it.precoCusto)
+        const precoVendaUnit = it.precoVenda != null ? toCents(it.precoVenda) : qtde ? totalLinha / qtde : 0
+        const custoUnit = custoCad > 0 ? custoCad : Math.round(precoVendaUnit * 0.6)
+        custoCents += Math.round(custoUnit * qtde)
       }
       const devs = await this.db
         .select({ produtoId: devolucoes.produtoId, qtde: devolucoes.qtde, valor: devolucoes.valor })
@@ -183,16 +208,22 @@ export class RelatoriosService {
       .filter((e) => e.qtde > 0.0001 && e.totalCents > 0)
       .sort((a, b) => b.totalCents - a.totalCents)
     const liquidoCents = totalCents - devolucoesCents
+    const margemCents = liquidoCents - custoCents
 
     return {
       periodo: p,
       totalCents,
       devolucoesCents,
       liquidoCents,
+      custoCents,
+      margemCents,
       qtdVendas,
       ticketMedioCents,
       porForma: [...porFormaMap.entries()]
         .map(([metodo, v]) => ({ metodo, ...v }))
+        .sort((a, b) => b.totalCents - a.totalCents),
+      porTipoCliente: [...porTipoMap.entries()]
+        .map(([tipo, v]) => ({ tipo, ...v }))
         .sort((a, b) => b.totalCents - a.totalCents),
       porDia: [...porDiaMap.entries()]
         .map(([dia, v]) => ({ dia, ...v }))
