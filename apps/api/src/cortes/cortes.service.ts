@@ -7,7 +7,7 @@ import {
   lancamentos,
   nucleos,
 } from '@pdv-udv/db'
-import { and, desc, eq, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, sql } from 'drizzle-orm'
 import { anoMesLocal, instanteLocal } from '../common/timezone'
 import { DB } from '../db/db.module'
 
@@ -163,6 +163,21 @@ export class CortesService {
           valorCents: i.valorCents,
         })),
       )
+
+      // Marca os lançamentos CONSUMIDOS por este corte → não entram em cortes futuros.
+      // (Feito antes das baixas, que são novas e ganham o corte_id na própria inserção.)
+      const contaIds = itens.map((i) => i.contaId)
+      await tx
+        .update(lancamentos)
+        .set({ corteId: corte.id })
+        .where(
+          and(
+            eq(lancamentos.nucleoId, nucleoId),
+            inArray(lancamentos.contaId, contaIds),
+            sql`${lancamentos.corteId} is null`,
+            sql`${lancamentos.createdAt} < ${periodoAte.toISOString()}`,
+          ),
+        )
 
       // Baixa: crédito que zera o saldo do sócio (p/ o empório, pago; transferido à tesouraria).
       const [yy, mm] = competencia.split('-')
