@@ -212,24 +212,24 @@ export default function ContasPage() {
           <Card className="mt-2 hidden overflow-hidden md:block">
             <table className="w-full text-base">
               <thead>
-                <tr className="border-b border-line bg-canvas text-left text-xs font-semibold uppercase tracking-wide text-ink-light">
-                  <th className="px-4 py-2.5 text-right">Cód.</th>
-                  <th className="px-4 py-2.5">Nome</th>
+                <tr className="border-b border-line bg-canvas text-center text-xs font-semibold uppercase tracking-wide text-ink-light">
+                  <th className="px-4 py-2.5">Cód.</th>
+                  <th className="px-4 py-2.5 text-left">Nome</th>
                   <th className="px-4 py-2.5">Tipo</th>
                   <th className="px-4 py-2.5">CPF</th>
                   <th className="px-4 py-2.5">WhatsApp</th>
                   <th className="px-4 py-2.5">Situação</th>
-                  <th className="px-4 py-2.5 text-right">Editar</th>
+                  <th className="px-4 py-2.5">Editar</th>
                 </tr>
               </thead>
               <tbody>
                 {visiveis.map((c) => (
                   <tr
                     key={c.id}
-                    className="border-b border-line/60 last:border-0 even:bg-brand-bg/40 hover:bg-brand-bg/70"
+                    className="border-b border-line/60 text-center last:border-0 even:bg-brand-bg/40 hover:bg-brand-bg/70"
                   >
-                    <td className="px-4 py-3 text-right font-mono text-ink-muted">{cod(c.codigo)}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 font-mono text-ink-muted">{cod(c.codigo)}</td>
+                    <td className="px-4 py-3 text-left">
                       <button
                         type="button"
                         onClick={() => setExtrato({ id: c.id, nome: c.nome })}
@@ -251,7 +251,7 @@ export default function ContasPage() {
                         </span>
                       </label>
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3">
                       <button
                         type="button"
                         onClick={() => setForm({ conta: c })}
