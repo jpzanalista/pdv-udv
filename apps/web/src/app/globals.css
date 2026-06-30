@@ -2,12 +2,63 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Tokens (canais RGB) — tema CLARO */
+:root {
+  --brand: 17 141 255;
+  --brand-dark: 10 109 194;
+  --brand-bg: 225 240 255;
+  --brand-subtle: 248 251 255;
+  --brand-border: 208 231 255;
+
+  --ink: 51 51 51;
+  --ink-muted: 102 102 102;
+  --ink-light: 136 136 136;
+
+  --success: 39 174 96;
+  --warning: 243 156 18;
+  --danger: 231 76 60;
+
+  --surface: 255 255 255;
+  --canvas: 245 249 255;
+  --line: 221 221 221;
+}
+
+/* Tokens — tema ESCURO */
+.dark {
+  --brand: 56 160 255;
+  --brand-dark: 17 141 255;
+  --brand-bg: 18 40 68;
+  --brand-subtle: 20 27 38;
+  --brand-border: 40 64 92;
+
+  --ink: 233 237 243;
+  --ink-muted: 165 173 185;
+  --ink-light: 120 129 142;
+
+  --success: 52 211 153;
+  --warning: 245 180 60;
+  --danger: 248 113 113;
+
+  --surface: 24 28 36;
+  --canvas: 15 18 24;
+  --line: 44 50 62;
+}
+
 @layer base {
   html,
   body {
     @apply bg-canvas text-ink antialiased;
     font-family: var(--font-sans, 'Segoe UI', system-ui, sans-serif);
-    font-size: 17px;
-    line-height: 1.55;
+    /* densidade compacta */
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  /* evita zoom automático do iOS ao focar inputs no celular */
+  @media (max-width: 640px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px;
+    }
   }
 }

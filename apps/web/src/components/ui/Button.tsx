@@ -1,22 +1,27 @@
+import { type VariantProps, cva } from 'class-variance-authority'
 import type { ButtonHTMLAttributes } from 'react'
+import { cn } from '@/lib/utils'
 
-type Variant = 'primary' | 'secondary' | 'ghost'
+const buttonVariants = cva(
+  'inline-flex min-h-touch items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/60 disabled:pointer-events-none disabled:opacity-50',
+  {
+    variants: {
+      variant: {
+        primary: 'bg-brand text-white shadow-sm hover:bg-brand-dark',
+        secondary: 'border border-brand/40 bg-surface text-brand hover:bg-brand-bg',
+        ghost: 'border border-line bg-transparent text-ink-muted hover:bg-canvas hover:text-ink',
+      },
+    },
+    defaultVariants: { variant: 'primary' },
+  },
+)
 
-const variants: Record<Variant, string> = {
-  primary: 'bg-brand text-white hover:bg-brand-dark',
-  secondary: 'bg-white text-brand border border-brand hover:bg-brand-bg',
-  ghost: 'bg-transparent text-ink-muted border border-line hover:bg-canvas',
-}
+type Variant = NonNullable<VariantProps<typeof buttonVariants>['variant']>
 
 export function Button({
-  variant = 'primary',
-  className = '',
+  variant,
+  className,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant }) {
-  return (
-    <button
-      className={`inline-flex min-h-touch items-center justify-center gap-2 rounded px-5 font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${variants[variant]} ${className}`}
-      {...props}
-    />
-  )
+  return <button className={cn(buttonVariants({ variant }), className)} {...props} />
 }

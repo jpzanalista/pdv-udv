@@ -1,26 +1,35 @@
 'use client'
 
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { type ChangeEvent, useRef, useState } from 'react'
-import { useEffect } from 'react'
+import { type ChangeEvent, useEffect, useRef, useState } from 'react'
 import * as XLSX from 'xlsx'
+import { AppShell } from '@/components/AppShell'
 import { ContaFormModal } from '@/components/contas/ContaFormModal'
 import { ExtratoModal } from '@/components/contas/ExtratoModal'
 import { VisitantesView } from '@/components/contas/VisitantesView'
 import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
+import { Input } from '@/components/ui/Input'
 import { ApiError, api } from '@/lib/api'
 import { getToken } from '@/lib/auth'
 import { parseContasXlsx } from '@/lib/contas-xlsx'
+import { cn } from '@/lib/utils'
 import type { ContaRow } from '@/lib/types'
 
 const ALLOWED = ['responsavel_emporio', 'admin']
-
 const TIPO_LABEL: Record<string, string> = {
   socio: 'Sócio',
   visitante: 'Visitante',
   institucional: 'Institucional',
 }
+const CHIPS = [
+  { id: null, label: 'Todos' },
+  { id: 'socio', label: 'Sócios' },
+  { id: 'visitante', label: 'Visitantes' },
+  { id: 'institucional', label: 'Institucional' },
+] as const
+
+const cod = (c: number | null) => (c != null ? String(c).padStart(3, '0') : '—')
 
 export default function ContasPage() {
   const router = useRouter()
@@ -32,6 +41,7 @@ export default function ContasPage() {
   const [form, setForm] = useState<{ conta: ContaRow | null } | null>(null)
   const [extrato, setExtrato] = useState<{ id: string; nome: string } | null>(null)
   const [tipoFiltro, setTipoFiltro] = useState<string | null>(null)
+  const [busca, setBusca] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
 
   async function carregar() {
@@ -57,8 +67,8 @@ export default function ContasPage() {
   }, [router])
 
   function exportar() {
-    const lista = tipoFiltro ? contas.filter((c) => c.tipo === tipoFiltro) : contas
-    const rows = lista.map((c) => ({
+    const rows = visiveis.map((c) => ({
+      Código: cod(c.codigo),
       Nome: c.nome,
       Tipo: TIPO_LABEL[c.tipo] ?? c.tipo,
       CPF: c.titularCpf ?? '',
@@ -96,47 +106,70 @@ export default function ContasPage() {
     }
   }
 
-  if (carregando) return <main className="p-8 text-ink-muted">Carregando…</main>
+  if (carregando) return <main className="grid min-h-[100dvh] place-items-center text-ink-muted">Carregando…</main>
   if (me && !ALLOWED.includes(me.role))
     return (
-      <main className="p-8">
-        <h1 className="text-xl font-bold text-brand">Contas</h1>
-        <p className="mt-2 text-ink-muted">Acesso restrito ao responsável do empório.</p>
-        <Link href="/" className="mt-2 inline-block text-brand">
-          ← início
-        </Link>
-      </main>
+      <AppShell title="Contas">
+        <Card className="p-6 text-ink-muted">Acesso restrito ao responsável do empório.</Card>
+      </AppShell>
     )
 
-  const visiveis = tipoFiltro ? contas.filter((c) => c.tipo === tipoFiltro) : contas
-  const titulo = tipoFiltro ? `Contas · ${TIPO_LABEL[tipoFiltro]}` : 'Contas'
+  const q = busca.trim().toLowerCase()
+  const visiveis = contas
+    .filter((c) => (tipoFiltro ? c.tipo === tipoFiltro : true))
+    .filter((c) => (q ? c.nome.toLowerCase().includes(q) || cod(c.codigo).includes(q) : true))
 
   return (
-    <main className="mx-auto max-w-4xl p-6">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-brand">{titulo}</h1>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button className="text-sm" onClick={() => setForm({ conta: null })}>
-            Nova conta
-          </Button>
-          <Button
-            variant="secondary"
-            className="text-sm"
-            onClick={() => fileRef.current?.click()}
-            disabled={importando}
-          >
-            {importando ? 'Importando…' : 'Importar'}
-          </Button>
-          <Button variant="secondary" className="text-sm" onClick={exportar} disabled={!visiveis.length}>
-            Exportar
-          </Button>
-          <input ref={fileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={onImport} />
-          <Link href="/" className="whitespace-nowrap text-sm text-ink-muted">
-            ← início
-          </Link>
-        </div>
+    <AppShell title="Contas">
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Button className="text-sm" onClick={() => setForm({ conta: null })}>
+          + Nova conta
+        </Button>
+        <Button
+          variant="secondary"
+          className="text-sm"
+          onClick={() => fileRef.current?.click()}
+          disabled={importando}
+        >
+          {importando ? 'Importando…' : 'Importar'}
+        </Button>
+        <Button variant="secondary" className="text-sm" onClick={exportar} disabled={!visiveis.length}>
+          Exportar
+        </Button>
+        <input ref={fileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={onImport} />
       </div>
-      {msg && <p className="mt-2 text-sm font-semibold text-ink">{msg}</p>}
+
+      {/* Filtros: chips + busca */}
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="flex flex-wrap gap-1.5">
+          {CHIPS.map((chip) => (
+            <button
+              key={chip.label}
+              type="button"
+              onClick={() => setTipoFiltro(chip.id)}
+              className={cn(
+                'rounded-full border px-3 py-1 text-xs font-semibold transition-colors',
+                tipoFiltro === chip.id
+                  ? 'border-brand bg-brand text-white'
+                  : 'border-line bg-surface text-ink-muted hover:bg-canvas',
+              )}
+            >
+              {chip.label}
+            </button>
+          ))}
+        </div>
+        {tipoFiltro !== 'visitante' && (
+          <Input
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Buscar por nome ou código…"
+            className="sm:ml-auto sm:max-w-xs"
+          />
+        )}
+      </div>
+
+      {msg && <p className="mt-3 text-sm font-semibold text-ink">{msg}</p>}
 
       {tipoFiltro === 'visitante' ? (
         <div className="mt-4">
@@ -144,62 +177,104 @@ export default function ContasPage() {
         </div>
       ) : (
         <>
-      <p className="mt-1 text-ink-muted">
-        {visiveis.length} conta(s). <span className="text-ink-light">Clique no nome para ver o extrato.</span>
-      </p>
+          <p className="mt-3 text-sm text-ink-muted">
+            {visiveis.length} conta(s).{' '}
+            <span className="text-ink-light">Toque no nome para ver o extrato.</span>
+          </p>
 
-      <div className="mt-4 overflow-auto rounded-lg border border-line bg-surface">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-line text-left text-ink-light">
-              <th className="p-3 text-right">Cód.</th>
-              <th className="p-3">Nome</th>
-              <th className="p-3">Tipo</th>
-              <th className="p-3">CPF (titular)</th>
-              <th className="p-3">WhatsApp</th>
-              <th className="p-3">Ativa</th>
-              <th className="p-3 text-right">Editar</th>
-            </tr>
-          </thead>
-          <tbody>
+          {/* Desktop: tabela */}
+          <Card className="mt-2 hidden overflow-hidden md:block">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-line text-left text-ink-light">
+                  <th className="px-3 py-2 text-right">Cód.</th>
+                  <th className="px-3 py-2">Nome</th>
+                  <th className="px-3 py-2">Tipo</th>
+                  <th className="px-3 py-2">CPF</th>
+                  <th className="px-3 py-2">WhatsApp</th>
+                  <th className="px-3 py-2">Ativa</th>
+                  <th className="px-3 py-2 text-right">Editar</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visiveis.map((c) => (
+                  <tr key={c.id} className="border-b border-line last:border-0 hover:bg-canvas">
+                    <td className="px-3 py-2 text-right font-mono text-ink-muted">{cod(c.codigo)}</td>
+                    <td className="px-3 py-2">
+                      <button
+                        type="button"
+                        onClick={() => setExtrato({ id: c.id, nome: c.nome })}
+                        className="text-left font-semibold text-ink hover:text-brand hover:underline"
+                      >
+                        {c.nome}
+                      </button>
+                    </td>
+                    <td className="px-3 py-2 text-ink-muted">{TIPO_LABEL[c.tipo] ?? c.tipo}</td>
+                    <td className="px-3 py-2 text-ink-muted">{c.titularCpf ?? '—'}</td>
+                    <td className="px-3 py-2 text-ink-muted">{c.titularWhatsapp ?? '—'}</td>
+                    <td className="px-3 py-2">
+                      {c.ativa ? (
+                        <span className="text-success">Sim</span>
+                      ) : (
+                        <span className="text-ink-light">Não</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      <button
+                        type="button"
+                        onClick={() => setForm({ conta: c })}
+                        className="rounded-lg border border-brand/40 px-3 py-1 text-xs font-semibold text-brand hover:bg-brand-bg"
+                      >
+                        Editar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {visiveis.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="px-3 py-6 text-center text-ink-light">
+                      Nenhuma conta.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </Card>
+
+          {/* Mobile: cartões */}
+          <div className="mt-2 grid gap-2 md:hidden">
             {visiveis.map((c) => (
-              <tr key={c.id} className="border-b border-line last:border-0">
-                <td className="p-3 text-right font-mono text-ink-muted">
-                  {c.codigo != null ? String(c.codigo).padStart(3, '0') : '—'}
-                </td>
-                <td className="p-3">
+              <Card key={c.id} className="p-3">
+                <div className="flex items-start justify-between gap-2">
                   <button
                     type="button"
                     onClick={() => setExtrato({ id: c.id, nome: c.nome })}
-                    className="text-left font-semibold text-ink hover:text-brand hover:underline"
+                    className="min-w-0 text-left"
                   >
-                    {c.nome}
+                    <p className="truncate font-semibold text-ink">{c.nome}</p>
+                    <p className="text-xs text-ink-light">
+                      <span className="font-mono">{cod(c.codigo)}</span> · {TIPO_LABEL[c.tipo] ?? c.tipo}
+                      {!c.ativa && ' · inativa'}
+                    </p>
                   </button>
-                </td>
-                <td className="p-3">{TIPO_LABEL[c.tipo] ?? c.tipo}</td>
-                <td className="p-3">{c.titularCpf ?? '—'}</td>
-                <td className="p-3">{c.titularWhatsapp ?? '—'}</td>
-                <td className="p-3">
-                  {c.ativa ? (
-                    <span className="text-success">Sim</span>
-                  ) : (
-                    <span className="text-ink-light">Não</span>
-                  )}
-                </td>
-                <td className="p-3 text-right">
                   <button
                     type="button"
                     onClick={() => setForm({ conta: c })}
-                    className="min-h-touch rounded border border-brand px-3 text-sm font-semibold text-brand hover:bg-brand-subtle"
+                    className="shrink-0 rounded-lg border border-brand/40 px-3 py-1 text-xs font-semibold text-brand hover:bg-brand-bg"
                   >
                     Editar
                   </button>
-                </td>
-              </tr>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-ink-muted">
+                  <span>CPF: {c.titularCpf ?? '—'}</span>
+                  <span>WhatsApp: {c.titularWhatsapp ?? '—'}</span>
+                </div>
+              </Card>
             ))}
-          </tbody>
-        </table>
-      </div>
+            {visiveis.length === 0 && (
+              <Card className="p-6 text-center text-ink-light">Nenhuma conta.</Card>
+            )}
+          </div>
         </>
       )}
 
@@ -223,6 +298,6 @@ export default function ContasPage() {
           onClose={() => setExtrato(null)}
         />
       )}
-    </main>
+    </AppShell>
   )
 }
