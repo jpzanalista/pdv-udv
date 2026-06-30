@@ -15,7 +15,7 @@ import { fmtDataHora } from '@/lib/datahora'
 const ALLOWED = ['responsavel_emporio', 'admin', 'tesoureiro_1', 'tesoureiro_2']
 const PODE_FECHAR = ['responsavel_emporio', 'admin']
 
-type Item = { clienteNome: string; valorCents: number }
+type Item = { codigo: number | null; clienteNome: string; valorCents: number }
 type Previa = {
   competencia: string
   periodoDe: string
@@ -228,6 +228,7 @@ export default function CortePage() {
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-canvas">
                 <tr className="text-left text-ink-light">
+                  <th className="p-2 text-right">Cód.</th>
                   <th className="p-2">Cliente</th>
                   <th className="p-2 text-right">Valor</th>
                 </tr>
@@ -235,13 +236,16 @@ export default function CortePage() {
               <tbody>
                 {previa.itens.map((i, idx) => (
                   <tr key={idx} className="border-t border-line">
+                    <td className="p-2 text-right font-mono text-ink-muted">
+                      {i.codigo != null ? String(i.codigo).padStart(3, '0') : '—'}
+                    </td>
                     <td className="p-2">{i.clienteNome}</td>
                     <td className="p-2 text-right font-semibold">{formatBRL(i.valorCents)}</td>
                   </tr>
                 ))}
                 {previa.itens.length === 0 && (
                   <tr>
-                    <td colSpan={2} className="p-4 text-ink-light">
+                    <td colSpan={3} className="p-4 text-ink-light">
                       Nenhum sócio com saldo no período.
                     </td>
                   </tr>

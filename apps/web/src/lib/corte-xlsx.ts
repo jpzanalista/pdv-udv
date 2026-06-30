@@ -1,6 +1,8 @@
 import * as XLSX from 'xlsx'
 
-type CorteItem = { clienteNome: string; valorCents: number }
+type CorteItem = { codigo: number | null; clienteNome: string; valorCents: number }
+
+const cod = (c: number | null) => (c != null ? String(c).padStart(3, '0') : '')
 
 function slugify(s: string): string {
   return s
@@ -19,13 +21,14 @@ export function exportarCorteXlsx(
   nucleoNome?: string,
 ) {
   const rows: Record<string, string | number>[] = itens.map((i) => ({
+    Código: cod(i.codigo),
     Cliente: i.clienteNome,
     'SUM de Valor': i.valorCents / 100,
   }))
-  rows.push({ Cliente: 'TOTAL', 'SUM de Valor': totalCents / 100 })
+  rows.push({ Código: '', Cliente: 'TOTAL', 'SUM de Valor': totalCents / 100 })
 
-  const ws = XLSX.utils.json_to_sheet(rows, { header: ['Cliente', 'SUM de Valor'] })
-  ws['!cols'] = [{ wch: 48 }, { wch: 14 }]
+  const ws = XLSX.utils.json_to_sheet(rows, { header: ['Código', 'Cliente', 'SUM de Valor'] })
+  ws['!cols'] = [{ wch: 8 }, { wch: 48 }, { wch: 14 }]
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Sócios')
 

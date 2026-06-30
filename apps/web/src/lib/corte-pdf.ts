@@ -2,9 +2,10 @@ import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { fmtDataHora } from './datahora'
 
-type Item = { clienteNome: string; valorCents: number }
+type Item = { codigo: number | null; clienteNome: string; valorCents: number }
 
 const brl = (cents: number) => `R$ ${(cents / 100).toFixed(2).replace('.', ',')}`
+const cod = (c: number | null) => (c != null ? String(c).padStart(3, '0') : '')
 const compBR = (c: string) => `${c.slice(5, 7)}/${c.slice(0, 4)}`
 
 function slugify(s: string): string {
@@ -55,13 +56,13 @@ export function exportarCortePdf(args: {
 
   autoTable(doc, {
     startY: y + 2,
-    head: [['Cliente', 'Valor']],
-    body: itens.map((i) => [i.clienteNome, brl(i.valorCents)]),
-    foot: [['TOTAL', brl(totalCents)]],
+    head: [['Cód.', 'Cliente', 'Valor']],
+    body: itens.map((i) => [cod(i.codigo), i.clienteNome, brl(i.valorCents)]),
+    foot: [['', 'TOTAL', brl(totalCents)]],
     styles: { fontSize: 10, cellPadding: 2 },
     headStyles: { fillColor: [17, 141, 255] },
     footStyles: { fillColor: [225, 240, 255], textColor: 0, fontStyle: 'bold' },
-    columnStyles: { 1: { halign: 'right' } },
+    columnStyles: { 0: { cellWidth: 16 }, 2: { halign: 'right' } },
     margin: { left: m, right: m },
   })
 

@@ -59,6 +59,7 @@ export class CortesService {
     const rows = await this.db
       .select({
         contaId: contas.id,
+        codigo: contas.codigo,
         nome: contas.nome,
         saldo: sql<string>`sum(case when ${lancamentos.tipo} = 'debito' then ${lancamentos.valor} else -${lancamentos.valor} end)`,
       })
@@ -72,10 +73,10 @@ export class CortesService {
           sql`${lancamentos.createdAt} < ${periodoAte.toISOString()}`,
         ),
       )
-      .groupBy(contas.id, contas.nome)
+      .groupBy(contas.id, contas.codigo, contas.nome)
 
     return rows
-      .map((r) => ({ contaId: r.contaId, clienteNome: r.nome, valorCents: toCents(r.saldo) }))
+      .map((r) => ({ contaId: r.contaId, codigo: r.codigo, clienteNome: r.nome, valorCents: toCents(r.saldo) }))
       .filter((r) => r.valorCents > 0)
       .sort((a, b) => a.clienteNome.localeCompare(b.clienteNome, 'pt-BR'))
   }
@@ -94,8 +95,13 @@ export class CortesService {
 
     if (existente) {
       const its = await this.db
-        .select({ clienteNome: corteItens.clienteNome, valorCents: corteItens.valorCents })
+        .select({
+          codigo: contas.codigo,
+          clienteNome: corteItens.clienteNome,
+          valorCents: corteItens.valorCents,
+        })
         .from(corteItens)
+        .leftJoin(contas, eq(contas.id, corteItens.contaId))
         .where(eq(corteItens.corteId, existente.id))
         .orderBy(corteItens.clienteNome)
       return {
@@ -125,7 +131,7 @@ export class CortesService {
       executadoEm: null,
       totalCents: itens.reduce((s, i) => s + i.valorCents, 0),
       qtdSocios: itens.length,
-      itens: itens.map((i) => ({ clienteNome: i.clienteNome, valorCents: i.valorCents })),
+      itens: itens.map((i) => ({ codigo: i.codigo, clienteNome: i.clienteNome, valorCents: i.valorCents })),
     }
   }
 
@@ -259,8 +265,13 @@ export class CortesService {
       .limit(1)
     if (!c) throw new NotFoundException('Fechamento não encontrado')
     const itens = await this.db
-      .select({ clienteNome: corteItens.clienteNome, valorCents: corteItens.valorCents })
+      .select({
+        codigo: contas.codigo,
+        clienteNome: corteItens.clienteNome,
+        valorCents: corteItens.valorCents,
+      })
       .from(corteItens)
+      .leftJoin(contas, eq(contas.id, corteItens.contaId))
       .where(eq(corteItens.corteId, c.id))
       .orderBy(corteItens.clienteNome)
     return {
