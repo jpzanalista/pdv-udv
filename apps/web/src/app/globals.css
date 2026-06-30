@@ -49,8 +49,8 @@
   body {
     @apply bg-canvas text-ink antialiased;
     font-family: var(--font-sans, 'Segoe UI', system-ui, sans-serif);
-    /* densidade compacta */
-    font-size: 15px;
+    /* escala confortável (PDV de balcão — fácil de ler) */
+    font-size: 17px;
     line-height: 1.5;
   }
   /* evita zoom automático do iOS ao focar inputs no celular */

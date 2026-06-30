@@ -39,7 +39,15 @@ const NAV: NavItem[] = [
   { href: '/configuracoes', label: 'Configurações', roles: ['responsavel_emporio', 'admin'] },
 ]
 
-export function AppShell({ title, children }: { title?: string; children: ReactNode }) {
+export function AppShell({
+  title,
+  children,
+  fluid = false,
+}: {
+  title?: string
+  children: ReactNode
+  fluid?: boolean // true = ocupa a largura toda (telas de tabela); false = largura confortável
+}) {
   const router = useRouter()
   const pathname = usePathname()
   const [me, setMe] = useState<{ role: string; nucleoNome: string | null } | null>(null)
@@ -117,7 +125,12 @@ export function AppShell({ title, children }: { title?: string; children: ReactN
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-5xl flex-1 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4">
+      <main
+        className={cn(
+          'mx-auto w-full flex-1 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4',
+          !fluid && 'max-w-5xl',
+        )}
+      >
         {children}
       </main>
     </div>
