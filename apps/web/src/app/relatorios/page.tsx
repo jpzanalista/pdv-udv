@@ -296,8 +296,8 @@ export default function RelatoriosPage() {
         <div className="mt-4 space-y-4">
           {resumo && (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <Kpi label="Sócios" valor={String(resumo.socios)} />
-              <Kpi label="Visitantes" valor={String(resumo.visitantes)} />
+              <Kpi label="Contas de sócio (ativas)" valor={String(resumo.socios)} />
+              <Kpi label="Contas de visitante (ativas)" valor={String(resumo.visitantes)} />
               <Kpi label="A receber" valor={formatBRL(resumo.aReceberCents)} />
               <Kpi label="Inadimplentes" valor={String(resumo.inadimplentes)} />
             </div>

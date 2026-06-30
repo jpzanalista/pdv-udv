@@ -44,11 +44,12 @@ export class RelatoriosService {
       .limit(1)
 
     const contasRows = await this.db
-      .select({ id: contas.id, tipo: contas.tipo })
+      .select({ id: contas.id, tipo: contas.tipo, ativa: contas.ativa })
       .from(contas)
       .where(eq(contas.nucleoId, nucleoId))
-    const socios = contasRows.filter((c) => c.tipo === 'socio').length
-    const visitantes = contasRows.filter((c) => c.tipo === 'visitante').length
+    // conta = família (pode ter vários sócios); só conta as ATIVAS.
+    const socios = contasRows.filter((c) => c.tipo === 'socio' && c.ativa).length
+    const visitantes = contasRows.filter((c) => c.tipo === 'visitante' && c.ativa).length
 
     const movs = await this.db
       .select({ contaId: lancamentos.contaId, tipo: lancamentos.tipo, valor: lancamentos.valor })
@@ -72,7 +73,8 @@ export class RelatoriosService {
     for (const c of cobsPend) if (c.contaId && c.dueDate && c.dueDate < hoje) vencida.add(c.contaId)
     let inadimplentes = 0
     for (const c of contasRows) {
-      if (c.tipo === 'visitante' && (saldoConta.get(c.id) ?? 0) > 0 && vencida.has(c.id)) inadimplentes++
+      if (c.tipo === 'visitante' && c.ativa && (saldoConta.get(c.id) ?? 0) > 0 && vencida.has(c.id))
+        inadimplentes++
     }
 
     return { nucleoNome: nucleo?.nome ?? null, socios, visitantes, aReceberCents, inadimplentes }
