@@ -121,6 +121,7 @@ export function VisitantesView() {
                     onClick={() =>
                       setEditar({
                         id: v.id,
+                        codigo: null,
                         nome: v.nome,
                         tipo: 'visitante',
                         descontoPct: '0',

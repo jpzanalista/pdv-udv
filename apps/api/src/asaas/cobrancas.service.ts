@@ -72,7 +72,17 @@ export class CobrancasService {
 
     const apiKey = await this.resolveApiKey(conta.nucleoId)
     const [pessoa] = await this.db.select().from(pessoas).where(eq(pessoas.id, pessoaId)).limit(1)
-    const pix = await this.criarCobranca(conta, pessoa, apiKey, valor, vencimentoDiasUteis(1), `Quitação ${conta.nome}`)
+    if (!pessoa?.cpf) {
+      throw new BadRequestException('Cadastre seu CPF para pagar via Pix.')
+    }
+    const pix = await this.criarCobranca(
+      conta,
+      { ...pessoa, cpf: pessoa.cpf },
+      apiKey,
+      valor,
+      vencimentoDiasUteis(1),
+      `Quitação ${conta.nome}`,
+    )
     return { ...pix, valorCents: valor }
   }
 
@@ -101,7 +111,11 @@ export class CobrancasService {
         continue
       }
       const [pessoa] = await this.db.select().from(pessoas).where(eq(pessoas.id, conta.titular)).limit(1)
-      await this.criarCobranca(conta, pessoa, apiKey, saldo, dueDate, `Empório — ${conta.nome}`)
+      if (!pessoa?.cpf) {
+        semCadastro++ // sem CPF não dá para gerar cobrança ASAAS
+        continue
+      }
+      await this.criarCobranca(conta, { ...pessoa, cpf: pessoa.cpf }, apiKey, saldo, dueDate, `Empório — ${conta.nome}`)
       cobrados++
     }
     return { cobrados, pulados, semCadastro }

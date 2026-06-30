@@ -70,7 +70,14 @@ export function ContaFormModal({
       onClick={onClose}
     >
       <Card className="my-6 w-full max-w-lg p-5" onClick={(e) => e.stopPropagation()}>
-        <h2 className="mb-4 text-lg font-semibold">{conta ? 'Editar conta' : 'Nova conta'}</h2>
+        <h2 className="mb-4 text-lg font-semibold">
+          {conta ? 'Editar conta' : 'Nova conta'}
+          {conta?.codigo != null && (
+            <span className="ml-2 font-mono text-sm text-ink-light">
+              #{String(conta.codigo).padStart(3, '0')}
+            </span>
+          )}
+        </h2>
         <form onSubmit={salvar} className="flex flex-col gap-3">
           <Field label="Nome" htmlFor="nome">
             <Input id="nome" value={nome} onChange={(e) => setNome(e.target.value)} autoFocus />

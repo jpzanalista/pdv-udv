@@ -6,7 +6,7 @@ import type {
   RegistrarPagamentoInput,
   UpdateContaInput,
 } from '@pdv-udv/shared'
-import { and, asc, desc, eq, inArray, ne } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, ne, sql } from 'drizzle-orm'
 import { DB } from '../db/db.module'
 
 const toCents = (v: string | null) => Math.round(Number(v ?? 0) * 100)
@@ -24,28 +24,64 @@ export class ContasService {
   constructor(@Inject(DB) private readonly db: Database) {}
 
   async create(nucleoId: string, input: CreateContaInput) {
-    const titularPessoaId = input.cpf
-      ? await this.resolverTitular(input.cpf, input.whatsapp, input.nome.trim())
-      : input.titularPessoaId
+    const titularPessoaId = await this.titularParaConta(
+      input.tipo,
+      input.cpf,
+      input.whatsapp,
+      input.nome.trim(),
+      input.titularPessoaId,
+    )
 
-    const [conta] = await this.db
-      .insert(contas)
-      .values({
-        nucleoId,
-        tipo: input.tipo,
-        nome: input.nome,
-        titularPessoaId,
-        descontoPct: input.descontoPct != null ? String(input.descontoPct) : undefined,
-        ativa: input.ativa ?? undefined,
-      })
-      .returning()
+    return this.db.transaction(async (tx) => {
+      const [{ max }] = await tx
+        .select({ max: sql<number>`coalesce(max(${contas.codigo}), 0)` })
+        .from(contas)
+        .where(eq(contas.nucleoId, nucleoId))
+      const codigo = Number(max) + 1
 
-    if (input.membros?.length) {
-      await this.db
-        .insert(contaMembros)
-        .values(input.membros.map((pessoaId) => ({ contaId: conta.id, pessoaId })))
-    }
-    return conta
+      const [conta] = await tx
+        .insert(contas)
+        .values({
+          nucleoId,
+          codigo,
+          tipo: input.tipo,
+          nome: input.nome,
+          titularPessoaId,
+          descontoPct: input.descontoPct != null ? String(input.descontoPct) : undefined,
+          ativa: input.ativa ?? undefined,
+        })
+        .returning()
+
+      if (input.membros?.length) {
+        await tx
+          .insert(contaMembros)
+          .values(input.membros.map((pessoaId) => ({ contaId: conta.id, pessoaId })))
+      }
+      return conta
+    })
+  }
+
+  /** Titular da conta: por CPF (dedup) ou, p/ sócio/visitante sem CPF, um titular só com nome+WhatsApp. */
+  private async titularParaConta(
+    tipo: string,
+    cpf: string | undefined,
+    whatsapp: string | undefined,
+    nome: string,
+    titularExistente?: string,
+  ): Promise<string | undefined> {
+    if (cpf) return this.resolverTitular(cpf, whatsapp, nome)
+    if (titularExistente) return titularExistente
+    if (tipo === 'socio' || tipo === 'visitante') return this.criarTitularSemCpf(nome, whatsapp)
+    return undefined
+  }
+
+  /** Cria uma pessoa titular sem CPF (só nome + WhatsApp). CPF entra depois (sócio ou admin). */
+  private async criarTitularSemCpf(nome: string, whatsapp: string | undefined): Promise<string> {
+    const [p] = await this.db
+      .insert(pessoas)
+      .values({ nome: nome.trim(), whatsapp: whatsapp ?? undefined })
+      .returning({ id: pessoas.id })
+    return p.id
   }
 
   async atualizar(nucleoId: string, id: string, patch: UpdateContaInput) {
@@ -81,9 +117,11 @@ export class ContasService {
       if (Object.keys(pset).length) {
         await this.db.update(pessoas).set(pset).where(eq(pessoas.id, atual.titularPessoaId))
       }
-    } else if (cpfDigits) {
-      // sem titular ainda → cria e vincula
-      const titularPessoaId = await this.resolverTitular(patch.cpf, patch.whatsapp, patch.nome ?? atual.nome)
+    } else if (cpfDigits || patch.whatsapp !== undefined) {
+      // sem titular ainda → cria (com CPF se houver; senão só nome + WhatsApp) e vincula
+      const titularPessoaId = cpfDigits
+        ? await this.resolverTitular(patch.cpf, patch.whatsapp, patch.nome ?? atual.nome)
+        : await this.criarTitularSemCpf(patch.nome ?? atual.nome, patch.whatsapp)
       if (titularPessoaId) set.titularPessoaId = titularPessoaId
     }
 
@@ -107,6 +145,7 @@ export class ContasService {
     return this.db
       .select({
         id: contas.id,
+        codigo: contas.codigo,
         nome: contas.nome,
         tipo: contas.tipo,
         descontoPct: contas.descontoPct,
@@ -239,26 +278,37 @@ export class ContasService {
       .where(eq(contas.nucleoId, nucleoId))
     const byNome = new Map(existentes.map((c) => [c.nome.trim().toLowerCase(), c.id]))
 
+    const [{ max }] = await this.db
+      .select({ max: sql<number>`coalesce(max(${contas.codigo}), 0)` })
+      .from(contas)
+      .where(eq(contas.nucleoId, nucleoId))
+    let codigo = Number(max)
+
     let criadas = 0
     let atualizadas = 0
     for (const r of input.contas) {
       const nome = r.nome.trim()
       const nomeKey = nome.toLowerCase()
-      const titularPessoaId = await this.resolverTitular(r.cpf, r.whatsapp, nome)
       const tipo = r.tipo ?? 'socio'
       const descontoPct = r.descontoPct != null ? String(r.descontoPct) : undefined
 
       const existingId = byNome.get(nomeKey)
       if (existingId) {
         const set: Partial<typeof contas.$inferInsert> = { tipo }
-        if (titularPessoaId) set.titularPessoaId = titularPessoaId
+        // só mexe no titular se vier CPF (evita duplicar pessoa a cada re-import sem CPF)
+        if (r.cpf) {
+          const t = await this.resolverTitular(r.cpf, r.whatsapp, nome)
+          if (t) set.titularPessoaId = t
+        }
         if (descontoPct != null) set.descontoPct = descontoPct
         await this.db.update(contas).set(set).where(eq(contas.id, existingId))
         atualizadas++
       } else {
+        const titularPessoaId = await this.titularParaConta(tipo, r.cpf, r.whatsapp, nome)
+        codigo++
         const [c] = await this.db
           .insert(contas)
-          .values({ nucleoId, tipo, nome, titularPessoaId, descontoPct })
+          .values({ nucleoId, codigo, tipo, nome, titularPessoaId, descontoPct })
           .returning({ id: contas.id })
         byNome.set(nomeKey, c.id)
         criadas++

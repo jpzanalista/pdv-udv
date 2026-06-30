@@ -152,6 +152,7 @@ export default function ContasPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-line text-left text-ink-light">
+              <th className="p-3 text-right">Cód.</th>
               <th className="p-3">Nome</th>
               <th className="p-3">Tipo</th>
               <th className="p-3">CPF (titular)</th>
@@ -163,6 +164,9 @@ export default function ContasPage() {
           <tbody>
             {visiveis.map((c) => (
               <tr key={c.id} className="border-b border-line last:border-0">
+                <td className="p-3 text-right font-mono text-ink-muted">
+                  {c.codigo != null ? String(c.codigo).padStart(3, '0') : '—'}
+                </td>
                 <td className="p-3">
                   <button
                     type="button"

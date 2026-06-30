@@ -42,6 +42,7 @@ export type ContaExtrato = {
 /** Conta enriquecida com titular (para a página de gestão/exportação). */
 export type ContaRow = {
   id: string
+  codigo: number | null
   nome: string
   tipo: string
   descontoPct: string

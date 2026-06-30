@@ -79,7 +79,7 @@ export const nucleos = pgTable('nucleos', {
 // Pessoa é GLOBAL (acima do tenant): 1 por CPF, 1 login. Vínculo com núcleos via pessoa_nucleo.
 export const pessoas = pgTable('pessoas', {
   id: uuid('id').primaryKey().defaultRandom(),
-  cpf: varchar('cpf', { length: 11 }).notNull().unique(),
+  cpf: varchar('cpf', { length: 11 }).unique(), // opcional: sócio pode existir só com nome + WhatsApp
   nome: varchar('nome', { length: 160 }).notNull(),
   whatsapp: varchar('whatsapp', { length: 20 }),
   email: varchar('email', { length: 160 }),
@@ -116,18 +116,23 @@ export const usuarios = pgTable('usuarios', {
 })
 
 // ---------- contas do empório (conta familiar / visitante / institucional) ----------
-export const contas = pgTable('contas', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  nucleoId: uuid('nucleo_id')
-    .notNull()
-    .references(() => nucleos.id),
-  tipo: accountTypeEnum('tipo').notNull(),
-  nome: varchar('nome', { length: 160 }).notNull(),
-  titularPessoaId: uuid('titular_pessoa_id').references(() => pessoas.id),
-  descontoPct: numeric('desconto_pct', { precision: 5, scale: 2 }).default('0').notNull(),
-  ativa: boolean('ativa').default(true).notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-})
+export const contas = pgTable(
+  'contas',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    nucleoId: uuid('nucleo_id')
+      .notNull()
+      .references(() => nucleos.id),
+    codigo: integer('codigo'), // identificador sequencial por núcleo (estável; whatsapp pode mudar)
+    tipo: accountTypeEnum('tipo').notNull(),
+    nome: varchar('nome', { length: 160 }).notNull(),
+    titularPessoaId: uuid('titular_pessoa_id').references(() => pessoas.id),
+    descontoPct: numeric('desconto_pct', { precision: 5, scale: 2 }).default('0').notNull(),
+    ativa: boolean('ativa').default(true).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({ uqCodigo: unique().on(t.nucleoId, t.codigo) }),
+)
 
 export const contaMembros = pgTable(
   'conta_membros',
