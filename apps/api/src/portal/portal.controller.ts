@@ -1,5 +1,11 @@
-import { Body, Controller, ForbiddenException, Get, Param, Post, UseGuards } from '@nestjs/common'
-import { type JwtClaims, type QuitarContaInput, quitarContaSchema } from '@pdv-udv/shared'
+import { Body, Controller, ForbiddenException, Get, Param, Patch, Post, UseGuards } from '@nestjs/common'
+import {
+  type JwtClaims,
+  type MeuCpfInput,
+  type QuitarContaInput,
+  meuCpfSchema,
+  quitarContaSchema,
+} from '@pdv-udv/shared'
 import { CurrentUser } from '../auth/current-user.decorator'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
 import { CobrancasService } from '../asaas/cobrancas.service'
@@ -31,6 +37,21 @@ export class PortalController {
   @Get('fechamento')
   fechamento(@CurrentUser() user: JwtClaims) {
     return this.portal.statusFechamento(this.pessoa(user))
+  }
+
+  /** Dados do próprio sócio (nome + CPF). */
+  @Get('perfil')
+  perfil(@CurrentUser() user: JwtClaims) {
+    return this.portal.perfil(this.pessoa(user))
+  }
+
+  /** Sócio cadastra o próprio CPF (destrava o Pix). */
+  @Patch('meu-cpf')
+  meuCpf(
+    @CurrentUser() user: JwtClaims,
+    @Body(new ZodValidationPipe(meuCpfSchema)) body: MeuCpfInput,
+  ) {
+    return this.portal.definirCpf(this.pessoa(user), body.cpf)
   }
 
   @Post('contas/:id/quitar')

@@ -28,6 +28,15 @@ function dataBR(iso: string): string {
   })
 }
 
+function maskCpf(v: string): string {
+  return v
+    .replace(/\D/g, '')
+    .slice(0, 11)
+    .replace(/^(\d{3})(\d)/, '$1.$2')
+    .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
+    .replace(/\.(\d{3})(\d)/, '.$1-$2')
+}
+
 export default function PortalPage() {
   const router = useRouter()
   const [contas, setContas] = useState<PortalConta[]>([])
@@ -39,11 +48,16 @@ export default function PortalPage() {
     bloqueado: false,
     reabreEm: null,
   })
+  const [perfil, setPerfil] = useState<{ nome: string | null; cpf: string | null }>({ nome: null, cpf: null })
+  const [cpfInput, setCpfInput] = useState('')
+  const [salvandoCpf, setSalvandoCpf] = useState(false)
+  const [erroCpf, setErroCpf] = useState<string | null>(null)
 
   const carregar = useCallback(async () => {
     try {
       setContas(await api<PortalConta[]>('/portal/contas'))
       setFechamento(await api<{ bloqueado: boolean; reabreEm: string | null }>('/portal/fechamento'))
+      setPerfil(await api<{ nome: string | null; cpf: string | null }>('/portal/perfil'))
       setExtratos({}) // força recarregar o extrato ao reabrir
     } catch (e) {
       if (e instanceof ApiError && (e.status === 401 || e.status === 403)) {
@@ -83,6 +97,25 @@ export default function PortalPage() {
     router.replace('/portal/login')
   }
 
+  async function salvarCpf() {
+    const cpf = cpfInput.replace(/\D/g, '')
+    if (cpf.length !== 11) {
+      setErroCpf('Informe os 11 dígitos do CPF.')
+      return
+    }
+    setSalvandoCpf(true)
+    setErroCpf(null)
+    try {
+      await api('/portal/meu-cpf', { method: 'PATCH', body: JSON.stringify({ cpf }) })
+      setCpfInput('')
+      await carregar() // recarrega perfil → destrava o Pix
+    } catch (e) {
+      setErroCpf(e instanceof ApiError ? e.message : 'Não foi possível salvar o CPF.')
+    } finally {
+      setSalvandoCpf(false)
+    }
+  }
+
   if (carregando) return <main className="p-8 text-ink-muted">Carregando…</main>
 
   return (
@@ -93,6 +126,35 @@ export default function PortalPage() {
           Sair
         </Button>
       </div>
+
+      {perfil.cpf ? (
+        <Card className="mb-3 p-3 text-sm">
+          <span className="text-ink-muted">CPF: </span>
+          <span className="font-semibold text-ink">{maskCpf(perfil.cpf)}</span>
+          <span className="ml-2 text-success">· Pix liberado ✓</span>
+        </Card>
+      ) : (
+        <Card className="mb-3 border-brand-border bg-brand-subtle p-4">
+          <p className="font-semibold text-ink">Cadastre seu CPF para pagar por Pix</p>
+          <p className="mt-1 text-sm text-ink-muted">
+            Sem CPF, você acompanha seu consumo e paga presencialmente ou na cobrança mensal da
+            tesouraria.
+          </p>
+          <div className="mt-3 flex gap-2">
+            <input
+              inputMode="numeric"
+              value={cpfInput}
+              onChange={(e) => setCpfInput(maskCpf(e.target.value))}
+              placeholder="000.000.000-00"
+              className="min-h-touch flex-1 rounded border border-line bg-white px-3 text-ink"
+            />
+            <Button className="text-sm" onClick={salvarCpf} disabled={salvandoCpf}>
+              {salvandoCpf ? 'Salvando…' : 'Cadastrar CPF'}
+            </Button>
+          </div>
+          {erroCpf && <p className="mt-2 text-sm text-danger">{erroCpf}</p>}
+        </Card>
+      )}
 
       {fechamento.bloqueado && (
         <Card className="mb-3 border-warning bg-warning/10 p-4">
@@ -106,7 +168,7 @@ export default function PortalPage() {
       )}
 
       {contas.length === 0 ? (
-        <Card className="p-5 text-ink-muted">Nenhuma conta vinculada ao seu CPF.</Card>
+        <Card className="p-5 text-ink-muted">Nenhuma conta vinculada ao seu WhatsApp.</Card>
       ) : (
         <div className="space-y-3">
           {contas.map((c) => {
@@ -135,8 +197,9 @@ export default function PortalPage() {
                   </Button>
                   <Button
                     className="flex-1 text-sm"
-                    disabled={c.saldoCents <= 0 || fechamento.bloqueado}
+                    disabled={c.saldoCents <= 0 || fechamento.bloqueado || !perfil.cpf}
                     onClick={() => setQuitar({ id: c.id, nome: c.nome, saldoCents: c.saldoCents })}
+                    title={!perfil.cpf ? 'Cadastre seu CPF para pagar por Pix' : undefined}
                   >
                     Quitar via Pix
                   </Button>
