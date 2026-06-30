@@ -112,7 +112,7 @@ export default function RelatoriosPage() {
           </Link>
           {CORTE_ROLES.includes(role) && (
             <Link href="/corte" className="text-ink-muted">
-              Corte
+              Fechamento
             </Link>
           )}
           {GESTAO.includes(role) && (

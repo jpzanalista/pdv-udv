@@ -140,7 +140,7 @@ export class CortesService {
         .from(cortes)
         .where(and(eq(cortes.nucleoId, nucleoId), eq(cortes.competencia, competencia)))
         .limit(1)
-      if (existente) throw new BadRequestException(`O corte de ${competencia} já foi fechado.`)
+      if (existente) throw new BadRequestException(`O crediário de ${competencia} já foi fechado.`)
 
       const itens = await this.itensAbertos(nucleoId, periodoAte)
       if (itens.length === 0) throw new BadRequestException('Nenhum sócio com saldo em aberto no período.')
@@ -192,7 +192,7 @@ export class CortesService {
           tipo: 'credito' as const,
           valor: reais(i.valorCents),
           corteId: corte.id,
-          descricao: `Corte ${mm}/${yy} → tesouraria`,
+          descricao: `Fechamento ${mm}/${yy} → tesouraria`,
         })),
       )
 
@@ -257,7 +257,7 @@ export class CortesService {
       .from(cortes)
       .where(and(eq(cortes.nucleoId, nucleoId), eq(cortes.id, corteId)))
       .limit(1)
-    if (!c) throw new NotFoundException('Corte não encontrado')
+    if (!c) throw new NotFoundException('Fechamento não encontrado')
     const itens = await this.db
       .select({ clienteNome: corteItens.clienteNome, valorCents: corteItens.valorCents })
       .from(corteItens)

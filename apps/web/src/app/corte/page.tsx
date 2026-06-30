@@ -96,11 +96,11 @@ export default function CortePage() {
     try {
       await api('/cortes/fechar', { method: 'POST', body: JSON.stringify({ competencia: previa.competencia }) })
       setConfirmar(false)
-      setMsg(`Corte de ${previa.competencia} fechado ✓`)
+      setMsg(`Crediário de ${previa.competencia} fechado ✓`)
       await carregarPrevia(previa.competencia)
       await carregarLista()
     } catch (e) {
-      setMsg(e instanceof ApiError ? e.message : 'Erro ao fechar o corte.')
+      setMsg(e instanceof ApiError ? e.message : 'Erro ao realizar o fechamento.')
     } finally {
       setFechando(false)
     }
@@ -144,7 +144,7 @@ export default function CortePage() {
   if (me && !ALLOWED.includes(me.role))
     return (
       <main className="p-8">
-        <h1 className="text-xl font-bold text-brand">Corte do crediário</h1>
+        <h1 className="text-xl font-bold text-brand">Fechamento do crediário</h1>
         <p className="mt-2 text-ink-muted">Acesso restrito ao responsável.</p>
         <Link href="/caixa" className="mt-2 inline-block text-brand">
           ← caixa
@@ -155,7 +155,7 @@ export default function CortePage() {
   return (
     <main className="mx-auto max-w-2xl p-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-brand">Corte do crediário</h1>
+        <h1 className="text-2xl font-bold text-brand">Fechamento do crediário</h1>
         <Link href="/caixa" className="text-sm text-ink-muted">
           ← caixa
         </Link>
@@ -218,7 +218,7 @@ export default function CortePage() {
                   onClick={() => setConfirmar(true)}
                   disabled={previa.itens.length === 0}
                 >
-                  Fechar corte
+                  Realizar fechamento
                 </Button>
               )}
             </div>
@@ -254,10 +254,10 @@ export default function CortePage() {
 
       <section className="mt-8">
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-light">
-          Cortes anteriores
+          Fechamentos anteriores
         </h2>
         {cortes.length === 0 ? (
-          <p className="text-sm text-ink-light">Nenhum corte fechado ainda.</p>
+          <p className="text-sm text-ink-light">Nenhum fechamento ainda.</p>
         ) : (
           <div className="overflow-auto rounded-lg border border-line bg-surface">
             <table className="w-full text-sm">
@@ -307,7 +307,7 @@ export default function CortePage() {
           onClick={() => !fechando && setConfirmar(false)}
         >
           <Card className="w-full max-w-md p-5" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-bold text-ink">Fechar corte de {previa.competencia}?</h2>
+            <h2 className="text-lg font-bold text-ink">Fechar o crediário de {previa.competencia}?</h2>
             <p className="mt-2 text-sm text-ink-muted">
               Isto <strong>baixa o saldo</strong> de {previa.qtdSocios} sócio(s) — total{' '}
               <strong>{formatBRL(previa.totalCents)}</strong> — e transfere à tesouraria. Para o
@@ -317,7 +317,7 @@ export default function CortePage() {
               ⚠️ Esta ação é irreversível pelo sistema.
             </p>
             <p className="mt-3 text-sm text-ink-light">
-              Corte configurado: <strong>dia {previa.corteDia}</strong> às{' '}
+              Fechamento configurado: <strong>dia {previa.corteDia}</strong> às{' '}
               <strong>{previa.corteHora}</strong> (fuso do núcleo).
             </p>
             <div className="mt-4 flex gap-2">

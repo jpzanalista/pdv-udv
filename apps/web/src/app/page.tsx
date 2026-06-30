@@ -75,7 +75,7 @@ const MENU: Secao[] = [
       },
       {
         href: '/corte',
-        titulo: 'Corte do crediário',
+        titulo: 'Fechamento do crediário',
         descricao: 'Planilha mensal dos sócios para a tesouraria (Excel/PDF).',
         papeis: ['tesoureiro_1', 'tesoureiro_2', 'responsavel_emporio', 'admin'],
       },

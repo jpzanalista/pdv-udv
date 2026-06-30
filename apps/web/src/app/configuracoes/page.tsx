@@ -112,12 +112,12 @@ export default function ConfiguracoesPage() {
         </p>
 
         <div className="mt-5 border-t border-line pt-4">
-          <p className="mb-1 font-semibold text-ink">Corte mensal do crediário</p>
+          <p className="mb-1 font-semibold text-ink">Fechamento mensal do crediário</p>
           <p className="mb-3 text-sm text-ink-light">
             Fechamento dos sócios para a tesouraria. A hora segue o fuso acima.
           </p>
           <div className="flex flex-wrap gap-3">
-            <Field label="Dia do corte" htmlFor="corte-dia">
+            <Field label="Dia do fechamento" htmlFor="corte-dia">
               <Input
                 id="corte-dia"
                 type="number"
@@ -128,7 +128,7 @@ export default function ConfiguracoesPage() {
                 className="w-24"
               />
             </Field>
-            <Field label="Hora do corte" htmlFor="corte-hora">
+            <Field label="Hora do fechamento" htmlFor="corte-hora">
               <Input
                 id="corte-hora"
                 type="time"

@@ -37,7 +37,7 @@ export function exportarCortePdf(args: {
   doc.text(`Empório — ${nucleoNome ?? 'Núcleo UDV'}`, m, y)
   y += 8
   doc.setFontSize(12)
-  doc.text(`Corte do crediário — competência ${compBR(competencia)}`, m, y)
+  doc.text(`Fechamento do crediário — competência ${compBR(competencia)}`, m, y)
   y += 7
   doc.setFontSize(10)
   doc.setTextColor(110)
@@ -70,5 +70,5 @@ export function exportarCortePdf(args: {
   doc.setTextColor(130)
   doc.text('Documento não fiscal — para lançamento na tesouraria.', m, finalY + 8)
 
-  doc.save(`corte-socios_${slugify(nucleoNome ?? 'nucleo')}_${competencia}.pdf`)
+  doc.save(`fechamento-socios_${slugify(nucleoNome ?? 'nucleo')}_${competencia}.pdf`)
 }

@@ -76,7 +76,7 @@ export default function TesourariaPage() {
             Histórico
           </Link>
           <Link href="/corte" className="text-brand">
-            Corte
+            Fechamento
           </Link>
           <Link href="/" className="text-ink-muted">
             ← início

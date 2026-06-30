@@ -29,5 +29,5 @@ export function exportarCorteXlsx(
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Sócios')
 
-  XLSX.writeFile(wb, `corte-socios_${slugify(nucleoNome ?? 'nucleo')}_${competencia}.xlsx`)
+  XLSX.writeFile(wb, `fechamento-socios_${slugify(nucleoNome ?? 'nucleo')}_${competencia}.xlsx`)
 }
