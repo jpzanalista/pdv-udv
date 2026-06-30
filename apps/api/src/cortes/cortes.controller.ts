@@ -20,18 +20,21 @@ export class CortesController {
 
   /** Prévia do corte (competência opcional; default = a devida). Não grava. */
   @Get('previa')
+  @Roles('responsavel_emporio', 'admin', 'tesoureiro_1', 'tesoureiro_2')
   previa(@CurrentUser() user: JwtClaims, @Query('competencia') competencia?: string) {
     return this.cortes.previa(nucleoOf(user), competencia || undefined)
   }
 
   /** Cortes já fechados. */
   @Get()
+  @Roles('responsavel_emporio', 'admin', 'tesoureiro_1', 'tesoureiro_2')
   listar(@CurrentUser() user: JwtClaims) {
     return this.cortes.listar(nucleoOf(user))
   }
 
   /** Detalhe de um corte fechado (reimpressão). */
   @Get(':id')
+  @Roles('responsavel_emporio', 'admin', 'tesoureiro_1', 'tesoureiro_2')
   detalhe(@CurrentUser() user: JwtClaims, @Param('id') id: string) {
     return this.cortes.detalhe(nucleoOf(user), id)
   }

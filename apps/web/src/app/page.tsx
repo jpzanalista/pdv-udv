@@ -73,6 +73,12 @@ const MENU: Secao[] = [
         descricao: 'Validar sangrias pendentes e gerar recibos.',
         papeis: ['tesoureiro_1', 'tesoureiro_2', 'admin'],
       },
+      {
+        href: '/corte',
+        titulo: 'Corte do crediário',
+        descricao: 'Planilha mensal dos sócios para a tesouraria (Excel/PDF).',
+        papeis: ['tesoureiro_1', 'tesoureiro_2', 'responsavel_emporio', 'admin'],
+      },
     ],
   },
 ]

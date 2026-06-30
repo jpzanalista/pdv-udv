@@ -8,16 +8,20 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ApiError, api } from '@/lib/api'
 import { getToken } from '@/lib/auth'
+import { exportarCortePdf } from '@/lib/corte-pdf'
 import { exportarCorteXlsx } from '@/lib/corte-xlsx'
 import { fmtDataHora } from '@/lib/datahora'
 
-const ALLOWED = ['responsavel_emporio', 'admin']
+const ALLOWED = ['responsavel_emporio', 'admin', 'tesoureiro_1', 'tesoureiro_2']
+const PODE_FECHAR = ['responsavel_emporio', 'admin']
 
 type Item = { clienteNome: string; valorCents: number }
 type Previa = {
   competencia: string
   periodoDe: string
   periodoAte: string
+  corteDia: number
+  corteHora: string
   jaFechado: boolean
   executadoEm: string | null
   totalCents: number
@@ -42,7 +46,9 @@ export default function CortePage() {
   const [cortes, setCortes] = useState<CorteRow[]>([])
   const [carregando, setCarregando] = useState(true)
   const [fechando, setFechando] = useState(false)
+  const [confirmar, setConfirmar] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
+  const podeFechar = !!me && PODE_FECHAR.includes(me.role)
 
   async function carregarPrevia(comp?: string) {
     const q = comp ? `?competencia=${comp}` : ''
@@ -83,16 +89,13 @@ export default function CortePage() {
     }
   }
 
-  async function fechar() {
+  async function confirmarFechar() {
     if (!previa) return
-    const ok = window.confirm(
-      `Fechar o corte de ${previa.competencia}?\n\n${previa.qtdSocios} sócio(s) — total ${formatBRL(previa.totalCents)}.\n\nIsto baixa o saldo das contas e envia à tesouraria. Não dá para desfazer pelo sistema.`,
-    )
-    if (!ok) return
     setFechando(true)
     setMsg(null)
     try {
       await api('/cortes/fechar', { method: 'POST', body: JSON.stringify({ competencia: previa.competencia }) })
+      setConfirmar(false)
       setMsg(`Corte de ${previa.competencia} fechado ✓`)
       await carregarPrevia(previa.competencia)
       await carregarLista()
@@ -103,9 +106,38 @@ export default function CortePage() {
     }
   }
 
-  async function exportarFechado(id: string) {
+  function exportarPreviaPdf() {
+    if (!previa) return
+    exportarCortePdf({
+      nucleoNome: me?.nucleoNome,
+      competencia: previa.competencia,
+      periodoDe: previa.periodoDe,
+      periodoAte: previa.periodoAte,
+      executadoEm: previa.executadoEm,
+      itens: previa.itens,
+      totalCents: previa.totalCents,
+      qtdSocios: previa.qtdSocios,
+      timezone: me?.timezone,
+    })
+  }
+
+  async function exportarFechado(id: string, formato: 'xlsx' | 'pdf') {
     const d = await api<Previa>(`/cortes/${id}`)
-    exportarCorteXlsx(d.competencia, d.itens, d.totalCents, me?.nucleoNome ?? undefined)
+    if (formato === 'xlsx') {
+      exportarCorteXlsx(d.competencia, d.itens, d.totalCents, me?.nucleoNome ?? undefined)
+    } else {
+      exportarCortePdf({
+        nucleoNome: me?.nucleoNome,
+        competencia: d.competencia,
+        periodoDe: d.periodoDe,
+        periodoAte: d.periodoAte,
+        executadoEm: d.executadoEm,
+        itens: d.itens,
+        totalCents: d.totalCents,
+        qtdSocios: d.qtdSocios,
+        timezone: me?.timezone,
+      })
+    }
   }
 
   if (carregando) return <main className="p-8 text-ink-muted">Carregando…</main>
@@ -163,18 +195,30 @@ export default function CortePage() {
                 <p className="text-sm text-ink-light">Prévia (ainda não fechado)</p>
               )}
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 variant="secondary"
                 className="text-sm"
                 onClick={() => exportarCorteXlsx(previa.competencia, previa.itens, previa.totalCents, me?.nucleoNome ?? undefined)}
                 disabled={previa.itens.length === 0}
               >
-                Exportar Excel
+                Excel
               </Button>
-              {!previa.jaFechado && (
-                <Button className="text-sm" onClick={fechar} disabled={fechando || previa.itens.length === 0}>
-                  {fechando ? 'Fechando…' : 'Fechar corte'}
+              <Button
+                variant="secondary"
+                className="text-sm"
+                onClick={exportarPreviaPdf}
+                disabled={previa.itens.length === 0}
+              >
+                PDF
+              </Button>
+              {podeFechar && !previa.jaFechado && (
+                <Button
+                  className="text-sm"
+                  onClick={() => setConfirmar(true)}
+                  disabled={previa.itens.length === 0}
+                >
+                  Fechar corte
                 </Button>
               )}
             </div>
@@ -236,10 +280,17 @@ export default function CortePage() {
                     <td className="p-2 text-right">
                       <button
                         type="button"
-                        onClick={() => exportarFechado(c.id)}
-                        className="text-sm font-semibold text-brand"
+                        onClick={() => exportarFechado(c.id, 'xlsx')}
+                        className="mr-3 text-sm font-semibold text-brand"
                       >
                         Excel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => exportarFechado(c.id, 'pdf')}
+                        className="text-sm font-semibold text-brand"
+                      >
+                        PDF
                       </button>
                     </td>
                   </tr>
@@ -249,6 +300,42 @@ export default function CortePage() {
           </div>
         )}
       </section>
+
+      {confirmar && previa && (
+        <div
+          className="fixed inset-0 z-30 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => !fechando && setConfirmar(false)}
+        >
+          <Card className="w-full max-w-md p-5" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-bold text-ink">Fechar corte de {previa.competencia}?</h2>
+            <p className="mt-2 text-sm text-ink-muted">
+              Isto <strong>baixa o saldo</strong> de {previa.qtdSocios} sócio(s) — total{' '}
+              <strong>{formatBRL(previa.totalCents)}</strong> — e transfere à tesouraria. Para o
+              empório, ficam como pagos.
+            </p>
+            <p className="mt-2 rounded bg-danger/10 px-3 py-2 text-sm font-semibold text-danger">
+              ⚠️ Esta ação é irreversível pelo sistema.
+            </p>
+            <p className="mt-3 text-sm text-ink-light">
+              Corte configurado: <strong>dia {previa.corteDia}</strong> às{' '}
+              <strong>{previa.corteHora}</strong> (fuso do núcleo).
+            </p>
+            <div className="mt-4 flex gap-2">
+              <Button
+                variant="ghost"
+                className="flex-1"
+                onClick={() => setConfirmar(false)}
+                disabled={fechando}
+              >
+                Cancelar
+              </Button>
+              <Button className="flex-1" onClick={confirmarFechar} disabled={fechando}>
+                {fechando ? 'Fechando…' : 'Confirmar fechamento'}
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </main>
   )
 }
