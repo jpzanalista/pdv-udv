@@ -27,6 +27,12 @@ export class PortalController {
     return this.portal.extrato(this.pessoa(user), id)
   }
 
+  /** Pix bloqueado durante o fechamento mensal? */
+  @Get('fechamento')
+  fechamento(@CurrentUser() user: JwtClaims) {
+    return this.portal.statusFechamento(this.pessoa(user))
+  }
+
   @Post('contas/:id/quitar')
   quitar(
     @CurrentUser() user: JwtClaims,

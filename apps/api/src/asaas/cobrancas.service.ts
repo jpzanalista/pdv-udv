@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common'
 import { type Database, asaasCustomers, cobrancas, contas, lancamentos, nucleos, pessoas } from '@pdv-udv/db'
 import { and, desc, eq } from 'drizzle-orm'
+import { bloqueioFechamento } from '../common/timezone'
 import { DB } from '../db/db.module'
 import { AsaasService } from './asaas.service'
 
@@ -51,6 +52,18 @@ export class CobrancasService {
       .where(eq(contas.id, contaId))
       .limit(1)
     if (!conta || conta.titular !== pessoaId) throw new ForbiddenException('Conta não pertence a você')
+
+    // Durante o fechamento mensal (do dia anterior 23:59 até o dia do corte 04:00) o Pix fica bloqueado.
+    const [cfg] = await this.db
+      .select({ timezone: nucleos.timezone, corteDia: nucleos.corteDia })
+      .from(nucleos)
+      .where(eq(nucleos.id, conta.nucleoId))
+      .limit(1)
+    if (cfg && bloqueioFechamento(new Date(), cfg.timezone, cfg.corteDia).bloqueado) {
+      throw new BadRequestException(
+        'Quitação indisponível durante o fechamento mensal. Reabre às 04:00 do dia do corte.',
+      )
+    }
 
     const saldoCents = await this.saldo(contaId)
     const valor = valorCents ?? saldoCents

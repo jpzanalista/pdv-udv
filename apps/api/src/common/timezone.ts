@@ -50,6 +50,23 @@ export function instanteLocal(
   return new Date(guess - tzOffsetMs(new Date(guess), tz))
 }
 
+/**
+ * Janela de bloqueio do Pix durante o fechamento: do dia (corteDia−1) 23:59 até o dia corteDia 04:00,
+ * no fuso do núcleo. Retorna se está bloqueado e quando reabre. (Correto p/ corteDia ≥ 2.)
+ */
+export function bloqueioFechamento(
+  agora: Date,
+  tz: string,
+  corteDia: number,
+): { bloqueado: boolean; reabreEm: Date } {
+  const { ano, mes } = anoMesLocal(agora, tz)
+  const meiaNoiteCorte = instanteLocal(ano, mes - 1, corteDia, 0, 0, tz) // dia do corte 00:00
+  const inicio = new Date(meiaNoiteCorte.getTime() - 60_000) // dia anterior 23:59
+  const reabreEm = instanteLocal(ano, mes - 1, corteDia, 4, 0, tz) // dia do corte 04:00
+  const t = agora.getTime()
+  return { bloqueado: t >= inicio.getTime() && t < reabreEm.getTime(), reabreEm }
+}
+
 /** Componentes ano/mês(1-12) locais de uma data num fuso. */
 export function anoMesLocal(date: Date, tz: string): { ano: number; mes: number } {
   const dtf = new Intl.DateTimeFormat('en-US', {

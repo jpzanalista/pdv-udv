@@ -35,10 +35,15 @@ export default function PortalPage() {
   const [aberta, setAberta] = useState<string | null>(null)
   const [extratos, setExtratos] = useState<Record<string, ContaExtrato>>({})
   const [quitar, setQuitar] = useState<{ id: string; nome: string; saldoCents: number } | null>(null)
+  const [fechamento, setFechamento] = useState<{ bloqueado: boolean; reabreEm: string | null }>({
+    bloqueado: false,
+    reabreEm: null,
+  })
 
   const carregar = useCallback(async () => {
     try {
       setContas(await api<PortalConta[]>('/portal/contas'))
+      setFechamento(await api<{ bloqueado: boolean; reabreEm: string | null }>('/portal/fechamento'))
       setExtratos({}) // força recarregar o extrato ao reabrir
     } catch (e) {
       if (e instanceof ApiError && (e.status === 401 || e.status === 403)) {
@@ -89,6 +94,17 @@ export default function PortalPage() {
         </Button>
       </div>
 
+      {fechamento.bloqueado && (
+        <Card className="mb-3 border-warning bg-warning/10 p-4">
+          <p className="font-semibold text-ink">Fechamento mensal em andamento</p>
+          <p className="mt-1 text-sm text-ink-muted">
+            A quitação por Pix está temporariamente indisponível
+            {fechamento.reabreEm ? `, reabre às ${dataBR(fechamento.reabreEm)}` : ''}. Suas compras do
+            mês estão sendo enviadas à tesouraria.
+          </p>
+        </Card>
+      )}
+
       {contas.length === 0 ? (
         <Card className="p-5 text-ink-muted">Nenhuma conta vinculada ao seu CPF.</Card>
       ) : (
@@ -119,7 +135,7 @@ export default function PortalPage() {
                   </Button>
                   <Button
                     className="flex-1 text-sm"
-                    disabled={c.saldoCents <= 0}
+                    disabled={c.saldoCents <= 0 || fechamento.bloqueado}
                     onClick={() => setQuitar({ id: c.id, nome: c.nome, saldoCents: c.saldoCents })}
                   >
                     Quitar via Pix

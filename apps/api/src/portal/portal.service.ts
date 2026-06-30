@@ -1,6 +1,7 @@
 import { ForbiddenException, Inject, Injectable } from '@nestjs/common'
-import { type Database, contas, lancamentos } from '@pdv-udv/db'
+import { type Database, contas, lancamentos, nucleos } from '@pdv-udv/db'
 import { and, eq } from 'drizzle-orm'
+import { bloqueioFechamento } from '../common/timezone'
 import { ContasService } from '../contas/contas.service'
 import { DB } from '../db/db.module'
 
@@ -33,6 +34,19 @@ export class PortalService {
       out.push({ ...c, saldoCents })
     }
     return out
+  }
+
+  /** Pix está bloqueado agora (fechamento mensal)? Baseado no núcleo das contas do sócio. */
+  async statusFechamento(pessoaId: string) {
+    const [row] = await this.db
+      .select({ timezone: nucleos.timezone, corteDia: nucleos.corteDia })
+      .from(contas)
+      .innerJoin(nucleos, eq(nucleos.id, contas.nucleoId))
+      .where(eq(contas.titularPessoaId, pessoaId))
+      .limit(1)
+    if (!row) return { bloqueado: false, reabreEm: null as string | null }
+    const { bloqueado, reabreEm } = bloqueioFechamento(new Date(), row.timezone, row.corteDia)
+    return { bloqueado, reabreEm: bloqueado ? reabreEm.toISOString() : null }
   }
 
   /** Extrato da própria conta (valida que pertence ao sócio) — reaproveita ContasService. */
