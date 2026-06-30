@@ -20,6 +20,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx src/seed.ts",
     "db:import-taurus": "tsx src/import-taurus.ts",
+    "db:import-vendas": "tsx src/import-vendas-2026.ts",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
