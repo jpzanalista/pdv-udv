@@ -1,5 +1,6 @@
 'use client'
 
+import { Download, Pencil, Plus, Upload } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { type ChangeEvent, useEffect, useRef, useState } from 'react'
 import * as XLSX from 'xlsx'
@@ -10,6 +11,7 @@ import { VisitantesView } from '@/components/contas/VisitantesView'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
+import { Switch } from '@/components/ui/Switch'
 import { ApiError, api } from '@/lib/api'
 import { getToken } from '@/lib/auth'
 import { parseContasXlsx } from '@/lib/contas-xlsx'
@@ -31,6 +33,24 @@ const CHIPS = [
 
 const cod = (c: number | null) => (c != null ? String(c).padStart(3, '0') : '—')
 
+const TIPO_BADGE: Record<string, string> = {
+  socio: 'bg-brand/10 text-brand',
+  visitante: 'bg-warning/15 text-warning',
+  institucional: 'bg-ink/10 text-ink-muted',
+}
+function TipoBadge({ tipo }: { tipo: string }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold',
+        TIPO_BADGE[tipo] ?? 'bg-ink/10 text-ink-muted',
+      )}
+    >
+      {TIPO_LABEL[tipo] ?? tipo}
+    </span>
+  )
+}
+
 export default function ContasPage() {
   const router = useRouter()
   const [me, setMe] = useState<{ role: string; timezone: string } | null>(null)
@@ -46,6 +66,17 @@ export default function ContasPage() {
 
   async function carregar() {
     setContas(await api<ContaRow[]>('/contas'))
+  }
+
+  async function toggleAtiva(c: ContaRow) {
+    const nova = !c.ativa
+    setContas((prev) => prev.map((x) => (x.id === c.id ? { ...x, ativa: nova } : x))) // otimista
+    try {
+      await api(`/contas/${c.id}`, { method: 'PATCH', body: JSON.stringify({ ativa: nova }) })
+    } catch {
+      setContas((prev) => prev.map((x) => (x.id === c.id ? { ...x, ativa: !nova } : x))) // reverte
+      setMsg('Não foi possível alterar a situação da conta.')
+    }
   }
 
   useEffect(() => {
@@ -123,19 +154,14 @@ export default function ContasPage() {
     <AppShell title="Contas" fluid>
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2">
-        <Button className="text-sm" onClick={() => setForm({ conta: null })}>
-          + Nova conta
+        <Button onClick={() => setForm({ conta: null })}>
+          <Plus size={18} /> Nova conta
         </Button>
-        <Button
-          variant="secondary"
-          className="text-sm"
-          onClick={() => fileRef.current?.click()}
-          disabled={importando}
-        >
-          {importando ? 'Importando…' : 'Importar'}
+        <Button variant="secondary" onClick={() => fileRef.current?.click()} disabled={importando}>
+          <Upload size={16} /> {importando ? 'Importando…' : 'Importar'}
         </Button>
-        <Button variant="secondary" className="text-sm" onClick={exportar} disabled={!visiveis.length}>
-          Exportar
+        <Button variant="secondary" onClick={exportar} disabled={!visiveis.length}>
+          <Download size={16} /> Exportar
         </Button>
         <input ref={fileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={onImport} />
       </div>
@@ -186,14 +212,14 @@ export default function ContasPage() {
           <Card className="mt-2 hidden overflow-hidden md:block">
             <table className="w-full text-base">
               <thead>
-                <tr className="border-b border-line text-left text-ink-light">
-                  <th className="px-4 py-3 text-right">Cód.</th>
-                  <th className="px-4 py-3">Nome</th>
-                  <th className="px-4 py-3">Tipo</th>
-                  <th className="px-4 py-3">CPF</th>
-                  <th className="px-4 py-3">WhatsApp</th>
-                  <th className="px-4 py-3">Ativa</th>
-                  <th className="px-4 py-3 text-right">Editar</th>
+                <tr className="border-b border-line bg-canvas text-left text-xs font-semibold uppercase tracking-wide text-ink-light">
+                  <th className="px-4 py-2.5 text-right">Cód.</th>
+                  <th className="px-4 py-2.5">Nome</th>
+                  <th className="px-4 py-2.5">Tipo</th>
+                  <th className="px-4 py-2.5">CPF</th>
+                  <th className="px-4 py-2.5">WhatsApp</th>
+                  <th className="px-4 py-2.5">Situação</th>
+                  <th className="px-4 py-2.5 text-right">Editar</th>
                 </tr>
               </thead>
               <tbody>
@@ -212,23 +238,26 @@ export default function ContasPage() {
                         {c.nome}
                       </button>
                     </td>
-                    <td className="px-4 py-3 text-ink-muted">{TIPO_LABEL[c.tipo] ?? c.tipo}</td>
+                    <td className="px-4 py-3">
+                      <TipoBadge tipo={c.tipo} />
+                    </td>
                     <td className="px-4 py-3 text-ink-muted">{c.titularCpf ?? '—'}</td>
                     <td className="px-4 py-3 text-ink-muted">{c.titularWhatsapp ?? '—'}</td>
                     <td className="px-4 py-3">
-                      {c.ativa ? (
-                        <span className="text-success">Sim</span>
-                      ) : (
-                        <span className="text-ink-light">Não</span>
-                      )}
+                      <label className="inline-flex cursor-pointer items-center gap-2">
+                        <Switch checked={c.ativa} onCheckedChange={() => toggleAtiva(c)} aria-label="Ativa" />
+                        <span className={cn('text-sm', c.ativa ? 'text-success' : 'text-ink-light')}>
+                          {c.ativa ? 'Ativa' : 'Inativa'}
+                        </span>
+                      </label>
                     </td>
                     <td className="px-4 py-3 text-right">
                       <button
                         type="button"
                         onClick={() => setForm({ conta: c })}
-                        className="rounded-lg border border-brand/40 px-3.5 py-1.5 text-sm font-semibold text-brand hover:bg-brand-bg"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-brand/40 px-3 py-1.5 text-sm font-semibold text-brand hover:bg-brand-bg"
                       >
-                        Editar
+                        <Pencil size={14} /> Editar
                       </button>
                     </td>
                   </tr>
@@ -255,23 +284,29 @@ export default function ContasPage() {
                     className="min-w-0 text-left"
                   >
                     <p className="truncate font-semibold text-ink">{c.nome}</p>
-                    <p className="text-sm text-ink-light">
-                      <span className="font-mono">{cod(c.codigo)}</span> · {TIPO_LABEL[c.tipo] ?? c.tipo}
-                      {!c.ativa && ' · inativa'}
+                    <p className="mt-0.5 flex items-center gap-2 text-sm text-ink-light">
+                      <span className="font-mono">{cod(c.codigo)}</span>
+                      <TipoBadge tipo={c.tipo} />
                     </p>
                   </button>
                   <button
                     type="button"
                     onClick={() => setForm({ conta: c })}
-                    className="shrink-0 rounded-lg border border-brand/40 px-3.5 py-1.5 text-sm font-semibold text-brand hover:bg-brand-bg"
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-brand/40 px-3 py-1.5 text-sm font-semibold text-brand hover:bg-brand-bg"
                   >
-                    Editar
+                    <Pencil size={14} /> Editar
                   </button>
                 </div>
                 <div className="mt-2 flex flex-wrap gap-x-4 gap-y-0.5 text-sm text-ink-muted">
                   <span>CPF: {c.titularCpf ?? '—'}</span>
                   <span>WhatsApp: {c.titularWhatsapp ?? '—'}</span>
                 </div>
+                <label className="mt-2 flex cursor-pointer items-center gap-2 border-t border-line/60 pt-2">
+                  <Switch checked={c.ativa} onCheckedChange={() => toggleAtiva(c)} aria-label="Ativa" />
+                  <span className={cn('text-sm font-medium', c.ativa ? 'text-success' : 'text-ink-light')}>
+                    {c.ativa ? 'Conta ativa' : 'Conta inativa'}
+                  </span>
+                </label>
               </Card>
             ))}
             {visiveis.length === 0 && (
