@@ -113,7 +113,7 @@ export class ExpedientesService {
         .limit(1)
       validadorRole = u?.role ?? null
     }
-    return { ...mov, nucleoNome: nuc?.nome ?? null, validadorRole }
+    return { ...mov, nucleoNome: nuc?.nomeExibicao ?? nuc?.nome ?? null, validadorRole }
   }
 
   /** Histórico completo de movimentos do núcleo (vitalício) + quem validou. */

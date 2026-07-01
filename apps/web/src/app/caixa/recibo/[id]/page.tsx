@@ -41,6 +41,13 @@ export default function ReciboPage() {
 
   if (erro) return <main className="p-8 text-ink-muted">Recibo não encontrado.</main>
   if (!mov) return <main className="p-8 text-ink-muted">Carregando recibo…</main>
+  // Só sangrias (compra/tesouraria) têm recibo. Suprimento (entrada) não emite.
+  if (mov.tipo !== 'sangria')
+    return (
+      <main className="grid min-h-[100dvh] place-items-center p-8 text-center text-ink-muted">
+        Recibo indisponível para este tipo de movimento.
+      </main>
+    )
 
   const data = new Date(mov.createdAt).toLocaleString('pt-BR')
 
@@ -62,7 +69,7 @@ export default function ReciboPage() {
           <Logo size={44} />
         </div>
         <h1 className="text-center text-xl font-bold text-ink">Recibo</h1>
-        {mov.nucleoNome && <p className="text-center text-ink-muted">Empório {mov.nucleoNome}</p>}
+        {mov.nucleoNome && <p className="text-center text-ink-muted">{mov.nucleoNome}</p>}
         <hr className="my-5 border-line" />
 
         {mov.destino === 'tesouraria' ? (

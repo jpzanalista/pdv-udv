@@ -499,6 +499,7 @@ export class VendasService {
         clienteTipo: contas.tipo,
         titularWhatsapp: pessoas.whatsapp,
         nucleoNome: nucleos.nome,
+        nucleoNomeExibicao: nucleos.nomeExibicao,
         nucleoTz: nucleos.timezone,
       })
       .from(vendas)
@@ -526,7 +527,7 @@ export class VendasService {
     const totalCents = toCents(v.total)
     const descontoCents = toCents(v.desconto)
     const texto = this.textoRecibo({
-      nucleoNome: v.nucleoNome,
+      nucleoNome: v.nucleoNomeExibicao ?? v.nucleoNome,
       tz: v.nucleoTz ?? undefined,
       numero: v.numero,
       occurredAt: v.occurredAt,
@@ -594,7 +595,7 @@ export class VendasService {
     }
 
     const L: string[] = []
-    L.push(`*Empório — ${d.nucleoNome ?? 'Núcleo UDV'}*`)
+    L.push(`*${d.nucleoNome ?? 'Empório'}*`)
     L.push(`Comprovante de venda #${d.numero}`)
     L.push(dataBR)
     if (d.cancelada) L.push('⚠️ *VENDA CANCELADA*')
