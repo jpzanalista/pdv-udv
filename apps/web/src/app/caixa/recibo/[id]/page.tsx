@@ -1,10 +1,11 @@
 'use client'
 
 import { formatBRL, reaisToCents } from '@pdv-udv/core'
-import Link from 'next/link'
+import { X } from 'lucide-react'
 import { useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/Button'
+import { Logo } from '@/components/ui/Logo'
 import { api } from '@/lib/api'
 
 type Movimento = {
@@ -45,14 +46,21 @@ export default function ReciboPage() {
 
   return (
     <main className="mx-auto max-w-lg p-6">
-      <div className="mb-4 flex items-center justify-between print:hidden">
-        <Link href="/caixa" className="text-sm text-ink-muted">
-          ← voltar ao caixa
-        </Link>
+      <div className="mb-4 flex items-center justify-between gap-2 print:hidden">
+        <button
+          type="button"
+          onClick={() => window.close()}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-2 text-sm font-semibold text-ink-muted hover:bg-canvas"
+        >
+          <X size={16} /> Fechar
+        </button>
         <Button onClick={() => window.print()}>Imprimir / Salvar PDF</Button>
       </div>
 
       <div className="rounded-lg border border-line bg-surface p-8">
+        <div className="mb-2 flex justify-center">
+          <Logo size={44} />
+        </div>
         <h1 className="text-center text-xl font-bold text-ink">Recibo</h1>
         {mov.nucleoNome && <p className="text-center text-ink-muted">Empório {mov.nucleoNome}</p>}
         <hr className="my-5 border-line" />
