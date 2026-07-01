@@ -1,8 +1,9 @@
 'use client'
 
-import Link from 'next/link'
+import { ArrowDown, ArrowUp, Check, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { type FormEvent, useEffect, useState } from 'react'
+import { AppShell } from '@/components/AppShell'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
@@ -83,45 +84,45 @@ export default function CategoriasPage() {
     await carregar()
   }
 
-  async function excluir(id: string) {
+  async function excluir(c: Categoria) {
+    if (!window.confirm(`Excluir a categoria "${c.nome}"?`)) return
     setMsg(null)
     try {
-      await api(`/categorias/${id}`, { method: 'DELETE' })
+      await api(`/categorias/${c.id}`, { method: 'DELETE' })
       await carregar()
     } catch (e) {
       setMsg(e instanceof ApiError ? e.message : 'Erro ao excluir.')
     }
   }
 
-  if (carregando) return <main className="p-8 text-ink-muted">Carregando…</main>
+  if (carregando)
+    return <main className="grid min-h-[100dvh] place-items-center text-ink-muted">Carregando…</main>
   if (me && !ALLOWED.includes(me.role))
     return (
-      <main className="p-8">
-        <h1 className="text-xl font-bold text-brand">Categorias</h1>
-        <p className="mt-2 text-ink-muted">Acesso restrito ao responsável.</p>
-        <Link href="/" className="mt-2 inline-block text-brand">
-          ← início
-        </Link>
-      </main>
+      <AppShell title="Categorias">
+        <Card className="p-6 text-ink-muted">Acesso restrito ao responsável do empório.</Card>
+      </AppShell>
     )
 
   return (
-    <main className="mx-auto max-w-xl p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-brand">Categorias</h1>
-        <Link href="/" className="text-sm text-ink-muted">
-          ← início
-        </Link>
+    <AppShell title="Categorias">
+      <div className="border-b border-line pb-4">
+        <h1 className="text-2xl font-bold text-ink">Categorias</h1>
+        <p className="mt-1 text-base text-ink-muted">As abas da grade de venda — a ordem aqui é a ordem no caixa.</p>
       </div>
-      <p className="mt-1 text-ink-muted">As abas da grade de venda (Passo 1, antes dos produtos).</p>
 
       <form onSubmit={criar} className="mt-4 flex gap-2">
-        <Input value={novoNome} onChange={(e) => setNovoNome(e.target.value)} placeholder="Nova categoria…" />
-        <Button type="submit" disabled={busy || !novoNome.trim()}>
-          Adicionar
+        <Input
+          value={novoNome}
+          onChange={(e) => setNovoNome(e.target.value)}
+          placeholder="Nova categoria…"
+          className="h-11 flex-1 text-base"
+        />
+        <Button type="submit" disabled={busy || !novoNome.trim()} className="min-h-touch-lg">
+          <Plus size={18} /> Adicionar
         </Button>
       </form>
-      {msg && <p className="mt-2 text-sm text-danger">{msg}</p>}
+      {msg && <p className="mt-2 text-sm font-semibold text-danger">{msg}</p>}
 
       <div className="mt-4 space-y-2">
         {cats.map((c, idx) => (
@@ -129,53 +130,80 @@ export default function CategoriasPage() {
             <div className="flex flex-col">
               <button
                 type="button"
+                aria-label="Subir"
                 onClick={() => mover(idx, -1)}
                 disabled={idx === 0}
-                className="text-ink-light disabled:opacity-30"
+                className="text-ink-light hover:text-brand disabled:opacity-30"
               >
-                ▲
+                <ArrowUp size={16} />
               </button>
               <button
                 type="button"
+                aria-label="Descer"
                 onClick={() => mover(idx, 1)}
                 disabled={idx === cats.length - 1}
-                className="text-ink-light disabled:opacity-30"
+                className="text-ink-light hover:text-brand disabled:opacity-30"
               >
-                ▼
+                <ArrowDown size={16} />
               </button>
             </div>
+
+            <span className="grid h-7 w-8 shrink-0 place-items-center rounded bg-canvas text-xs font-mono text-ink-light">
+              {idx + 1}
+            </span>
+
             {editId === c.id ? (
               <>
-                <Input value={editNome} onChange={(e) => setEditNome(e.target.value)} className="flex-1" />
-                <Button className="text-sm" onClick={() => salvarNome(c.id)}>
-                  Salvar
-                </Button>
-                <Button variant="ghost" className="text-sm" onClick={() => setEditId(null)}>
-                  Cancelar
-                </Button>
+                <Input
+                  value={editNome}
+                  onChange={(e) => setEditNome(e.target.value)}
+                  className="h-10 flex-1 text-base"
+                  onKeyDown={(e) => e.key === 'Enter' && salvarNome(c.id)}
+                />
+                <button
+                  type="button"
+                  aria-label="Salvar"
+                  onClick={() => salvarNome(c.id)}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-brand text-white hover:opacity-90"
+                >
+                  <Check size={16} />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Cancelar"
+                  onClick={() => setEditId(null)}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-line text-ink-muted hover:bg-canvas"
+                >
+                  <X size={16} />
+                </button>
               </>
             ) : (
               <>
-                <span className="flex-1 font-semibold">{c.nome}</span>
+                <span className="flex-1 font-semibold text-ink">{c.nome}</span>
                 <button
                   type="button"
                   onClick={() => {
                     setEditId(c.id)
                     setEditNome(c.nome)
                   }}
-                  className="text-sm text-brand"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-brand/40 px-3 py-1.5 text-sm font-semibold text-brand hover:bg-brand-bg"
                 >
-                  renomear
+                  <Pencil size={14} /> Renomear
                 </button>
-                <button type="button" onClick={() => excluir(c.id)} className="text-sm text-danger">
-                  excluir
+                <button
+                  type="button"
+                  aria-label="Excluir"
+                  onClick={() => excluir(c)}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-line text-ink-light hover:border-danger hover:bg-danger/10 hover:text-danger"
+                >
+                  <Trash2 size={16} />
                 </button>
               </>
             )}
           </Card>
         ))}
-        {cats.length === 0 && <Card className="p-5 text-ink-light">Nenhuma categoria ainda.</Card>}
+        {cats.length === 0 && <Card className="p-6 text-center text-ink-light">Nenhuma categoria ainda.</Card>}
       </div>
-    </main>
+    </AppShell>
   )
 }
