@@ -77,21 +77,27 @@ export default function ConfiguracoesPage() {
     config?.timezone !== timezone || config?.corteDia !== corteDia || config?.corteHora !== corteHora
 
   return (
-    <AppShell title="Configurações">
-      <div className="mx-auto max-w-2xl space-y-4">
-        {config && (
-          <p className="text-lg font-semibold text-ink">
-            {config.nome} <span className="text-sm font-normal text-ink-light">· Configurações do empório</span>
-          </p>
-        )}
+    <AppShell title="Configurações" fluid>
+      {/* Cabeçalho */}
+      <div className="border-b border-line pb-4">
+        <h1 className="text-2xl font-bold text-ink">Configurações do empório</h1>
+        <p className="mt-1 text-base text-ink-muted">
+          {config?.nome ?? 'Núcleo'} · Ajustes que valem para todo o PDV deste empório.
+        </p>
+      </div>
 
-        <Secao icon={<Globe size={18} />} titulo="Fuso horário" descricao="Usado nos comprovantes, nas datas de Consultar Vendas e nos relatórios.">
-          <Field label="Fuso" htmlFor="tz">
+      <div className="mt-5 grid gap-4 lg:grid-cols-2">
+        <Secao
+          icon={<Globe size={20} />}
+          titulo="Fuso horário"
+          descricao="Usado nos comprovantes, nas datas de Consultar Vendas e nos relatórios."
+        >
+          <Field label="Fuso do empório" htmlFor="tz">
             <select
               id="tz"
               value={timezone}
               onChange={(e) => setTimezone(e.target.value)}
-              className="min-h-touch w-full rounded-lg border border-line bg-surface px-3 text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/60"
+              className="min-h-touch w-full rounded-lg border border-line bg-surface px-3 text-base text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/60"
             >
               {BR_TIMEZONES.map((t) => (
                 <option key={t.id} value={t.id}>
@@ -103,9 +109,9 @@ export default function ConfiguracoesPage() {
         </Secao>
 
         <Secao
-          icon={<CalendarClock size={18} />}
+          icon={<CalendarClock size={20} />}
           titulo="Fechamento mensal do crediário"
-          descricao="Fechamento dos sócios para a tesouraria. A hora segue o fuso acima."
+          descricao="Fechamento dos sócios para a tesouraria. A hora segue o fuso ao lado."
         >
           <div className="flex flex-wrap gap-3">
             <Field label="Dia do fechamento" htmlFor="corte-dia">
@@ -116,7 +122,7 @@ export default function ConfiguracoesPage() {
                 max={28}
                 value={corteDia}
                 onChange={(e) => setCorteDia(Number(e.target.value))}
-                className="w-28"
+                className="h-11 w-28 text-base"
               />
             </Field>
             <Field label="Hora do fechamento" htmlFor="corte-hora">
@@ -125,7 +131,7 @@ export default function ConfiguracoesPage() {
                 type="time"
                 value={corteHora}
                 onChange={(e) => setCorteHora(e.target.value)}
-                className="w-36"
+                className="h-11 w-36 text-base"
               />
             </Field>
           </div>
@@ -135,14 +141,15 @@ export default function ConfiguracoesPage() {
             atual.
           </p>
         </Secao>
+      </div>
 
-        <div className="sticky bottom-0 flex items-center gap-3 border-t border-line bg-canvas/90 py-3 backdrop-blur">
-          <Button onClick={salvar} disabled={salvando || !alterado}>
-            <Save size={16} /> {salvando ? 'Salvando…' : 'Salvar alterações'}
-          </Button>
-          {msg && <span className="text-sm font-semibold text-success">{msg}</span>}
-          {!alterado && !msg && <span className="text-sm text-ink-light">Nada alterado.</span>}
-        </div>
+      {/* Barra de salvar */}
+      <div className="sticky bottom-0 mt-5 flex items-center gap-3 border-t border-line bg-canvas/90 py-3 backdrop-blur">
+        <Button onClick={salvar} disabled={salvando || !alterado} className="min-h-touch-lg text-base">
+          <Save size={18} /> {salvando ? 'Salvando…' : 'Salvar alterações'}
+        </Button>
+        {msg && <span className="text-sm font-semibold text-success">{msg}</span>}
+        {!alterado && !msg && <span className="text-sm text-ink-light">Nada alterado.</span>}
       </div>
     </AppShell>
   )
@@ -161,12 +168,12 @@ function Secao({
 }) {
   return (
     <Card className="p-5">
-      <div className="mb-3 flex items-start gap-3">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-brand-bg text-brand">
+      <div className="mb-4 flex items-start gap-3">
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-bg text-brand">
           {icon}
         </span>
         <div>
-          <p className="font-semibold text-ink">{titulo}</p>
+          <p className="text-lg font-bold text-ink">{titulo}</p>
           <p className="text-sm text-ink-light">{descricao}</p>
         </div>
       </div>
