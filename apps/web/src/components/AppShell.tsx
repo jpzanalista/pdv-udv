@@ -14,6 +14,11 @@ type NavItem = { href: string; label: string; roles: string[] }
 
 // Navegação consolidada por perfil (substitui engrenagem/links/hub no mobile).
 const NAV: NavItem[] = [
+  {
+    href: '/',
+    label: 'Início',
+    roles: ['responsavel_emporio', 'presidencia', 'representante_nucleo', 'tesoureiro_1', 'tesoureiro_2', 'admin'],
+  },
   { href: '/caixa', label: 'Caixa (PDV)', roles: ['responsavel_emporio', 'admin'] },
   { href: '/produtos', label: 'Produtos', roles: ['responsavel_emporio', 'admin'] },
   { href: '/categorias', label: 'Categorias', roles: ['responsavel_emporio', 'admin'] },

@@ -17,7 +17,6 @@ import { AppShell } from '@/components/AppShell'
 import { Card } from '@/components/ui/Card'
 import { ApiError, api } from '@/lib/api'
 import { clearTokens, getToken } from '@/lib/auth'
-import { landingFor } from '@/lib/nav'
 
 type Me = { sub: string; role: string; nucleoId: string | null; nucleoNome: string | null }
 
@@ -116,14 +115,7 @@ export default function Home() {
       return
     }
     api<Me>('/auth/me')
-      .then((m) => {
-        const dest = landingFor(m.role)
-        if (dest !== '/') {
-          router.replace(dest) // papel tem área própria → cai direto nela
-          return
-        }
-        setMe(m) // admin/sócio: hub é a área
-      })
+      .then(setMe) // hub aberto a todos; o login já leva cada papel à sua área
       .catch((e) => {
         if (e instanceof ApiError && e.status === 401) {
           clearTokens()
