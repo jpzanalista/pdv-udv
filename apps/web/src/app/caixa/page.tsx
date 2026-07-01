@@ -2,7 +2,7 @@
 
 import { calcularTotais, formatBRL, reaisToCents } from '@pdv-udv/core'
 import { useRouter } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AbrirCaixaModal } from '@/components/caixa/AbrirCaixaModal'
 import { Cart } from '@/components/caixa/Cart'
 import { FecharCaixaModal } from '@/components/caixa/FecharCaixaModal'
@@ -41,6 +41,7 @@ export default function CaixaPage() {
   const [recibo, setRecibo] = useState<ReciboData | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
+  const buscaRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (!getToken()) {
@@ -82,6 +83,43 @@ export default function CaixaPage() {
       return alvo.includes(q)
     })
   }, [produtos, activeCat, busca])
+
+  const modalAberto = receberOpen || abrirOpen || fecharOpen || !!movimentoTipo || !!recibo
+
+  // Atalhos: F12 Receber · F11 Cancelar · F3 buscar (desligados com modal aberto).
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (modalAberto) return
+      if (e.key === 'F12') {
+        e.preventDefault()
+        pedirReceber()
+      } else if (e.key === 'F11') {
+        e.preventDefault()
+        clear()
+      } else if (e.key === 'F3') {
+        e.preventDefault()
+        buscaRef.current?.focus()
+        buscaRef.current?.select()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modalAberto, expediente, cart.length])
+
+  /** Enter na busca: adiciona por código de barras/código exato, ou o único resultado (scanner). */
+  function onBuscaEnter(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== 'Enter') return
+    e.preventDefault()
+    const q = busca.trim()
+    if (!q) return
+    const exato = produtos.find((p) => p.codigoBarras === q || p.codigo === q)
+    const alvo = exato ?? (produtosFiltrados.length === 1 ? produtosFiltrados[0] : undefined)
+    if (alvo) {
+      addProduto(alvo)
+      setBusca('')
+    }
+  }
 
   function addProduto(p: Produto) {
     setMsg(null)
@@ -305,9 +343,12 @@ export default function CaixaPage() {
         <section className="flex flex-1 flex-col overflow-hidden p-3">
           <div className="mb-3 flex flex-wrap items-center gap-3">
             <Input
+              ref={buscaRef}
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
-              placeholder="🔎 Buscar produto por nome ou código…"
+              onKeyDown={onBuscaEnter}
+              placeholder="🔎 Buscar / bipar código  (F3)"
+              autoFocus
               className="h-11 flex-1 text-base sm:min-w-[16rem] sm:max-w-md"
             />
             <QtyStepper value={qtde} onChange={setQtde} />
