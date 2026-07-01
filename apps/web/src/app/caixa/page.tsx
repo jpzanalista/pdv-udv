@@ -27,6 +27,7 @@ export default function CaixaPage() {
   const [contas, setContas] = useState<Conta[]>([])
   const [expediente, setExpediente] = useState<Expediente | null>(null)
   const [sugestaoFundo, setSugestaoFundo] = useState<number | null>(null)
+  const [role, setRole] = useState<string>('')
   const [fecharOpen, setFecharOpen] = useState(false)
   const [abrirOpen, setAbrirOpen] = useState(false)
   const [receberAposAbrir, setReceberAposAbrir] = useState(false)
@@ -53,13 +54,15 @@ export default function CaixaPage() {
       api<Produto[]>('/produtos'),
       api<Conta[]>('/contas'),
       api<{ aberto: Expediente | null; sugestaoFundoCents: number | null }>('/expedientes/atual'),
+      api<{ role: string }>('/auth/me'),
     ])
-      .then(([cat, prod, cont, exp]) => {
+      .then(([cat, prod, cont, exp, me]) => {
         setCategorias(cat)
         setProdutos(prod.filter((p) => p.ativo && p.exibirVenda))
         setContas(cont)
         setExpediente(exp.aberto)
         setSugestaoFundo(exp.sugestaoFundoCents)
+        setRole(me.role)
       })
       .catch((e) => {
         if (e instanceof ApiError && e.status === 401) router.replace('/login')
@@ -330,6 +333,7 @@ export default function CaixaPage() {
           <CaixaStatus aberto={!!expediente} />
           <ThemeToggle />
           <GearMenu
+            role={role}
             caixaAberto={!!expediente}
             onAbrir={() => setAbrirOpen(true)}
             onSangria={() => abrirMovimento('sangria')}

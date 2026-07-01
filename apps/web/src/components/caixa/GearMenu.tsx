@@ -1,18 +1,52 @@
 'use client'
 
+import {
+  BarChart3,
+  CalendarClock,
+  History,
+  LockKeyhole,
+  LogOut,
+  Package,
+  PlusCircle,
+  Power,
+  Receipt,
+  RotateCcw,
+  Settings,
+  Tags,
+  TrendingDown,
+  Users,
+  type LucideIcon,
+} from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { type ReactNode, useState } from 'react'
 import { ContasTipoModal } from '@/components/contas/ContasTipoModal'
 import { clearTokens } from '@/lib/auth'
+import { cn } from '@/lib/utils'
+
+// Papéis (iguais aos do menu do AppShell) para filtrar a visibilidade por perfil.
+const STAFF = ['responsavel_emporio', 'admin']
+const CONSULTA = ['responsavel_emporio', 'presidencia', 'representante_nucleo', 'tesoureiro_1', 'tesoureiro_2', 'admin']
+const TESOURARIA = ['responsavel_emporio', 'tesoureiro_1', 'tesoureiro_2', 'admin']
+
+type Item = {
+  label: string
+  icon: LucideIcon
+  roles: string[]
+  href?: string
+  action?: 'sangria' | 'suprimento' | 'fechar' | 'abrir' | 'contas'
+  danger?: boolean
+}
 
 export function GearMenu({
+  role,
   caixaAberto,
   onAbrir,
   onSangria,
   onSuprimento,
   onFechar,
 }: {
+  role: string
   caixaAberto: boolean
   onAbrir?: () => void
   onSangria?: () => void
@@ -24,14 +58,60 @@ export function GearMenu({
   const [contasOpen, setContasOpen] = useState(false)
 
   const close = () => setOpen(false)
-  const act = (fn?: () => void) => {
-    close()
-    fn?.()
-  }
   const sair = () => {
     clearTokens()
     router.replace('/login')
   }
+
+  const acoes: Record<string, (() => void) | undefined> = {
+    sangria: onSangria,
+    suprimento: onSuprimento,
+    fechar: onFechar,
+    abrir: onAbrir,
+    contas: () => setContasOpen(true),
+  }
+
+  // Estrutura orientada por dados; cada item declara os papéis que o enxergam.
+  const grupos: { title: string; itens: Item[] }[] = [
+    {
+      title: 'Caixa',
+      itens: caixaAberto
+        ? [
+            { label: 'Sangria', icon: TrendingDown, roles: STAFF, action: 'sangria' },
+            { label: 'Suprimento', icon: PlusCircle, roles: STAFF, action: 'suprimento' },
+            { label: 'Devoluções', icon: RotateCcw, roles: STAFF, href: '/devolucoes' },
+            { label: 'Fechar expediente', icon: LockKeyhole, roles: STAFF, action: 'fechar' },
+          ]
+        : [{ label: 'Abrir caixa', icon: Power, roles: STAFF, action: 'abrir' }],
+    },
+    {
+      title: 'Cadastros',
+      itens: [
+        { label: 'Produtos', icon: Package, roles: STAFF, href: '/produtos' },
+        { label: 'Categorias', icon: Tags, roles: STAFF, href: '/categorias' },
+        { label: 'Contas', icon: Users, roles: STAFF, action: 'contas' },
+      ],
+    },
+    {
+      title: 'Consultas',
+      itens: [
+        { label: 'Consultar vendas', icon: Receipt, roles: STAFF, href: '/vendas' },
+        { label: 'Relatórios', icon: BarChart3, roles: CONSULTA, href: '/relatorios' },
+        { label: 'Histórico', icon: History, roles: CONSULTA, href: '/historico' },
+      ],
+    },
+    {
+      title: 'Empório',
+      itens: [
+        { label: 'Fechamento do crediário', icon: CalendarClock, roles: TESOURARIA, href: '/corte' },
+        { label: 'Configurações', icon: Settings, roles: STAFF, href: '/configuracoes' },
+      ],
+    },
+  ]
+
+  const visiveis = grupos
+    .map((g) => ({ ...g, itens: g.itens.filter((i) => i.roles.includes(role)) }))
+    .filter((g) => g.itens.length > 0)
 
   return (
     <div className="relative">
@@ -41,9 +121,12 @@ export function GearMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="min-h-touch rounded border border-line bg-surface px-3 text-lg text-ink-muted hover:bg-canvas"
+        className={cn(
+          'inline-flex h-11 w-11 items-center justify-center rounded-lg border border-line text-ink-muted transition-colors hover:bg-canvas hover:text-ink',
+          open && 'bg-canvas text-ink',
+        )}
       >
-        ⚙️
+        <Settings size={20} />
       </button>
 
       {open && (
@@ -55,58 +138,37 @@ export function GearMenu({
             onClick={close}
             className="fixed inset-0 z-30 cursor-default"
           />
-          <div className="absolute right-0 z-40 mt-2 w-60 overflow-hidden rounded-lg border border-line bg-surface shadow-lg">
-            <Group title="Caixa">
-              {caixaAberto ? (
-                <>
-                  <ActionItem onClick={() => act(onSangria)}>Sangria</ActionItem>
-                  <ActionItem onClick={() => act(onSuprimento)}>Suprimento</ActionItem>
-                  <LinkItem href="/devolucoes" onNavigate={close}>
-                    Devoluções
-                  </LinkItem>
-                  <ActionItem onClick={() => act(onFechar)}>Fechar expediente</ActionItem>
-                </>
-              ) : (
-                <ActionItem onClick={() => act(onAbrir)}>Abrir caixa</ActionItem>
-              )}
-            </Group>
-            <Group title="Cadastros">
-              <LinkItem href="/produtos" onNavigate={close}>
-                Produtos
-              </LinkItem>
-              <LinkItem href="/categorias" onNavigate={close}>
-                Categorias
-              </LinkItem>
-              <ActionItem
-                onClick={() => {
-                  close()
-                  setContasOpen(true)
-                }}
-              >
-                Contas
-              </ActionItem>
-            </Group>
-            <Group title="Consultas">
-              <LinkItem href="/vendas" onNavigate={close}>
-                Consultar vendas
-              </LinkItem>
-              <LinkItem href="/relatorios" onNavigate={close}>
-                Relatórios
-              </LinkItem>
-              <LinkItem href="/historico" onNavigate={close}>
-                Histórico
-              </LinkItem>
-            </Group>
-            <Group title="Empório">
-              <LinkItem href="/corte" onNavigate={close}>
-                Fechamento do crediário
-              </LinkItem>
-              <LinkItem href="/configuracoes" onNavigate={close}>
-                Configurações
-              </LinkItem>
-            </Group>
-            <div className="border-t border-line p-1">
-              <ActionItem onClick={sair}>Sair</ActionItem>
+          <div className="absolute right-0 z-40 mt-2 w-64 origin-top-right animate-in fade-in slide-in-from-top-1 overflow-hidden rounded-xl border border-line bg-surface p-1.5 shadow-xl">
+            {visiveis.map((g) => (
+              <div key={g.title} className="border-b border-line/70 pb-1.5 last:border-0 last:pb-0">
+                <p className="px-2.5 pb-1 pt-2 text-[11px] font-bold uppercase tracking-wider text-ink-light">
+                  {g.title}
+                </p>
+                {g.itens.map((i) =>
+                  i.href ? (
+                    <ItemRow key={i.label} icon={i.icon} href={i.href} onClick={close}>
+                      {i.label}
+                    </ItemRow>
+                  ) : (
+                    <ItemRow
+                      key={i.label}
+                      icon={i.icon}
+                      onClick={() => {
+                        close()
+                        acoes[i.action as string]?.()
+                      }}
+                    >
+                      {i.label}
+                    </ItemRow>
+                  ),
+                )}
+              </div>
+            ))}
+
+            <div className="mt-1.5 border-t border-line/70 pt-1.5">
+              <ItemRow icon={LogOut} onClick={sair} danger>
+                Sair
+              </ItemRow>
             </div>
           </div>
         </>
@@ -117,40 +179,41 @@ export function GearMenu({
   )
 }
 
-function Group({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <div className="border-b border-line p-1 last:border-0">
-      <p className="px-2 pb-1 pt-1 text-xs font-semibold uppercase tracking-wide text-ink-light">
-        {title}
-      </p>
-      {children}
-    </div>
-  )
-}
-
-const itemClass =
-  'block w-full rounded px-2 py-2 text-left text-sm font-medium text-ink hover:bg-brand-subtle'
-
-function ActionItem({ onClick, children }: { onClick: () => void; children: ReactNode }) {
-  return (
-    <button type="button" onClick={onClick} className={itemClass}>
-      {children}
-    </button>
-  )
-}
-
-function LinkItem({
+function ItemRow({
+  icon: Icon,
   href,
-  onNavigate,
+  onClick,
+  danger,
   children,
 }: {
-  href: string
-  onNavigate: () => void
+  icon: LucideIcon
+  href?: string
+  onClick?: () => void
+  danger?: boolean
   children: ReactNode
 }) {
+  const cls = cn(
+    'flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm font-medium no-underline transition-colors',
+    danger
+      ? 'text-danger hover:bg-danger/10'
+      : 'text-ink hover:bg-brand-subtle hover:text-brand-dark',
+  )
+  const inner = (
+    <>
+      <Icon size={17} className="shrink-0 opacity-80" />
+      <span className="truncate">{children}</span>
+    </>
+  )
+  if (href) {
+    return (
+      <Link href={href} onClick={onClick} className={cls}>
+        {inner}
+      </Link>
+    )
+  }
   return (
-    <Link href={href} onClick={onNavigate} className={`${itemClass} no-underline`}>
-      {children}
-    </Link>
+    <button type="button" onClick={onClick} className={cls}>
+      {inner}
+    </button>
   )
 }
