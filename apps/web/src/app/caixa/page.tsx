@@ -38,6 +38,7 @@ export default function CaixaPage() {
   const [busca, setBusca] = useState('')
   const [qtde, setQtde] = useState(1)
   const [cart, setCart] = useState<CartItem[]>([])
+  const [cartOpen, setCartOpen] = useState(false) // bottom-sheet do carrinho (mobile)
   const [receberOpen, setReceberOpen] = useState(false)
   const [recibo, setRecibo] = useState<ReciboData | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -86,6 +87,9 @@ export default function CaixaPage() {
       return alvo.includes(q)
     })
   }, [produtos, activeCat, busca])
+
+  const { total: totalCart } = calcularTotais(cart)
+  const qtdItensCart = cart.reduce((s, i) => s + i.qtde, 0)
 
   const modalAberto = receberOpen || abrirOpen || fecharOpen || !!movimentoTipo || !!recibo
 
@@ -371,12 +375,13 @@ export default function CaixaPage() {
               </Tab>
             ))}
           </div>
-          <div className="flex-1 overflow-auto">
+          <div className="flex-1 overflow-auto pb-20 md:pb-0">
             <ProductGrid produtos={produtosFiltrados} onAdd={addProduto} />
           </div>
         </section>
 
-        <aside className="flex h-72 flex-col border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] md:h-auto md:w-96 md:border-l md:border-t-0">
+        {/* Desktop: carrinho lateral fixo */}
+        <aside className="hidden flex-col border-line bg-surface md:flex md:w-96 md:border-l">
           <Cart
             items={cart}
             onInc={inc}
@@ -388,8 +393,52 @@ export default function CaixaPage() {
         </aside>
       </div>
 
+      {/* Mobile: barra inferior fixa que abre o carrinho em bottom-sheet */}
+      <button
+        type="button"
+        onClick={() => setCartOpen(true)}
+        className="fixed inset-x-0 bottom-0 z-20 flex items-center gap-3 border-t border-line bg-brand px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-white shadow-[0_-4px_16px_rgba(0,0,0,0.12)] md:hidden"
+      >
+        <span className="grid h-9 min-w-9 place-items-center rounded-full bg-white/20 px-2 text-sm font-bold">
+          {qtdItensCart}
+        </span>
+        <span className="text-base font-semibold">Ver carrinho</span>
+        <span className="ml-auto text-xl font-extrabold">{formatBRL(totalCart)}</span>
+      </button>
+
+      {/* Bottom-sheet do carrinho (mobile) */}
+      {cartOpen && (
+        <div className="fixed inset-0 z-40 md:hidden" role="dialog" aria-modal>
+          <button
+            type="button"
+            aria-label="Fechar"
+            onClick={() => setCartOpen(false)}
+            className="absolute inset-0 bg-black/40 animate-in fade-in"
+          />
+          <div className="absolute inset-x-0 bottom-0 flex max-h-[85vh] flex-col rounded-t-2xl border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] shadow-2xl animate-in slide-in-from-bottom">
+            <div className="flex justify-center pt-2">
+              <span className="h-1.5 w-10 rounded-full bg-line" />
+            </div>
+            <Cart
+              items={cart}
+              onInc={inc}
+              onDec={dec}
+              onRemove={remove}
+              onClear={() => {
+                clear()
+                setCartOpen(false)
+              }}
+              onReceber={() => {
+                setCartOpen(false)
+                pedirReceber()
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       {msg && (
-        <div className="pointer-events-none fixed bottom-4 left-1/2 z-20 -translate-x-1/2 rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-white shadow-lg">
+        <div className="pointer-events-none fixed bottom-24 left-1/2 z-30 -translate-x-1/2 rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-white shadow-lg md:bottom-4">
           {msg}
         </div>
       )}
