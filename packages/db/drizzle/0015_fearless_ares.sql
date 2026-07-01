@@ -1,0 +1,1 @@
+ALTER TABLE "nucleos" ADD COLUMN "nome_exibicao" varchar(160);

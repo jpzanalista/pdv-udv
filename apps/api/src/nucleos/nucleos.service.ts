@@ -22,6 +22,7 @@ export class NucleosService {
     const [n] = await this.db
       .select({
         nome: nucleos.nome,
+        nomeExibicao: nucleos.nomeExibicao,
         timezone: nucleos.timezone,
         corteDia: nucleos.corteDia,
         corteHora: nucleos.corteHora,
@@ -34,12 +35,22 @@ export class NucleosService {
   }
 
   async updateConfig(nucleoId: string, input: NucleoConfigInput) {
+    const set: Partial<typeof nucleos.$inferInsert> = {
+      timezone: input.timezone,
+      corteDia: input.corteDia,
+      corteHora: input.corteHora,
+    }
+    // Só mexe no nome de exibição quando enviado; vazio → null (volta ao nome oficial).
+    if (input.nomeExibicao !== undefined) {
+      set.nomeExibicao = input.nomeExibicao.length ? input.nomeExibicao : null
+    }
     const [n] = await this.db
       .update(nucleos)
-      .set({ timezone: input.timezone, corteDia: input.corteDia, corteHora: input.corteHora })
+      .set(set)
       .where(eq(nucleos.id, nucleoId))
       .returning({
         nome: nucleos.nome,
+        nomeExibicao: nucleos.nomeExibicao,
         timezone: nucleos.timezone,
         corteDia: nucleos.corteDia,
         corteHora: nucleos.corteHora,

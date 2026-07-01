@@ -58,6 +58,7 @@ export const nucleos = pgTable('nucleos', {
   id: uuid('id').primaryKey().defaultRandom(),
   udvId: integer('udv_id').unique(),
   nome: varchar('nome', { length: 160 }).notNull(),
+  nomeExibicao: varchar('nome_exibicao', { length: 160 }), // nome do empório mostrado na UI (default = nome)
   type: nucleoTypeEnum('type').notNull().default('nucleo'),
   regionId: uuid('region_id').references(() => regioes.id),
   timezone: varchar('timezone', { length: 40 }).notNull().default('America/Sao_Paulo'), // fuso local do empório

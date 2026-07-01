@@ -55,7 +55,7 @@ export class AuthService {
       sub: claims.sub,
       role: claims.role,
       nucleoId: claims.nucleoId,
-      nucleoNome: nucleo?.nome ?? null,
+      nucleoNome: nucleo?.nomeExibicao ?? nucleo?.nome ?? null,
       timezone: nucleo?.timezone ?? 'America/Sao_Paulo',
     }
   }
