@@ -33,3 +33,4 @@ drizzle/.snapshot
 # PII — nomes de clientes da migração TaurusPOS (não versionar)
 packages/db/data/taurus/clientes.json
 packages/db/data/taurus/*.md
+backup_antes_limpeza.sql

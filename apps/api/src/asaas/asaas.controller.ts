@@ -31,8 +31,9 @@ export class AsaasController {
     @Headers('asaas-access-token') token: string | undefined,
     @Body() body: { event?: string; payment?: { id?: string } },
   ) {
+    // Fail-closed: sem token configurado (ou divergente) → rejeita.
     const esperado = process.env.ASAAS_WEBHOOK_TOKEN
-    if (esperado && token !== esperado) throw new UnauthorizedException('token inválido')
+    if (!esperado || token !== esperado) throw new UnauthorizedException('token inválido')
 
     const paymentId = body?.payment?.id
     if (paymentId && (body.event === 'PAYMENT_RECEIVED' || body.event === 'PAYMENT_CONFIRMED')) {

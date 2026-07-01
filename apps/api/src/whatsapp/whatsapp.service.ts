@@ -30,6 +30,11 @@ export class WhatsappService {
     const apiKey = process.env.EVOLUTION_API_KEY
 
     if (!url || !instance || !apiKey) {
+      if (process.env.NODE_ENV === 'production') {
+        // Não vaza o código no log nem finge sucesso — falha para o chamador tratar.
+        this.logger.error('EVOLUTION_* não configurado — WhatsApp indisponível em produção')
+        throw new Error('Serviço de WhatsApp indisponível')
+      }
       this.logger.warn(`[DEV] WhatsApp p/ ${number}:\n${text}\n(configure EVOLUTION_* para enviar de verdade)`)
       return
     }

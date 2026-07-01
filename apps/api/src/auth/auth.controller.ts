@@ -10,6 +10,7 @@ import {
   otpRequestSchema,
   otpVerifySchema,
 } from '@pdv-udv/shared'
+import { RateLimit } from '../common/rate-limit.guard'
 import { ZodValidationPipe } from '../common/zod-validation.pipe'
 import { AuthService } from './auth.service'
 import { CurrentUser } from './current-user.decorator'
@@ -25,12 +26,14 @@ export class AuthController {
 
   /** Sócio: solicita o código OTP por WhatsApp a partir do CPF. */
   @Post('socio/otp')
+  @RateLimit(5)
   solicitarOtp(@Body(new ZodValidationPipe(otpRequestSchema)) body: OtpRequestInput) {
     return this.otp.request(body.whatsapp)
   }
 
   /** Sócio: verifica o código e devolve o JWT (role=socio). */
   @Post('socio/verify')
+  @RateLimit(10)
   verificarOtp(@Body(new ZodValidationPipe(otpVerifySchema)) body: OtpVerifyInput) {
     return this.otp.verify(body.whatsapp, body.code)
   }
@@ -44,6 +47,7 @@ export class AuthController {
 
   /** Login real: SRP no backend → nosso JWT. */
   @Post('login')
+  @RateLimit(10)
   login(@Body(new ZodValidationPipe(loginSchema)) body: LoginInput) {
     return this.auth.loginStaff(body)
   }

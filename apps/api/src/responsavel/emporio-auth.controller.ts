@@ -7,6 +7,7 @@ import {
   emporioLoginSchema,
   resetSenhaSchema,
 } from '@pdv-udv/shared'
+import { RateLimit } from '../common/rate-limit.guard'
 import { ZodValidationPipe } from '../common/zod-validation.pipe'
 import { ResponsavelService } from './responsavel.service'
 
@@ -16,11 +17,13 @@ export class EmporioAuthController {
   constructor(private readonly responsavel: ResponsavelService) {}
 
   @Post('login')
+  @RateLimit(10)
   login(@Body(new ZodValidationPipe(emporioLoginSchema)) body: EmporioLoginInput) {
     return this.responsavel.login(body.email, body.senha)
   }
 
   @Post('reset')
+  @RateLimit(5)
   reset(@Body(new ZodValidationPipe(resetSenhaSchema)) body: ResetSenhaInput) {
     return this.responsavel.solicitarReset(body.email)
   }
