@@ -1,9 +1,19 @@
 'use client'
 
+import {
+  CalendarClock,
+  History,
+  Package,
+  ShieldCheck,
+  ShoppingCart,
+  Tags,
+  Users,
+  type LucideIcon,
+} from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { Button } from '@/components/ui/Button'
+import { AppShell } from '@/components/AppShell'
 import { Card } from '@/components/ui/Card'
 import { ApiError, api } from '@/lib/api'
 import { clearTokens, getToken } from '@/lib/auth'
@@ -15,6 +25,7 @@ type Item = {
   href: string
   titulo: string
   descricao: string
+  icon: LucideIcon
   papeis: string[] | null // null = todos
 }
 
@@ -31,6 +42,7 @@ const MENU: Secao[] = [
         href: '/caixa',
         titulo: 'Abrir caixa',
         descricao: 'Vender, receber e fechar o caixa do expediente.',
+        icon: ShoppingCart,
         papeis: null,
       },
     ],
@@ -42,18 +54,21 @@ const MENU: Secao[] = [
         href: '/produtos',
         titulo: 'Produtos',
         descricao: 'Cadastro, preços, estoque e exibição na venda.',
+        icon: Package,
         papeis: ['responsavel_emporio', 'admin'],
       },
       {
         href: '/categorias',
         titulo: 'Categorias',
         descricao: 'As abas da grade de venda.',
+        icon: Tags,
         papeis: ['responsavel_emporio', 'admin'],
       },
       {
         href: '/contas',
         titulo: 'Contas',
         descricao: 'Sócio, visitante e institucional — importar, exportar e editar.',
+        icon: Users,
         papeis: ['responsavel_emporio', 'admin'],
       },
     ],
@@ -65,18 +80,21 @@ const MENU: Secao[] = [
         href: '/historico',
         titulo: 'Histórico',
         descricao: 'Movimentações vitalícias, filtros e exportação.',
+        icon: History,
         papeis: ['tesoureiro_1', 'tesoureiro_2', 'responsavel_emporio', 'presidencia', 'admin'],
       },
       {
         href: '/tesouraria',
         titulo: 'Tesouraria · validações',
         descricao: 'Validar sangrias pendentes e gerar recibos.',
+        icon: ShieldCheck,
         papeis: ['tesoureiro_1', 'tesoureiro_2', 'admin'],
       },
       {
         href: '/corte',
         titulo: 'Fechamento do crediário',
         descricao: 'Planilha mensal dos sócios para a tesouraria (Excel/PDF).',
+        icon: CalendarClock,
         papeis: ['tesoureiro_1', 'tesoureiro_2', 'responsavel_emporio', 'admin'],
       },
     ],
@@ -115,12 +133,8 @@ export default function Home() {
       .finally(() => setCarregando(false))
   }, [router])
 
-  function sair() {
-    clearTokens()
-    router.replace('/login')
-  }
-
-  if (carregando) return <main className="p-8 text-ink-muted">Carregando…</main>
+  if (carregando)
+    return <main className="grid min-h-[100dvh] place-items-center text-ink-muted">Carregando…</main>
   if (!me) return null
 
   const secoes = MENU.map((s) => ({
@@ -129,33 +143,40 @@ export default function Home() {
   })).filter((s) => s.itens.length > 0)
 
   return (
-    <main className="mx-auto max-w-3xl p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-brand">PDV UDV</h1>
-        <Button variant="ghost" className="text-sm" onClick={sair}>
-          Sair
-        </Button>
+    <AppShell title="Início">
+      <div className="border-b border-line pb-4">
+        <h1 className="text-2xl font-bold text-ink">Bem-vindo ao PDV UDV</h1>
+        <p className="mt-1 text-base text-ink-muted">
+          <span className="font-semibold text-ink">{me.role}</span>
+          {me.nucleoNome ? ` · ${me.nucleoNome}` : ''}
+        </p>
       </div>
-      <p className="mt-1 text-ink-muted">
-        <b>{me.role}</b>
-        {me.nucleoNome ? ` · ${me.nucleoNome}` : ''}
-      </p>
 
       {secoes.map((secao) => (
         <section key={secao.nome} className="mt-6">
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-light">{secao.nome}</h2>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {secao.itens.map((item) => (
-              <Link key={item.href} href={item.href} className="no-underline">
-                <Card className="min-h-touch-lg p-5 transition hover:border-brand hover:shadow-md">
-                  <h3 className="font-semibold text-ink">{item.titulo}</h3>
-                  <p className="mt-1 text-sm text-ink-muted">{item.descricao}</p>
-                </Card>
-              </Link>
-            ))}
+          <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-ink-light">
+            {secao.nome}
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {secao.itens.map((item) => {
+              const Icon = item.icon
+              return (
+                <Link key={item.href} href={item.href} className="no-underline">
+                  <Card className="flex h-full items-start gap-3 p-5 transition hover:border-brand hover:shadow-md active:scale-[0.99]">
+                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-bg text-brand">
+                      <Icon size={22} />
+                    </span>
+                    <div className="min-w-0">
+                      <h3 className="font-bold text-ink">{item.titulo}</h3>
+                      <p className="mt-1 text-sm text-ink-muted">{item.descricao}</p>
+                    </div>
+                  </Card>
+                </Link>
+              )
+            })}
           </div>
         </section>
       ))}
-    </main>
+    </AppShell>
   )
 }
