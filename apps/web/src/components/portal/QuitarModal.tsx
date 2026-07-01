@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Field, Input } from '@/components/ui/Input'
 import { ApiError, api } from '@/lib/api'
+import { desktopAutofocus } from '@/lib/focus'
 
 type PixResult = {
   paymentId: string
@@ -87,7 +88,7 @@ export function QuitarModal({
               <Input
                 id="q-valor"
                 inputMode="decimal"
-                autoFocus
+                ref={desktopAutofocus}
                 value={valor}
                 onChange={(e) => setValor(e.target.value)}
               />

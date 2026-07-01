@@ -5,8 +5,10 @@ import { type FormEvent, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Field, Input } from '@/components/ui/Input'
+import { Logo } from '@/components/ui/Logo'
 import { ApiError, api } from '@/lib/api'
 import { type TokenPair, setTokens } from '@/lib/auth'
+import { desktopAutofocus } from '@/lib/focus'
 import { TELEFONE_INICIAL, maskTelefone, telefoneCompleto } from '@/lib/telefone'
 
 function soDigitos(v: string, max: number): string {
@@ -69,8 +71,13 @@ export default function PortalLoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-sm p-6">
-        <h1 className="text-2xl font-bold text-brand">Minha conta</h1>
-        <p className="mb-5 text-ink-muted">Portal do sócio · empório UDV</p>
+        <div className="mb-5 flex items-center gap-3">
+          <Logo size={44} />
+          <div>
+            <h1 className="text-2xl font-bold leading-none text-brand">Empório</h1>
+            <p className="mt-1 text-ink-muted">Portal do sócio</p>
+          </div>
+        </div>
 
         {etapa === 'whatsapp' ? (
           <form onSubmit={enviarCodigo} className="flex flex-col gap-4">
@@ -82,7 +89,7 @@ export default function PortalLoginPage() {
                 value={whatsapp}
                 onChange={(e) => setWhatsapp(e.target.value)}
                 onBlur={() => setWhatsapp(maskTelefone(whatsapp))}
-                autoFocus
+                ref={desktopAutofocus}
               />
             </Field>
             {erro && <p className="text-sm text-danger">{erro}</p>}
@@ -102,7 +109,7 @@ export default function PortalLoginPage() {
                 placeholder="0000"
                 value={codigo}
                 onChange={(e) => setCodigo(soDigitos(e.target.value, 6))}
-                autoFocus
+                ref={desktopAutofocus}
               />
             </Field>
             {erro && <p className="text-sm text-danger">{erro}</p>}

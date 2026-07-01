@@ -1,11 +1,14 @@
 'use client'
 
 import { formatBRL } from '@pdv-udv/core'
+import { LogOut } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 import { QuitarModal } from '@/components/portal/QuitarModal'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { Logo } from '@/components/ui/Logo'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { ApiError, api } from '@/lib/api'
 import { clearTokens, getToken } from '@/lib/auth'
 import type { ContaExtrato } from '@/lib/types'
@@ -116,25 +119,37 @@ export default function PortalPage() {
     }
   }
 
-  if (carregando) return <main className="p-8 text-ink-muted">Carregando…</main>
+  if (carregando)
+    return <main className="grid min-h-[100dvh] place-items-center text-ink-muted">Carregando…</main>
 
   return (
-    <main className="mx-auto max-w-md p-4">
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-brand">Minha conta</h1>
-        <Button variant="ghost" className="text-sm" onClick={sair}>
-          Sair
-        </Button>
-      </div>
+    <div className="flex min-h-[100dvh] flex-col bg-canvas">
+      <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-line bg-surface/95 px-3 pt-[env(safe-area-inset-top)] backdrop-blur">
+        <Logo size={26} className="shrink-0" />
+        <span className="font-bold text-brand">Portal do sócio</span>
+        <div className="ml-auto flex items-center gap-1.5">
+          <ThemeToggle />
+          <button
+            type="button"
+            onClick={sair}
+            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold text-danger hover:bg-canvas"
+          >
+            <LogOut size={16} /> Sair
+          </button>
+        </div>
+      </header>
 
-      {perfil.cpf ? (
+      <main className="mx-auto w-full max-w-md flex-1 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <h1 className="mb-4 text-2xl font-bold text-ink">Minha conta</h1>
+
+        {perfil.cpf ? (
         <Card className="mb-3 p-3 text-sm">
           <span className="text-ink-muted">CPF: </span>
           <span className="font-semibold text-ink">{maskCpf(perfil.cpf)}</span>
           <span className="ml-2 text-success">· Pix liberado ✓</span>
         </Card>
       ) : (
-        <Card className="mb-3 border-brand-border bg-brand-subtle p-4">
+        <Card className="mb-3 border-brand/30 bg-brand-subtle p-4">
           <p className="font-semibold text-ink">Cadastre seu CPF para pagar por Pix</p>
           <p className="mt-1 text-sm text-ink-muted">
             Sem CPF, você acompanha seu consumo e paga presencialmente ou na cobrança mensal da
@@ -252,15 +267,16 @@ export default function PortalPage() {
         </div>
       )}
 
-      {quitar && (
-        <QuitarModal
-          contaId={quitar.id}
-          contaNome={quitar.nome}
-          saldoCents={quitar.saldoCents}
-          onAtualizar={carregar}
-          onClose={() => setQuitar(null)}
-        />
-      )}
-    </main>
+        {quitar && (
+          <QuitarModal
+            contaId={quitar.id}
+            contaNome={quitar.nome}
+            saldoCents={quitar.saldoCents}
+            onAtualizar={carregar}
+            onClose={() => setQuitar(null)}
+          />
+        )}
+      </main>
+    </div>
   )
 }
