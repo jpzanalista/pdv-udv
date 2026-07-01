@@ -69,7 +69,7 @@ export function MovimentoModal({
                   className={`min-h-touch rounded border px-3 font-semibold capitalize ${
                     destino === d
                       ? 'border-brand bg-brand-bg text-brand-dark'
-                      : 'border-line bg-white text-ink-muted hover:bg-canvas'
+                      : 'border-line bg-surface text-ink-muted hover:bg-canvas'
                   }`}
                 >
                   {d}

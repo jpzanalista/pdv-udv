@@ -37,7 +37,7 @@ export function Cart({
                 <button
                   type="button"
                   onClick={() => onDec(i.produtoId)}
-                  className="min-h-touch w-9 rounded border border-line bg-white font-bold text-ink-muted"
+                  className="min-h-touch w-9 rounded border border-line bg-surface font-bold text-ink-muted"
                 >
                   −
                 </button>
@@ -45,7 +45,7 @@ export function Cart({
                 <button
                   type="button"
                   onClick={() => onInc(i.produtoId)}
-                  className="min-h-touch w-9 rounded border border-line bg-white font-bold text-ink-muted"
+                  className="min-h-touch w-9 rounded border border-line bg-surface font-bold text-ink-muted"
                 >
                   +
                 </button>

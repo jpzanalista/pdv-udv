@@ -12,6 +12,7 @@ import { ProductGrid } from '@/components/caixa/ProductGrid'
 import { QtyStepper } from '@/components/caixa/QtyStepper'
 import { ReceberModal, type ReceberPayload } from '@/components/caixa/ReceberModal'
 import { ReciboModal, type ReciboData } from '@/components/caixa/ReciboModal'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { ApiError, api } from '@/lib/api'
 import { getToken } from '@/lib/auth'
 import type { CartItem, Categoria, Conta, Expediente, Produto } from '@/lib/types'
@@ -261,16 +262,21 @@ export default function CaixaPage() {
     }
   }
 
-  if (carregando) return <main className="p-8 text-ink-muted">Carregando caixa…</main>
+  if (carregando)
+    return <main className="grid h-[100dvh] place-items-center text-ink-muted">Carregando caixa…</main>
 
   return (
-    <main className="flex h-screen flex-col">
-      <header className="flex items-center justify-between gap-3 border-b border-line bg-surface px-4 py-2">
-        <div className="flex items-center gap-3">
-          <span className="text-xl font-bold text-brand">PDV UDV</span>
+    <main className="flex h-[100dvh] flex-col bg-canvas">
+      <header className="flex items-center justify-between gap-3 border-b border-line bg-surface px-3 pt-[env(safe-area-inset-top)] py-2">
+        <div className="flex items-center gap-2">
+          <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand text-xs font-bold text-white">
+            NSS
+          </span>
+          <span className="text-lg font-bold text-brand">PDV UDV</span>
         </div>
         <div className="flex items-center gap-2">
           <CaixaStatus aberto={!!expediente} />
+          <ThemeToggle />
           <GearMenu
             caixaAberto={!!expediente}
             onAbrir={() => setAbrirOpen(true)}
@@ -301,7 +307,7 @@ export default function CaixaPage() {
           </div>
         </section>
 
-        <aside className="flex h-64 flex-col border-t border-line bg-canvas md:h-auto md:w-80 md:border-l md:border-t-0">
+        <aside className="flex h-72 flex-col border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] md:h-auto md:w-96 md:border-l md:border-t-0">
           <Cart
             items={cart}
             onInc={inc}
@@ -392,8 +398,8 @@ function Tab({
     <button
       type="button"
       onClick={onClick}
-      className={`min-h-touch rounded px-3 text-sm font-semibold ${
-        active ? 'bg-brand text-white' : 'bg-white text-ink-muted border border-line hover:bg-brand-subtle'
+      className={`min-h-touch rounded-full border px-4 text-sm font-semibold transition-colors ${
+        active ? 'border-brand bg-brand text-white' : 'border-line bg-surface text-ink-muted hover:bg-canvas'
       }`}
     >
       {children}

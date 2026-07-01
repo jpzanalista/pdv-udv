@@ -128,7 +128,7 @@ export function ExtratoModal({
                       className={`min-h-touch rounded border px-3 text-sm font-semibold ${
                         metodo === m.id
                           ? 'border-brand bg-brand-bg text-brand-dark'
-                          : 'border-line bg-white text-ink-muted hover:bg-canvas'
+                          : 'border-line bg-surface text-ink-muted hover:bg-canvas'
                       }`}
                     >
                       {m.label}

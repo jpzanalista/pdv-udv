@@ -168,7 +168,7 @@ export default function CortePage() {
             type="month"
             value={competencia}
             onChange={(e) => trocarCompetencia(e.target.value)}
-            className="min-h-touch rounded border border-line bg-white px-2 text-ink"
+            className="min-h-touch rounded border border-line bg-surface px-2 text-ink"
           />
         </label>
         {previa && (

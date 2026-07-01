@@ -182,7 +182,7 @@ export default function VendasPage() {
           <select
             value={situacao}
             onChange={(e) => setSituacao(e.target.value)}
-            className="min-h-touch rounded border border-line bg-white px-2 text-ink"
+            className="min-h-touch rounded border border-line bg-surface px-2 text-ink"
           >
             <option value="todas">Todas</option>
             <option value="autorizada">Autorizada</option>

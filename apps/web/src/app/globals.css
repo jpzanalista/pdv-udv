@@ -44,6 +44,19 @@
   --line: 44 50 62;
 }
 
+/* Impressão sempre em tema claro (recibos/comprovantes) */
+@media print {
+  html {
+    --brand: 17 141 255;
+    --ink: 51 51 51;
+    --ink-muted: 102 102 102;
+    --ink-light: 136 136 136;
+    --surface: 255 255 255;
+    --canvas: 255 255 255;
+    --line: 221 221 221;
+  }
+}
+
 @layer base {
   html,
   body {

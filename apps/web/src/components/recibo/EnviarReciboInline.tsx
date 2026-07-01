@@ -82,7 +82,7 @@ export function EnviarReciboInline({
             onChange={(e) => setTelefone(e.target.value)}
             onBlur={() => setTelefone(maskTelefone(telefone))}
             placeholder="+55 (00) 00000-0000"
-            className="min-h-touch w-44 rounded border border-line bg-white px-2 text-sm text-ink"
+            className="min-h-touch w-44 rounded border border-line bg-surface px-2 text-sm text-ink"
           />
           <button
             type="button"

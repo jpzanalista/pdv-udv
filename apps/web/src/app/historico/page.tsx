@@ -31,7 +31,7 @@ const TES_LABEL: Record<string, string> = {
 
 function chip(active: boolean) {
   return `min-h-touch rounded px-3 text-sm font-semibold capitalize ${
-    active ? 'bg-brand text-white' : 'border border-line bg-white text-ink-muted hover:bg-canvas'
+    active ? 'bg-brand text-white' : 'border border-line bg-surface text-ink-muted hover:bg-canvas'
   }`
 }
 
@@ -143,14 +143,14 @@ export default function HistoricoPage() {
           type="date"
           value={de}
           onChange={(e) => setDe(e.target.value)}
-          className="min-h-touch rounded border border-line bg-white px-2"
+          className="min-h-touch rounded border border-line bg-surface px-2"
         />
         <span>até</span>
         <input
           type="date"
           value={ate}
           onChange={(e) => setAte(e.target.value)}
-          className="min-h-touch rounded border border-line bg-white px-2"
+          className="min-h-touch rounded border border-line bg-surface px-2"
         />
         {(de || ate) && (
           <button

@@ -52,7 +52,7 @@ export default function ReciboPage() {
         <Button onClick={() => window.print()}>Imprimir / Salvar PDF</Button>
       </div>
 
-      <div className="rounded-lg border border-line bg-white p-8">
+      <div className="rounded-lg border border-line bg-surface p-8">
         <h1 className="text-center text-xl font-bold text-ink">Recibo</h1>
         {mov.nucleoNome && <p className="text-center text-ink-muted">Empório {mov.nucleoNome}</p>}
         <hr className="my-5 border-line" />

@@ -97,7 +97,7 @@ export default function ConfiguracoesPage() {
             id="tz"
             value={timezone}
             onChange={(e) => setTimezone(e.target.value)}
-            className="min-h-touch w-full rounded border border-line bg-white px-2 text-ink"
+            className="min-h-touch w-full rounded border border-line bg-surface px-2 text-ink"
           >
             {BR_TIMEZONES.map((t) => (
               <option key={t.id} value={t.id}>

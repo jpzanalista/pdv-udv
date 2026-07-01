@@ -93,7 +93,7 @@ export function ProdutoFormModal({
               id="categoria"
               value={categoriaId}
               onChange={(e) => setCategoriaId(e.target.value)}
-              className="min-h-touch w-full rounded border border-line bg-white px-3 text-ink"
+              className="min-h-touch w-full rounded border border-line bg-surface px-3 text-ink"
             >
               <option value="">— sem categoria —</option>
               {categorias.map((c) => (

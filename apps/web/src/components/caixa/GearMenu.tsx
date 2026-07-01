@@ -41,7 +41,7 @@ export function GearMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="min-h-touch rounded border border-line bg-white px-3 text-lg text-ink-muted hover:bg-canvas"
+        className="min-h-touch rounded border border-line bg-surface px-3 text-lg text-ink-muted hover:bg-canvas"
       >
         ⚙️
       </button>

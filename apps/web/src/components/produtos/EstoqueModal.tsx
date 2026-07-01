@@ -111,14 +111,14 @@ export function EstoqueModal({
             <button
               type="button"
               onClick={() => setTipo('entrada')}
-              className={`min-h-touch rounded border px-3 text-sm font-semibold ${tipo === 'entrada' ? 'border-brand bg-brand-bg text-brand-dark' : 'border-line bg-white text-ink-muted'}`}
+              className={`min-h-touch rounded border px-3 text-sm font-semibold ${tipo === 'entrada' ? 'border-brand bg-brand-bg text-brand-dark' : 'border-line bg-surface text-ink-muted'}`}
             >
               Entrada (somar)
             </button>
             <button
               type="button"
               onClick={() => setTipo('ajuste')}
-              className={`min-h-touch rounded border px-3 text-sm font-semibold ${tipo === 'ajuste' ? 'border-brand bg-brand-bg text-brand-dark' : 'border-line bg-white text-ink-muted'}`}
+              className={`min-h-touch rounded border px-3 text-sm font-semibold ${tipo === 'ajuste' ? 'border-brand bg-brand-bg text-brand-dark' : 'border-line bg-surface text-ink-muted'}`}
             >
               Ajuste (definir)
             </button>

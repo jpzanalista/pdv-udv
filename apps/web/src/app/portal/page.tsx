@@ -146,7 +146,7 @@ export default function PortalPage() {
               value={cpfInput}
               onChange={(e) => setCpfInput(maskCpf(e.target.value))}
               placeholder="000.000.000-00"
-              className="min-h-touch flex-1 rounded border border-line bg-white px-3 text-ink"
+              className="min-h-touch flex-1 rounded border border-line bg-surface px-3 text-ink"
             />
             <Button className="text-sm" onClick={salvarCpf} disabled={salvandoCpf}>
               {salvandoCpf ? 'Salvando…' : 'Cadastrar CPF'}

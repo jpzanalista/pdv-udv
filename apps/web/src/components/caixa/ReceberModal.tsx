@@ -148,7 +148,7 @@ export function ReceberModal({
                   className={`min-h-touch rounded border px-3 font-semibold ${
                     metodo === m.id
                       ? 'border-brand bg-brand-bg text-brand-dark'
-                      : 'border-line bg-white text-ink-muted hover:bg-canvas'
+                      : 'border-line bg-surface text-ink-muted hover:bg-canvas'
                   }`}
                 >
                   {m.label}
@@ -197,7 +197,7 @@ export function ReceberModal({
                   key={t.value}
                   type="button"
                   onClick={() => escolherTipo(t.value)}
-                  className="min-h-touch-lg rounded-lg border border-line bg-white px-4 font-semibold text-ink hover:border-brand hover:bg-brand-subtle"
+                  className="min-h-touch-lg rounded-lg border border-line bg-surface px-4 font-semibold text-ink hover:border-brand hover:bg-brand-subtle"
                 >
                   {t.label}
                 </button>

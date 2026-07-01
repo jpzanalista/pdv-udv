@@ -5,7 +5,7 @@ export function QtyStepper({ value, onChange }: { value: number; onChange: (v: n
       <button
         type="button"
         onClick={() => onChange(Math.max(1, value - 1))}
-        className="min-h-touch w-11 rounded border border-line bg-white text-xl font-bold text-ink-muted hover:bg-canvas"
+        className="min-h-touch w-11 rounded border border-line bg-surface text-xl font-bold text-ink-muted hover:bg-canvas"
       >
         −
       </button>
@@ -13,7 +13,7 @@ export function QtyStepper({ value, onChange }: { value: number; onChange: (v: n
       <button
         type="button"
         onClick={() => onChange(value + 1)}
-        className="min-h-touch w-11 rounded border border-line bg-white text-xl font-bold text-ink-muted hover:bg-canvas"
+        className="min-h-touch w-11 rounded border border-line bg-surface text-xl font-bold text-ink-muted hover:bg-canvas"
       >
         +
       </button>

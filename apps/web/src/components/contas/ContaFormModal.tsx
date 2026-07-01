@@ -88,7 +88,7 @@ export function ContaFormModal({
               id="tipo"
               value={tipo}
               onChange={(e) => setTipo(e.target.value)}
-              className="min-h-touch w-full rounded border border-line bg-white px-3 text-ink"
+              className="min-h-touch w-full rounded border border-line bg-surface px-3 text-ink"
             >
               {TIPOS.map((t) => (
                 <option key={t.value} value={t.value}>
