@@ -12,7 +12,7 @@ export function ProductGrid({
     return <p className="p-6 text-center text-base text-ink-light">Nenhum produto encontrado.</p>
   }
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+    <div className="grid grid-cols-2 gap-2 min-[400px]:grid-cols-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
       {produtos.map((p) => (
         <button
           key={p.id}

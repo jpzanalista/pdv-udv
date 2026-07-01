@@ -326,14 +326,14 @@ export default function CaixaPage() {
 
   return (
     <main className="flex h-[100dvh] flex-col bg-canvas">
-      <header className="flex items-center justify-between gap-3 border-b border-line bg-surface px-3 pt-[env(safe-area-inset-top)] py-2">
-        <div className="flex items-center gap-2">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand text-xs font-bold text-white">
+      <header className="flex items-center justify-between gap-2 border-b border-line bg-surface px-3 pt-[env(safe-area-inset-top)] py-2 sm:gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand text-xs font-bold text-white">
             NSS
           </span>
-          <span className="text-lg font-bold text-brand">PDV UDV</span>
+          <span className="truncate text-base font-bold text-brand sm:text-lg">PDV UDV</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           <CaixaStatus aberto={!!expediente} />
           <ThemeToggle />
           <GearMenu
@@ -497,13 +497,14 @@ export default function CaixaPage() {
 function CaixaStatus({ aberto }: { aberto: boolean }) {
   return (
     <span
-      className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide text-white ${
+      className={`whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white sm:px-3 sm:text-xs ${
         aberto
-          ? 'bg-success shadow-[0_0_12px_2px_rgba(39,174,96,0.75)]'
-          : 'bg-danger shadow-[0_0_12px_2px_rgba(231,76,60,0.75)]'
+          ? 'bg-success shadow-[0_0_8px_1px_rgba(39,174,96,0.7)] sm:shadow-[0_0_12px_2px_rgba(39,174,96,0.75)]'
+          : 'bg-danger shadow-[0_0_8px_1px_rgba(231,76,60,0.7)] sm:shadow-[0_0_12px_2px_rgba(231,76,60,0.75)]'
       }`}
     >
-      {aberto ? 'Caixa Aberto' : 'Caixa Fechado'}
+      <span className="sm:hidden">{aberto ? 'Aberto' : 'Fechado'}</span>
+      <span className="hidden sm:inline">{aberto ? 'Caixa Aberto' : 'Caixa Fechado'}</span>
     </span>
   )
 }
@@ -521,7 +522,7 @@ function Tab({
     <button
       type="button"
       onClick={onClick}
-      className={`min-h-touch shrink-0 whitespace-nowrap rounded-full border px-4 text-sm font-semibold transition-colors sm:text-base ${
+      className={`min-h-[40px] shrink-0 whitespace-nowrap rounded-full border px-3.5 text-sm font-semibold transition-colors sm:min-h-touch sm:px-4 sm:text-base ${
         active ? 'border-brand bg-brand text-white' : 'border-line bg-surface text-ink-muted hover:bg-canvas'
       }`}
     >
