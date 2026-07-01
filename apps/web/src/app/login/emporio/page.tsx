@@ -5,6 +5,7 @@ import { type FormEvent, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Field, Input } from '@/components/ui/Input'
+import { Logo } from '@/components/ui/Logo'
 import { ApiError, api } from '@/lib/api'
 import { type TokenPair, setTokens } from '@/lib/auth'
 
@@ -62,8 +63,13 @@ export default function EmporioLoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-sm p-6">
-        <h1 className="text-2xl font-bold text-brand">PDV UDV</h1>
-        <p className="mb-5 text-ink-muted">Empório · responsável</p>
+        <div className="mb-5 flex items-center gap-3">
+          <Logo size={44} />
+          <div>
+            <h1 className="text-2xl font-bold leading-none text-brand">Empório</h1>
+            <p className="mt-1 text-ink-muted">Responsável</p>
+          </div>
+        </div>
 
         {aviso && <p className="mb-3 text-sm font-semibold text-success">{aviso}</p>}
 

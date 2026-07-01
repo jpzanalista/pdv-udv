@@ -137,7 +137,7 @@ export default function Home() {
   return (
     <AppShell title="Início">
       <div className="border-b border-line pb-4">
-        <h1 className="text-2xl font-bold text-ink">Bem-vindo ao PDV UDV</h1>
+        <h1 className="text-2xl font-bold text-ink">{me.nucleoNome ?? 'Empório'}</h1>
         <p className="mt-1 text-base text-ink-muted">
           <span className="font-semibold text-ink">{me.role}</span>
           {me.nucleoNome ? ` · ${me.nucleoNome}` : ''}

@@ -13,6 +13,7 @@ import { QtyStepper } from '@/components/caixa/QtyStepper'
 import { ReceberModal, type ReceberPayload } from '@/components/caixa/ReceberModal'
 import { ReciboModal, type ReciboData } from '@/components/caixa/ReciboModal'
 import { Input } from '@/components/ui/Input'
+import { Logo } from '@/components/ui/Logo'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { ApiError, api } from '@/lib/api'
 import { getToken } from '@/lib/auth'
@@ -29,6 +30,7 @@ export default function CaixaPage() {
   const [expediente, setExpediente] = useState<Expediente | null>(null)
   const [sugestaoFundo, setSugestaoFundo] = useState<number | null>(null)
   const [role, setRole] = useState<string>('')
+  const [nucleoNome, setNucleoNome] = useState<string | null>(null)
   const [fecharOpen, setFecharOpen] = useState(false)
   const [abrirOpen, setAbrirOpen] = useState(false)
   const [receberAposAbrir, setReceberAposAbrir] = useState(false)
@@ -58,7 +60,7 @@ export default function CaixaPage() {
       api<Produto[]>('/produtos'),
       api<Conta[]>('/contas'),
       api<{ aberto: Expediente | null; sugestaoFundoCents: number | null }>('/expedientes/atual'),
-      api<{ role: string }>('/auth/me'),
+      api<{ role: string; nucleoNome: string | null }>('/auth/me'),
     ])
       .then(([cat, prod, cont, exp, me]) => {
         setCategorias(cat)
@@ -67,6 +69,7 @@ export default function CaixaPage() {
         setExpediente(exp.aberto)
         setSugestaoFundo(exp.sugestaoFundoCents)
         setRole(me.role)
+        setNucleoNome(me.nucleoNome)
       })
       .catch((e) => {
         if (e instanceof ApiError && e.status === 401) router.replace('/login')
@@ -331,10 +334,10 @@ export default function CaixaPage() {
     <main className="flex h-[100dvh] flex-col bg-canvas">
       <header className="flex items-center justify-between gap-2 border-b border-line bg-surface px-3 pt-[env(safe-area-inset-top)] py-2 sm:gap-3">
         <div className="flex min-w-0 items-center gap-2">
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand text-xs font-bold text-white">
-            NSS
+          <Logo size={30} className="shrink-0" />
+          <span className="truncate text-base font-bold text-brand sm:text-lg">
+            {nucleoNome ?? 'Empório'}
           </span>
-          <span className="truncate text-base font-bold text-brand sm:text-lg">PDV UDV</span>
         </div>
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           <CaixaStatus aberto={!!expediente} />

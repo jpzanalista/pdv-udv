@@ -4,6 +4,7 @@ import { LogOut, Menu } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { type ReactNode, useEffect, useState } from 'react'
+import { Logo } from '@/components/ui/Logo'
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/Sheet'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { api } from '@/lib/api'
@@ -82,15 +83,12 @@ export function AppShell({
             <Menu size={22} />
           </SheetTrigger>
           <SheetContent>
-            {/* Slot do logo (placeholder até existir o logotipo) */}
             <SheetTitle asChild>
               <div className="mb-1 flex items-center gap-2">
-                <div className="grid h-9 w-9 place-items-center rounded-lg bg-brand text-sm font-bold text-white">
-                  NSS
-                </div>
+                <Logo size={36} />
                 <div className="leading-tight">
-                  <p className="text-sm font-bold text-ink">PDV UDV</p>
-                  {me?.nucleoNome && <p className="text-xs text-ink-light">{me.nucleoNome}</p>}
+                  <p className="text-sm font-bold text-ink">{me?.nucleoNome ?? 'Empório'}</p>
+                  <p className="text-xs text-ink-light">Ponto de venda</p>
                 </div>
               </div>
             </SheetTitle>
@@ -124,7 +122,10 @@ export function AppShell({
           </SheetContent>
         </Sheet>
 
-        <span className="truncate text-base font-bold text-brand">{title ?? 'PDV UDV'}</span>
+        <Logo size={26} className="shrink-0" />
+        <span className="truncate text-base font-bold text-brand">
+          {title ?? me?.nucleoNome ?? 'Empório'}
+        </span>
         <div className="ml-auto flex items-center gap-2">
           <ThemeToggle />
         </div>

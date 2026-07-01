@@ -4,8 +4,17 @@ import { ThemeProvider } from '@/components/theme-provider'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'PDV UDV',
+  title: 'Empório',
   description: 'PDV dos empórios da União do Vegetal',
+  manifest: '/site.webmanifest',
+  icons: {
+    icon: [
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+    ],
+    apple: '/apple-touch-icon.png',
+  },
+  appleWebApp: { capable: true, title: 'Empório', statusBarStyle: 'default' },
 }
 
 export const viewport: Viewport = {

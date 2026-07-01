@@ -1,7 +1,7 @@
 'use client'
 
 import { BR_TIMEZONES } from '@pdv-udv/shared'
-import { CalendarClock, Globe, Save } from 'lucide-react'
+import { CalendarClock, Globe, Save, Store } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { type ReactNode, useEffect, useState } from 'react'
 import { AppShell } from '@/components/AppShell'
@@ -13,12 +13,19 @@ import { getToken } from '@/lib/auth'
 
 const ALLOWED = ['responsavel_emporio', 'admin']
 
-type Config = { nome: string; timezone: string; corteDia: number; corteHora: string }
+type Config = {
+  nome: string
+  nomeExibicao: string | null
+  timezone: string
+  corteDia: number
+  corteHora: string
+}
 
 export default function ConfiguracoesPage() {
   const router = useRouter()
   const [me, setMe] = useState<{ role: string } | null>(null)
   const [config, setConfig] = useState<Config | null>(null)
+  const [nomeExibicao, setNomeExibicao] = useState('')
   const [timezone, setTimezone] = useState('America/Sao_Paulo')
   const [corteDia, setCorteDia] = useState(28)
   const [corteHora, setCorteHora] = useState('02:59')
@@ -37,6 +44,7 @@ export default function ConfiguracoesPage() {
         if (ALLOWED.includes(m.role)) {
           const c = await api<Config>('/nucleos/config')
           setConfig(c)
+          setNomeExibicao(c.nomeExibicao ?? '')
           setTimezone(c.timezone)
           setCorteDia(c.corteDia)
           setCorteHora(c.corteHora)
@@ -54,9 +62,10 @@ export default function ConfiguracoesPage() {
     try {
       const c = await api<Config>('/nucleos/config', {
         method: 'PATCH',
-        body: JSON.stringify({ timezone, corteDia, corteHora }),
+        body: JSON.stringify({ nomeExibicao: nomeExibicao.trim(), timezone, corteDia, corteHora }),
       })
       setConfig(c)
+      setNomeExibicao(c.nomeExibicao ?? '')
       setMsg('Configurações salvas ✓')
     } catch (e) {
       setMsg(e instanceof ApiError ? e.message : 'Erro ao salvar.')
@@ -74,7 +83,10 @@ export default function ConfiguracoesPage() {
     )
 
   const alterado =
-    config?.timezone !== timezone || config?.corteDia !== corteDia || config?.corteHora !== corteHora
+    (config?.nomeExibicao ?? '') !== nomeExibicao.trim() ||
+    config?.timezone !== timezone ||
+    config?.corteDia !== corteDia ||
+    config?.corteHora !== corteHora
 
   return (
     <AppShell title="Configurações" fluid>
@@ -87,6 +99,23 @@ export default function ConfiguracoesPage() {
       </div>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
+        <Secao
+          icon={<Store size={20} />}
+          titulo="Nome do empório"
+          descricao="Aparece no topo do sistema, no login e nos documentos. Vazio usa o nome oficial do núcleo."
+        >
+          <Field label="Nome de exibição" htmlFor="nome-exibicao">
+            <Input
+              id="nome-exibicao"
+              value={nomeExibicao}
+              onChange={(e) => setNomeExibicao(e.target.value)}
+              placeholder={config?.nome ?? 'Empório'}
+              maxLength={160}
+              className="h-11 text-base"
+            />
+          </Field>
+        </Secao>
+
         <Secao
           icon={<Globe size={20} />}
           titulo="Fuso horário"
