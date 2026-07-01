@@ -1,5 +1,6 @@
 import {
   boolean,
+  index,
   integer,
   numeric,
   pgEnum,
@@ -132,7 +133,10 @@ export const contas = pgTable(
     ativa: boolean('ativa').default(true).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => ({ uqCodigo: unique().on(t.nucleoId, t.codigo) }),
+  (t) => [
+    unique().on(t.nucleoId, t.codigo),
+    index('contas_titular_idx').on(t.titularPessoaId),
+  ],
 )
 
 export const contaMembros = pgTable(
@@ -205,7 +209,7 @@ export const expedientes = pgTable('expedientes', {
   valorContado: money('valor_contado'),
   valorEsperado: money('valor_esperado'),
   diferenca: money('diferenca'),
-})
+}, (t) => [index('expedientes_nucleo_status_idx').on(t.nucleoId, t.status)])
 
 // Sangria (saída) / Suprimento (entrada) de dinheiro no caixa.
 export const caixaMovimentos = pgTable('caixa_movimentos', {
@@ -226,7 +230,10 @@ export const caixaMovimentos = pgTable('caixa_movimentos', {
   validadoEm: timestamp('validado_em', { withTimezone: true }),
   createdBy: uuid('created_by').references(() => usuarios.id),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-})
+}, (t) => [
+  index('caixa_mov_nucleo_idx').on(t.nucleoId),
+  index('caixa_mov_expediente_idx').on(t.expedienteId),
+])
 
 // ---------- vendas (id gerado no cliente p/ offline) ----------
 export const vendas = pgTable(
@@ -253,7 +260,12 @@ export const vendas = pgTable(
     createdBy: uuid('created_by').references(() => usuarios.id),
     retroativa: boolean('retroativa').default(false).notNull(),
   },
-  (t) => ({ uqNumero: unique().on(t.terminalId, t.numero) }),
+  (t) => [
+    unique().on(t.terminalId, t.numero),
+    index('vendas_nucleo_data_idx').on(t.nucleoId, t.occurredAt),
+    index('vendas_expediente_idx').on(t.expedienteId),
+    index('vendas_conta_idx').on(t.contaId),
+  ],
 )
 
 export const vendaItens = pgTable('venda_itens', {
@@ -266,7 +278,7 @@ export const vendaItens = pgTable('venda_itens', {
   qtde: numeric('qtde', { precision: 12, scale: 3 }).notNull(),
   unitario: money('unitario').notNull(),
   total: money('total').notNull(),
-})
+}, (t) => [index('venda_itens_venda_idx').on(t.vendaId)])
 
 export const pagamentos = pgTable('pagamentos', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -275,7 +287,7 @@ export const pagamentos = pgTable('pagamentos', {
     .references(() => vendas.id),
   metodo: paymentMethodEnum('metodo').notNull(),
   valor: money('valor').notNull(),
-})
+}, (t) => [index('pagamentos_venda_idx').on(t.vendaId)])
 
 // ---------- conta-corrente (append-only) ----------
 export const lancamentos = pgTable('lancamentos', {
@@ -293,7 +305,10 @@ export const lancamentos = pgTable('lancamentos', {
   corteId: uuid('corte_id'), // baixa do corte mensal (FK lógica p/ cortes; evita ciclo de import)
   descricao: varchar('descricao', { length: 200 }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-})
+}, (t) => [
+  index('lancamentos_conta_idx').on(t.contaId),
+  index('lancamentos_venda_idx').on(t.vendaId),
+])
 
 // ---------- cobranças ASAAS ----------
 export const cobrancas = pgTable('cobrancas', {
@@ -308,7 +323,7 @@ export const cobrancas = pgTable('cobrancas', {
   invoiceUrl: text('invoice_url'),
   dueDate: varchar('due_date', { length: 10 }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-})
+}, (t) => [index('cobrancas_conta_idx').on(t.contaId)])
 
 // ---------- OTP do portal do sócio ----------
 export const otpCodigos = pgTable('otp_codigos', {
@@ -368,7 +383,7 @@ export const estoqueMovimentos = pgTable('estoque_movimentos', {
   saldoApos: numeric('saldo_apos', { precision: 12, scale: 3 }).notNull(),
   motivo: varchar('motivo', { length: 200 }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-})
+}, (t) => [index('estoque_mov_produto_idx').on(t.produtoId)])
 
 // ---------- devoluções (estorno parcial item a item) ----------
 export const devolucoes = pgTable('devolucoes', {
@@ -391,7 +406,10 @@ export const devolucoes = pgTable('devolucoes', {
   metodo: paymentMethodEnum('metodo').notNull(), // método da venda original (impacto no caixa)
   motivo: varchar('motivo', { length: 200 }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-})
+}, (t) => [
+  index('devolucoes_venda_idx').on(t.vendaId),
+  index('devolucoes_expediente_idx').on(t.expedienteId),
+])
 
 // ---------- corte mensal do crediário (sócios → tesouraria/Granatum) ----------
 export const cortes = pgTable(
@@ -422,4 +440,4 @@ export const corteItens = pgTable('corte_itens', {
     .references(() => contas.id),
   clienteNome: varchar('cliente_nome', { length: 160 }).notNull(), // snapshot do nome no corte
   valorCents: integer('valor_cents').notNull(),
-})
+}, (t) => [index('corte_itens_corte_idx').on(t.corteId)])
