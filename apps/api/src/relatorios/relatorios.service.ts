@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import {
   type Database,
   caixaMovimentos,
+  categorias,
   cobrancas,
   contas,
   devolucoes,
@@ -164,6 +165,7 @@ export class RelatoriosService {
 
     // top produtos (bruto dos itens − devoluções) + total devolvido + líquido
     const porProduto = new Map<string, { descricao: string; qtde: number; totalCents: number }>()
+    const porCategoriaMap = new Map<string, { totalCents: number; qtde: number }>()
     let devolucoesCents = 0
     let custoCents = 0 // custo dos itens vendidos (p/ margem); custo 0 → 60% do preço
     if (ids.length) {
@@ -175,9 +177,11 @@ export class RelatoriosService {
           total: vendaItens.total,
           precoVenda: produtos.precoVenda,
           precoCusto: produtos.precoCusto,
+          categoria: categorias.nome,
         })
         .from(vendaItens)
         .leftJoin(produtos, eq(produtos.id, vendaItens.produtoId))
+        .leftJoin(categorias, eq(categorias.id, produtos.categoriaId))
         .where(inArray(vendaItens.vendaId, ids))
       for (const it of its) {
         const key = it.produtoId ?? it.descricao
@@ -187,6 +191,11 @@ export class RelatoriosService {
         e.qtde += qtde
         e.totalCents += totalLinha
         porProduto.set(key, e)
+        const cat = it.categoria ?? 'Sem categoria'
+        const ce = porCategoriaMap.get(cat) ?? { totalCents: 0, qtde: 0 }
+        ce.totalCents += totalLinha
+        ce.qtde += qtde
+        porCategoriaMap.set(cat, ce)
         // custo: cadastrado se > 0; senão 60% do preço de venda (ou do unitário se sem produto)
         const custoCad = toCents(it.precoCusto)
         const precoVendaUnit = it.precoVenda != null ? toCents(it.precoVenda) : qtde ? totalLinha / qtde : 0
@@ -212,6 +221,16 @@ export class RelatoriosService {
     const liquidoCents = totalCents - devolucoesCents
     const margemCents = liquidoCents - custoCents
 
+    // por mês (a partir dos dias)
+    const porMesMap = new Map<string, { totalCents: number; qtd: number }>()
+    for (const [dia, v] of porDiaMap) {
+      const mes = dia.slice(0, 7)
+      const e = porMesMap.get(mes) ?? { totalCents: 0, qtd: 0 }
+      e.totalCents += v.totalCents
+      e.qtd += v.qtd
+      porMesMap.set(mes, e)
+    }
+
     return {
       periodo: p,
       totalCents,
@@ -230,6 +249,12 @@ export class RelatoriosService {
       porDia: [...porDiaMap.entries()]
         .map(([dia, v]) => ({ dia, ...v }))
         .sort((a, b) => a.dia.localeCompare(b.dia)),
+      porMes: [...porMesMap.entries()]
+        .map(([mes, v]) => ({ mes, ...v }))
+        .sort((a, b) => a.mes.localeCompare(b.mes)),
+      porCategoria: [...porCategoriaMap.entries()]
+        .map(([categoria, v]) => ({ categoria, ...v }))
+        .sort((a, b) => b.totalCents - a.totalCents),
       topProdutos,
     }
   }

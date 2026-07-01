@@ -90,14 +90,21 @@ export function Donut({ data }: { data: { label: string; valor: number; cor: str
   )
 }
 
-/** Barras horizontais (ranking). data: { label, valor(cents) }[] */
-export function BarTop({ data }: { data: { label: string; valor: number }[] }) {
+/** Barras horizontais (ranking). moeda=true → R$; false → número. */
+export function BarTop({
+  data,
+  moeda = true,
+}: {
+  data: { label: string; valor: number }[]
+  moeda?: boolean
+}) {
+  const inteiro = (v: number) => v.toLocaleString('pt-BR')
   return (
     <ResponsiveContainer width="100%" height={Math.max(220, data.length * 34)}>
       <BarChart data={data} layout="vertical" margin={{ left: 8, right: 16, top: 4, bottom: 4 }}>
         <XAxis
           type="number"
-          tickFormatter={reaisK}
+          tickFormatter={moeda ? reaisK : inteiro}
           tick={{ fill: AXIS, fontSize: 12 }}
           axisLine={false}
           tickLine={false}
@@ -112,10 +119,28 @@ export function BarTop({ data }: { data: { label: string; valor: number }[] }) {
         />
         <Tooltip
           contentStyle={tooltipStyle}
-          formatter={(v) => [formatBRL(v as number), 'Faturamento']}
+          formatter={(v) => [moeda ? formatBRL(v as number) : inteiro(v as number), moeda ? 'Faturamento' : 'Qtde']}
           cursor={{ fill: 'rgb(var(--brand-bg))' }}
         />
         <Bar dataKey="valor" fill="rgb(var(--brand))" radius={[0, 4, 4, 0]} />
+      </BarChart>
+    </ResponsiveContainer>
+  )
+}
+
+/** Barras verticais por mês. data: { label, valor(cents) }[] */
+export function BarMes({ data }: { data: { label: string; valor: number }[] }) {
+  return (
+    <ResponsiveContainer width="100%" height={240}>
+      <BarChart data={data} margin={{ left: 4, right: 8, top: 8, bottom: 0 }}>
+        <XAxis dataKey="label" tick={{ fill: AXIS, fontSize: 12 }} tickLine={false} axisLine={{ stroke: GRID }} />
+        <YAxis tickFormatter={reaisK} tick={{ fill: AXIS, fontSize: 12 }} tickLine={false} axisLine={false} width={64} />
+        <Tooltip
+          contentStyle={tooltipStyle}
+          formatter={(v) => [formatBRL(v as number), 'Faturamento']}
+          cursor={{ fill: 'rgb(var(--brand-bg))' }}
+        />
+        <Bar dataKey="valor" fill="rgb(var(--brand))" radius={[6, 6, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   )

@@ -4,7 +4,7 @@ import { formatBRL } from '@pdv-udv/core'
 import { useRouter } from 'next/navigation'
 import { type ReactNode, useCallback, useEffect, useState } from 'react'
 import { AppShell } from '@/components/AppShell'
-import { BarTop, Donut, FaturamentoArea } from '@/components/dashboard/charts'
+import { BarMes, BarTop, Donut, FaturamentoArea } from '@/components/dashboard/charts'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
@@ -44,6 +44,10 @@ const COR_TIPO: Record<string, string> = {
   avulso: '#22c55e',
 }
 const ddmm = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`
+const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
+const mesLabel = (m: string) => `${MESES[Number(m.slice(5, 7)) - 1]}/${m.slice(2, 4)}`
+// paleta p/ categorias (ciclo)
+const PALETA = ['rgb(var(--brand))', '#22c55e', '#f59e0b', '#8b5cf6', '#06b6d4', '#ef4444', '#64748b', '#eab308']
 
 type ResumoRel = {
   nucleoNome: string | null
@@ -63,6 +67,8 @@ type VendasRel = {
   porForma: { metodo: string; totalCents: number; qtd: number }[]
   porTipoCliente: { tipo: string; totalCents: number; qtd: number }[]
   porDia: { dia: string; totalCents: number; qtd: number }[]
+  porMes: { mes: string; totalCents: number; qtd: number }[]
+  porCategoria: { categoria: string; totalCents: number; qtde: number }[]
   topProdutos: { descricao: string; qtde: number; totalCents: number }[]
 }
 type FinRel = {
@@ -242,18 +248,54 @@ export default function RelatoriosPage() {
       {/* PRODUTOS */}
       {tab === 'produtos' && vendas && (
         <div className="mt-4 space-y-4">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Kpi label="Produtos vendidos" valor={String(vendas.topProdutos.length)} />
-            <Kpi label="Faturamento" valor={formatBRL(vendas.totalCents)} />
-            <Kpi label="Custo (est.)" valor={formatBRL(vendas.custoCents)} />
-            <Kpi label="Margem (est.)" valor={`${formatBRL(vendas.margemCents)} · ${margemPct}%`} />
+          {(() => {
+            const abc = classificaAbc(vendas.topProdutos)
+            return (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <Kpi label="Produtos vendidos" valor={String(vendas.topProdutos.length)} />
+                <Kpi
+                  label="Curva A (≈80%)"
+                  valor={`${abc.a} produto(s)`}
+                />
+                <Kpi label="Custo (est.)" valor={formatBRL(vendas.custoCents)} />
+                <Kpi label="Margem (est.)" valor={`${formatBRL(vendas.margemCents)} · ${margemPct}%`} />
+              </div>
+            )
+          })()}
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Bloco titulo="Top produtos por faturamento">
+              {vendas.topProdutos.length === 0 ? (
+                <Vazio />
+              ) : (
+                <BarTop
+                  data={vendas.topProdutos.slice(0, 12).map((p) => ({ label: p.descricao, valor: p.totalCents }))}
+                />
+              )}
+            </Bloco>
+            <Bloco titulo="Top produtos por quantidade">
+              {vendas.topProdutos.length === 0 ? (
+                <Vazio />
+              ) : (
+                <BarTop
+                  moeda={false}
+                  data={[...vendas.topProdutos]
+                    .sort((a, b) => b.qtde - a.qtde)
+                    .slice(0, 12)
+                    .map((p) => ({ label: p.descricao, valor: Math.round(p.qtde) }))}
+                />
+              )}
+            </Bloco>
           </div>
-          <Bloco titulo="Top produtos por faturamento">
-            {vendas.topProdutos.length === 0 ? (
+          <Bloco titulo="Por categoria">
+            {vendas.porCategoria.length === 0 ? (
               <Vazio />
             ) : (
-              <BarTop
-                data={vendas.topProdutos.slice(0, 12).map((p) => ({ label: p.descricao, valor: p.totalCents }))}
+              <Donut
+                data={vendas.porCategoria.map((c, i) => ({
+                  label: c.categoria,
+                  valor: c.totalCents,
+                  cor: PALETA[i % PALETA.length],
+                }))}
               />
             )}
           </Bloco>
@@ -269,6 +311,17 @@ export default function RelatoriosPage() {
             <Kpi label="Visitantes" valor={formatBRL(fin.aReceber.visitanteCents)} />
             <Kpi label="Inadimplência" valor={formatBRL(fin.inadimplencia.valorCents)} />
           </div>
+          {fin.aReceber.totalCents > 0 && (
+            <Bloco titulo="A receber por tipo">
+              <Donut
+                data={[
+                  { label: 'Sócio', valor: fin.aReceber.socioCents, cor: COR_TIPO.socio },
+                  { label: 'Visitante', valor: fin.aReceber.visitanteCents, cor: COR_TIPO.visitante },
+                  { label: 'Institucional', valor: fin.aReceber.institucionalCents, cor: COR_TIPO.institucional },
+                ].filter((d) => d.valor > 0)}
+              />
+            </Bloco>
+          )}
           <Bloco titulo="Caixa no período">
             <Linha label="Sangrias p/ tesouraria" valor={formatBRL(fin.caixa.sangriaTesourariaCents)} />
             <Linha label="Sangrias p/ compra" valor={formatBRL(fin.caixa.sangriaCompraCents)} />
@@ -310,19 +363,51 @@ export default function RelatoriosPage() {
                 <Kpi label="Margem (est.)" valor={`${formatBRL(vendas.margemCents)} · ${margemPct}%`} />
                 <Kpi label="Nº de vendas" valor={String(vendas.qtdVendas)} />
               </div>
-              <Bloco titulo="Faturamento por dia">
-                {vendas.porDia.length === 0 ? (
-                  <Vazio />
-                ) : (
-                  <FaturamentoArea data={vendas.porDia.map((d) => ({ label: ddmm(d.dia), valor: d.totalCents }))} />
-                )}
-              </Bloco>
+              <div className="grid gap-4 lg:grid-cols-2">
+                <Bloco titulo="Faturamento por mês">
+                  {vendas.porMes.length === 0 ? (
+                    <Vazio />
+                  ) : (
+                    <BarMes data={vendas.porMes.map((m) => ({ label: mesLabel(m.mes), valor: m.totalCents }))} />
+                  )}
+                </Bloco>
+                <Bloco titulo="Identificado × avulso">
+                  {vendas.porTipoCliente.length === 0 ? (
+                    <Vazio />
+                  ) : (
+                    <Donut
+                      data={vendas.porTipoCliente.map((t) => ({
+                        label: TIPO[t.tipo] ?? t.tipo,
+                        valor: t.totalCents,
+                        cor: COR_TIPO[t.tipo] ?? '#94a3b8',
+                      }))}
+                    />
+                  )}
+                </Bloco>
+              </div>
             </>
           )}
         </div>
       )}
     </AppShell>
   )
+}
+
+/** Curva ABC por faturamento: A ≈ 80%, B ≈ 15%, C ≈ 5% do total. */
+function classificaAbc(produtos: { totalCents: number }[]): { a: number; b: number; c: number } {
+  const total = produtos.reduce((s, p) => s + p.totalCents, 0)
+  if (!total) return { a: 0, b: 0, c: 0 }
+  const ord = [...produtos].sort((x, y) => y.totalCents - x.totalCents)
+  let acc = 0
+  const r = { a: 0, b: 0, c: 0 }
+  for (const p of ord) {
+    acc += p.totalCents
+    const pct = acc / total
+    if (pct <= 0.8) r.a++
+    else if (pct <= 0.95) r.b++
+    else r.c++
+  }
+  return r
 }
 
 function Kpi({ label, valor, destaque }: { label: string; valor: string; destaque?: boolean }) {
