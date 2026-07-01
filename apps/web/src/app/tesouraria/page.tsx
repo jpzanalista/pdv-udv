@@ -1,15 +1,17 @@
 'use client'
 
 import { formatBRL, reaisToCents } from '@pdv-udv/core'
-import Link from 'next/link'
+import { BadgeCheck, CheckCircle2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { AppShell } from '@/components/AppShell'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ApiError, api } from '@/lib/api'
 import { getToken } from '@/lib/auth'
+import { fmtDataHora } from '@/lib/datahora'
 
-type Me = { role: string }
+type Me = { role: string; timezone: string }
 type Pendente = { id: string; valor: string; descricao: string | null; createdAt: string }
 
 const TES = ['tesoureiro_1', 'tesoureiro_2', 'admin']
@@ -54,57 +56,54 @@ export default function TesourariaPage() {
     }
   }
 
-  if (carregando) return <main className="p-8 text-ink-muted">Carregando…</main>
-
+  if (carregando)
+    return <main className="grid min-h-[100dvh] place-items-center text-ink-muted">Carregando…</main>
   if (me && !TES.includes(me.role))
     return (
-      <main className="p-8">
-        <h1 className="text-xl font-bold text-brand">Tesouraria</h1>
-        <p className="mt-2 text-ink-muted">Acesso restrito aos tesoureiros.</p>
-        <Link href="/" className="mt-2 inline-block text-brand">
-          ← início
-        </Link>
-      </main>
+      <AppShell title="Tesouraria">
+        <Card className="p-6 text-ink-muted">Acesso restrito aos tesoureiros.</Card>
+      </AppShell>
     )
 
   return (
-    <main className="mx-auto max-w-2xl p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-brand">Tesouraria · validações</h1>
-        <div className="flex items-center gap-3 text-sm">
-          <Link href="/historico" className="text-brand">
-            Histórico
-          </Link>
-          <Link href="/corte" className="text-brand">
-            Fechamento
-          </Link>
-          <Link href="/" className="text-ink-muted">
-            ← início
-          </Link>
+    <AppShell title="Tesouraria">
+      <div className="mx-auto max-w-2xl">
+        <div className="border-b border-line pb-4">
+          <h1 className="flex items-center gap-2 text-2xl font-bold text-ink">
+            <BadgeCheck size={22} className="text-brand" /> Tesouraria · validações
+          </h1>
+          <p className="mt-1 text-base text-ink-muted">
+            Sangrias para a tesouraria aguardando validação. Ao validar, o recibo abre para impressão.
+          </p>
+        </div>
+
+        {erro && <p className="mt-3 text-sm font-semibold text-danger">{erro}</p>}
+
+        <div className="mt-4 space-y-2">
+          {pendentes.length === 0 && (
+            <Card className="flex items-center gap-2 p-6 text-ink-muted">
+              <CheckCircle2 size={18} className="text-success" /> Nenhuma sangria pendente.
+            </Card>
+          )}
+          {pendentes.map((m) => (
+            <Card key={m.id} className="flex items-center gap-3 p-4">
+              <div className="min-w-0 flex-1">
+                <p className="text-lg font-bold text-ink">{formatBRL(reaisToCents(Number(m.valor)))}</p>
+                <p className="mt-0.5 text-sm text-ink-muted">
+                  {m.descricao ?? 'Sangria para tesouraria'} · {fmtDataHora(m.createdAt, me?.timezone)}
+                </p>
+              </div>
+              <Button
+                className="min-h-touch-lg shrink-0"
+                onClick={() => validar(m.id)}
+                disabled={validando === m.id}
+              >
+                <BadgeCheck size={16} /> {validando === m.id ? 'Validando…' : 'Validar'}
+              </Button>
+            </Card>
+          ))}
         </div>
       </div>
-      <p className="mt-1 text-ink-muted">Sangrias para a tesouraria aguardando validação.</p>
-      {erro && <p className="mt-2 text-danger">{erro}</p>}
-
-      <div className="mt-4 space-y-2">
-        {pendentes.length === 0 && (
-          <Card className="p-5 text-ink-light">Nenhuma sangria pendente. 🎉</Card>
-        )}
-        {pendentes.map((m) => (
-          <Card key={m.id} className="flex items-center gap-3 p-4">
-            <div className="flex-1">
-              <p className="font-bold text-ink">{formatBRL(reaisToCents(Number(m.valor)))}</p>
-              <p className="text-sm text-ink-muted">
-                {m.descricao ?? 'Sangria para tesouraria'} ·{' '}
-                {new Date(m.createdAt).toLocaleString('pt-BR')}
-              </p>
-            </div>
-            <Button onClick={() => validar(m.id)} disabled={validando === m.id}>
-              {validando === m.id ? 'Validando…' : 'Validar'}
-            </Button>
-          </Card>
-        ))}
-      </div>
-    </main>
+    </AppShell>
   )
 }
