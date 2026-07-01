@@ -352,6 +352,11 @@ export default function CaixaPage() {
           <div className="mb-3 flex flex-wrap items-center gap-3">
             <Input
               ref={buscaRef}
+              name="busca-produto"
+              type="search"
+              inputMode="search"
+              autoComplete="off"
+              aria-label="Buscar ou bipar código do produto"
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
               onKeyDown={onBuscaEnter}
