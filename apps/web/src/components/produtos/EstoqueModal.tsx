@@ -2,6 +2,7 @@ import { type FormEvent, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Field, Input } from '@/components/ui/Input'
+import { desktopAutofocus } from '@/lib/focus'
 import { ApiError, api } from '@/lib/api'
 import type { Produto } from '@/lib/types'
 
@@ -124,7 +125,7 @@ export function EstoqueModal({
             </button>
           </div>
           <Field label={tipo === 'entrada' ? 'Quantidade a somar' : 'Novo saldo'} htmlFor="qtde">
-            <Input id="qtde" inputMode="decimal" value={qtde} onChange={(e) => setQtde(e.target.value)} autoFocus />
+            <Input id="qtde" inputMode="decimal" value={qtde} onChange={(e) => setQtde(e.target.value)} ref={desktopAutofocus} />
           </Field>
           <Field label="Motivo (opcional)" htmlFor="motivo">
             <Input id="motivo" value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="ex.: compra, contagem" />

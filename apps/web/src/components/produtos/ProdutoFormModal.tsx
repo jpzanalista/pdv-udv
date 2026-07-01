@@ -2,6 +2,7 @@ import { type FormEvent, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Field, Input } from '@/components/ui/Input'
+import { desktopAutofocus } from '@/lib/focus'
 import { ApiError, api } from '@/lib/api'
 import type { Categoria, Produto } from '@/lib/types'
 
@@ -76,7 +77,7 @@ export function ProdutoFormModal({
         <h2 className="mb-4 text-lg font-semibold">{produto ? 'Editar produto' : 'Novo produto'}</h2>
         <form onSubmit={salvar} className="flex flex-col gap-3">
           <Field label="Descrição" htmlFor="descricao">
-            <Input id="descricao" value={descricao} onChange={(e) => setDescricao(e.target.value)} autoFocus />
+            <Input id="descricao" value={descricao} onChange={(e) => setDescricao(e.target.value)} ref={desktopAutofocus} />
           </Field>
 
           <div className="grid grid-cols-2 gap-3">
