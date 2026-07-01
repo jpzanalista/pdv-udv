@@ -165,6 +165,16 @@ export default function RelatoriosPage() {
         >
           1º sem. 2026
         </Button>
+        <Button
+          variant="ghost"
+          className="text-xs"
+          onClick={() => {
+            setDe('2026-01-01')
+            setAte('2026-12-31')
+          }}
+        >
+          Ano 2026
+        </Button>
         <Button onClick={() => carregar(role)} disabled={carregando}>
           {carregando ? 'Atualizando…' : 'Atualizar'}
         </Button>
