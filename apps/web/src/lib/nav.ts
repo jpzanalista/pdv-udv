@@ -1,9 +1,9 @@
 // Landing por perfil: cada papel cai direto na sua área ao logar.
-// Papéis sem área própria ainda (admin, socio) caem no hub ('/').
+// Diretoria (presidência/representante) e admin entram no Início ('/'); sócio no portal.
 const ROLE_LANDING: Record<string, string> = {
   responsavel_emporio: '/caixa',
-  presidencia: '/relatorios',
-  representante_nucleo: '/relatorios',
+  presidencia: '/',
+  representante_nucleo: '/',
   tesoureiro_1: '/relatorios',
   tesoureiro_2: '/relatorios',
   socio: '/portal',

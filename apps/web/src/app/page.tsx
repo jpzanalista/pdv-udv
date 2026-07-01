@@ -1,12 +1,14 @@
 'use client'
 
 import {
+  BarChart3,
   CalendarClock,
   History,
   Package,
   ShieldCheck,
   ShoppingCart,
   Tags,
+  UserCog,
   Users,
   type LucideIcon,
 } from 'lucide-react'
@@ -33,6 +35,8 @@ type Secao = {
   itens: Item[]
 }
 
+const GESTAO = ['responsavel_emporio', 'presidencia', 'representante_nucleo', 'tesoureiro_1', 'tesoureiro_2', 'admin']
+
 const MENU: Secao[] = [
   {
     nome: 'Operação',
@@ -42,7 +46,7 @@ const MENU: Secao[] = [
         titulo: 'Abrir caixa',
         descricao: 'Vender, receber e fechar o caixa do expediente.',
         icon: ShoppingCart,
-        papeis: null,
+        papeis: ['responsavel_emporio', 'admin'],
       },
     ],
   },
@@ -73,14 +77,21 @@ const MENU: Secao[] = [
     ],
   },
   {
-    nome: 'Financeiro',
+    nome: 'Gestão',
     itens: [
+      {
+        href: '/relatorios',
+        titulo: 'Relatórios',
+        descricao: 'Dashboards de vendas, produtos, crediário e diretoria.',
+        icon: BarChart3,
+        papeis: GESTAO,
+      },
       {
         href: '/historico',
         titulo: 'Histórico',
         descricao: 'Movimentações vitalícias, filtros e exportação.',
         icon: History,
-        papeis: ['tesoureiro_1', 'tesoureiro_2', 'responsavel_emporio', 'presidencia', 'admin'],
+        papeis: GESTAO,
       },
       {
         href: '/tesouraria',
@@ -95,6 +106,13 @@ const MENU: Secao[] = [
         descricao: 'Planilha mensal dos sócios para a tesouraria (Excel/PDF).',
         icon: CalendarClock,
         papeis: ['tesoureiro_1', 'tesoureiro_2', 'responsavel_emporio', 'admin'],
+      },
+      {
+        href: '/responsaveis',
+        titulo: 'Responsáveis',
+        descricao: 'Cadastro e acesso dos responsáveis do empório.',
+        icon: UserCog,
+        papeis: ['presidencia', 'representante_nucleo', 'admin'],
       },
     ],
   },
