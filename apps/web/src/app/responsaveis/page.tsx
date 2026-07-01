@@ -1,13 +1,16 @@
 'use client'
 
-import Link from 'next/link'
+import { Mail, UserPlus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { type FormEvent, useEffect, useState } from 'react'
+import { AppShell } from '@/components/AppShell'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
+import { Switch } from '@/components/ui/Switch'
 import { ApiError, api } from '@/lib/api'
 import { getToken } from '@/lib/auth'
+import { cn } from '@/lib/utils'
 
 const ALLOWED = ['presidencia', 'representante_nucleo', 'admin']
 
@@ -60,13 +63,12 @@ export default function ResponsaveisPage() {
   }
 
   async function toggleAtivo(r: Responsavel) {
+    const nova = !r.ativo
+    setLista((prev) => prev.map((x) => (x.id === r.id ? { ...x, ativo: nova } : x))) // otimista
     try {
-      await api(`/usuarios/responsavel/${r.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ ativo: !r.ativo }),
-      })
-      await carregar()
+      await api(`/usuarios/responsavel/${r.id}`, { method: 'PATCH', body: JSON.stringify({ ativo: nova }) })
     } catch {
+      setLista((prev) => prev.map((x) => (x.id === r.id ? { ...x, ativo: !nova } : x)))
       setMsg('Não foi possível atualizar.')
     }
   }
@@ -81,69 +83,87 @@ export default function ResponsaveisPage() {
     }
   }
 
-  if (carregando) return <main className="p-8 text-ink-muted">Carregando…</main>
+  if (carregando)
+    return <main className="grid min-h-[100dvh] place-items-center text-ink-muted">Carregando…</main>
   if (me && !ALLOWED.includes(me.role))
     return (
-      <main className="p-8">
-        <h1 className="text-xl font-bold text-brand">Responsáveis</h1>
-        <p className="mt-2 text-ink-muted">Acesso restrito à direção do núcleo.</p>
-        <Link href="/" className="mt-2 inline-block text-brand">
-          ← início
-        </Link>
-      </main>
+      <AppShell title="Responsáveis">
+        <Card className="p-6 text-ink-muted">Acesso restrito à direção do núcleo.</Card>
+      </AppShell>
     )
 
   return (
-    <main className="mx-auto max-w-xl p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-brand">Responsáveis do empório</h1>
-        <Link href="/relatorios" className="text-sm text-ink-muted">
-          ← relatórios
-        </Link>
-      </div>
-      <p className="mt-1 text-ink-muted">Cadastre o e-mail do responsável; ele define a senha pelo link.</p>
+    <AppShell title="Responsáveis">
+      <div className="mx-auto max-w-2xl">
+        <div className="border-b border-line pb-4">
+          <h1 className="text-2xl font-bold text-ink">Responsáveis do empório</h1>
+          <p className="mt-1 text-base text-ink-muted">
+            Cadastre o e-mail do responsável; ele define a senha pelo link enviado.
+          </p>
+        </div>
 
-      <form onSubmit={cadastrar} className="mt-4 flex gap-2">
-        <Input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="email@do-emporio.com"
-        />
-        <Button type="submit" disabled={busy || !email.trim()}>
-          Cadastrar
-        </Button>
-      </form>
-      {msg && <p className="mt-2 text-sm font-semibold text-ink">{msg}</p>}
+        <form onSubmit={cadastrar} className="mt-4 flex gap-2">
+          <Input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="email@do-emporio.com"
+            className="h-11 flex-1 text-base"
+          />
+          <Button type="submit" disabled={busy || !email.trim()} className="min-h-touch-lg">
+            <UserPlus size={18} /> Cadastrar
+          </Button>
+        </form>
+        {msg && <p className="mt-2 text-sm font-semibold text-ink">{msg}</p>}
 
-      <div className="mt-4 space-y-2">
-        {lista.map((r) => (
-          <Card key={r.id} className="flex items-center justify-between gap-3 p-3">
-            <div className="min-w-0">
-              <p className="truncate font-semibold">{r.email}</p>
-              <p className="text-xs text-ink-light">
-                {r.temSenha ? 'senha definida' : 'aguardando definir senha'} ·{' '}
-                {r.ativo ? <span className="text-success">ativo</span> : <span className="text-danger">inativo</span>}
-              </p>
-            </div>
-            <div className="flex shrink-0 gap-2">
-              {!r.temSenha && (
-                <button type="button" onClick={() => reenviar(r)} className="text-sm text-brand">
-                  reenviar link
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => toggleAtivo(r)}
-                className={`text-sm font-semibold ${r.ativo ? 'text-danger' : 'text-success'}`}
-              >
-                {r.ativo ? 'desativar' : 'ativar'}
-              </button>
-            </div>
-          </Card>
-        ))}
-        {lista.length === 0 && <Card className="p-5 text-ink-light">Nenhum responsável cadastrado.</Card>}
+        <div className="mt-4 space-y-2">
+          {lista.map((r) => (
+            <Card key={r.id} className="flex items-center justify-between gap-3 p-3">
+              <div className="min-w-0">
+                <p className="truncate font-semibold text-ink">{r.email}</p>
+                <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                  <Badge tom={r.temSenha ? 'ok' : 'warn'}>
+                    {r.temSenha ? 'Senha definida' : 'Aguardando senha'}
+                  </Badge>
+                  <Badge tom={r.ativo ? 'ok' : 'off'}>{r.ativo ? 'Ativo' : 'Inativo'}</Badge>
+                </div>
+              </div>
+              <div className="flex shrink-0 items-center gap-3">
+                {!r.temSenha && (
+                  <button
+                    type="button"
+                    onClick={() => reenviar(r)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-brand/40 px-3 py-1.5 text-sm font-semibold text-brand hover:bg-brand-bg"
+                  >
+                    <Mail size={14} /> Reenviar
+                  </button>
+                )}
+                <label className="flex cursor-pointer items-center gap-2">
+                  <Switch checked={r.ativo} onCheckedChange={() => toggleAtivo(r)} aria-label="Ativo" />
+                </label>
+              </div>
+            </Card>
+          ))}
+          {lista.length === 0 && (
+            <Card className="p-6 text-center text-ink-light">Nenhum responsável cadastrado.</Card>
+          )}
+        </div>
       </div>
-    </main>
+    </AppShell>
+  )
+}
+
+function Badge({ tom, children }: { tom: 'ok' | 'warn' | 'off'; children: React.ReactNode }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold',
+        tom === 'ok' && 'bg-success/15 text-success',
+        tom === 'warn' && 'bg-warning/15 text-warning',
+        tom === 'off' && 'bg-ink/10 text-ink-light',
+      )}
+    >
+      {children}
+    </span>
   )
 }
