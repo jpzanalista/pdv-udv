@@ -18,41 +18,50 @@ export function Cart({
   onReceber: () => void
 }) {
   const { total } = calcularTotais(items)
+  const qtdItens = items.reduce((s, i) => s + i.qtde, 0)
 
   return (
     <div className="flex h-full flex-col">
+      <div className="flex items-center justify-between border-b border-line px-3 py-2">
+        <span className="font-bold text-ink">Carrinho</span>
+        <span className="text-sm text-ink-light">{qtdItens} item(ns)</span>
+      </div>
       <div className="flex-1 overflow-auto">
         {items.length === 0 ? (
-          <p className="p-4 text-ink-light">Carrinho vazio. Toque nos produtos.</p>
+          <p className="p-6 text-center text-base text-ink-light">
+            Carrinho vazio.
+            <br />
+            Toque nos produtos.
+          </p>
         ) : (
           <ul className="divide-y divide-line">
             {items.map((i) => (
-              <li key={i.produtoId} className="flex items-center gap-2 p-2">
-                <div className="flex-1">
-                  <p className="text-sm font-semibold leading-tight">{i.descricao}</p>
-                  <p className="text-xs text-ink-light">
-                    {formatBRL(i.unitario)} · subtotal {formatBRL(i.unitario * i.qtde)}
+              <li key={i.produtoId} className="flex items-center gap-2 px-3 py-2.5">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-base font-semibold leading-tight text-ink">{i.descricao}</p>
+                  <p className="text-sm text-ink-light">
+                    {formatBRL(i.unitario)} · <span className="font-semibold text-ink-muted">{formatBRL(i.unitario * i.qtde)}</span>
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => onDec(i.produtoId)}
-                  className="min-h-touch w-9 rounded border border-line bg-surface font-bold text-ink-muted"
+                  className="h-10 w-10 rounded-lg border border-line bg-surface text-lg font-bold text-ink-muted hover:bg-canvas"
                 >
                   −
                 </button>
-                <span className="w-6 text-center font-bold">{i.qtde}</span>
+                <span className="w-7 text-center text-lg font-bold text-ink">{i.qtde}</span>
                 <button
                   type="button"
                   onClick={() => onInc(i.produtoId)}
-                  className="min-h-touch w-9 rounded border border-line bg-surface font-bold text-ink-muted"
+                  className="h-10 w-10 rounded-lg border border-line bg-surface text-lg font-bold text-ink-muted hover:bg-canvas"
                 >
                   +
                 </button>
                 <button
                   type="button"
                   onClick={() => onRemove(i.produtoId)}
-                  className="ml-1 px-2 text-danger"
+                  className="ml-1 px-2 text-lg text-danger"
                   aria-label="Remover"
                 >
                   ✕
@@ -65,15 +74,15 @@ export function Cart({
 
       <div className="border-t border-line p-3">
         <div className="mb-3 flex items-baseline justify-between">
-          <span className="text-ink-muted">Total</span>
-          <span className="text-3xl font-bold text-ink">{formatBRL(total)}</span>
+          <span className="text-base font-semibold text-ink-muted">Total</span>
+          <span className="text-4xl font-extrabold text-ink">{formatBRL(total)}</span>
         </div>
         <div className="flex gap-2">
-          <Button variant="ghost" className="flex-1" onClick={onClear} disabled={items.length === 0}>
+          <Button variant="ghost" className="min-h-touch-lg flex-1 text-base" onClick={onClear} disabled={items.length === 0}>
             Cancelar
           </Button>
           <Button
-            className="flex-1 min-h-touch-lg"
+            className="min-h-touch-lg flex-[2] text-base"
             onClick={onReceber}
             disabled={items.length === 0}
           >

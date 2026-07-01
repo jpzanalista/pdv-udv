@@ -12,6 +12,7 @@ import { ProductGrid } from '@/components/caixa/ProductGrid'
 import { QtyStepper } from '@/components/caixa/QtyStepper'
 import { ReceberModal, type ReceberPayload } from '@/components/caixa/ReceberModal'
 import { ReciboModal, type ReciboData } from '@/components/caixa/ReciboModal'
+import { Input } from '@/components/ui/Input'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { ApiError, api } from '@/lib/api'
 import { getToken } from '@/lib/auth'
@@ -33,6 +34,7 @@ export default function CaixaPage() {
   const [carregando, setCarregando] = useState(true)
 
   const [activeCat, setActiveCat] = useState<string>(TODOS)
+  const [busca, setBusca] = useState('')
   const [qtde, setQtde] = useState(1)
   const [cart, setCart] = useState<CartItem[]>([])
   const [receberOpen, setReceberOpen] = useState(false)
@@ -64,10 +66,22 @@ export default function CaixaPage() {
       .finally(() => setCarregando(false))
   }, [router])
 
-  const produtosFiltrados = useMemo(
-    () => (activeCat === TODOS ? produtos : produtos.filter((p) => p.categoriaId === activeCat)),
-    [produtos, activeCat],
-  )
+  const produtosFiltrados = useMemo(() => {
+    const q = busca
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+    return produtos.filter((p) => {
+      if (activeCat !== TODOS && p.categoriaId !== activeCat) return false
+      if (!q) return true
+      const alvo = `${p.descricao} ${p.codigo ?? ''} ${p.codigoBarras ?? ''}`
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+      return alvo.includes(q)
+    })
+  }, [produtos, activeCat, busca])
 
   function addProduto(p: Produto) {
     setMsg(null)
@@ -289,18 +303,28 @@ export default function CaixaPage() {
 
       <div className="flex flex-1 flex-col overflow-hidden md:flex-row">
         <section className="flex flex-1 flex-col overflow-hidden p-3">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap gap-1">
-              <Tab active={activeCat === TODOS} onClick={() => setActiveCat(TODOS)}>
-                TODOS
-              </Tab>
-              {categorias.map((c) => (
-                <Tab key={c.id} active={activeCat === c.id} onClick={() => setActiveCat(c.id)}>
-                  {c.nome}
-                </Tab>
-              ))}
-            </div>
+          <div className="mb-3 flex flex-wrap items-center gap-3">
+            <Input
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="🔎 Buscar produto por nome ou código…"
+              className="h-11 flex-1 text-base sm:min-w-[16rem] sm:max-w-md"
+            />
             <QtyStepper value={qtde} onChange={setQtde} />
+          </div>
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            <Tab active={activeCat === TODOS} onClick={() => setActiveCat(TODOS)}>
+              TODOS
+            </Tab>
+            {categorias.map((c) => (
+              <Tab
+                key={c.id}
+                active={activeCat === c.id}
+                onClick={() => setActiveCat((prev) => (prev === c.id ? TODOS : c.id))}
+              >
+                {c.nome}
+              </Tab>
+            ))}
           </div>
           <div className="flex-1 overflow-auto">
             <ProductGrid produtos={produtosFiltrados} onAdd={addProduto} />
@@ -398,7 +422,7 @@ function Tab({
     <button
       type="button"
       onClick={onClick}
-      className={`min-h-touch rounded-full border px-4 text-sm font-semibold transition-colors ${
+      className={`min-h-touch rounded-full border px-4 text-base font-semibold transition-colors ${
         active ? 'border-brand bg-brand text-white' : 'border-line bg-surface text-ink-muted hover:bg-canvas'
       }`}
     >
