@@ -1,14 +1,16 @@
 'use client'
 
 import { formatBRL } from '@pdv-udv/core'
-import Link from 'next/link'
+import { ChevronDown, RotateCcw } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
+import { AppShell } from '@/components/AppShell'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { ApiError, api } from '@/lib/api'
 import { getToken } from '@/lib/auth'
+import { cn } from '@/lib/utils'
 
 const ALLOWED = ['responsavel_emporio', 'admin']
 const METODO: Record<string, string> = {
@@ -91,100 +93,105 @@ export default function DevolucoesPage() {
     }
   }
 
-  if (carregando) return <main className="p-8 text-ink-muted">Carregando…</main>
+  if (carregando)
+    return <main className="grid min-h-[100dvh] place-items-center text-ink-muted">Carregando…</main>
   if (me && !ALLOWED.includes(me.role))
     return (
-      <main className="p-8">
-        <h1 className="text-xl font-bold text-brand">Devoluções</h1>
-        <p className="mt-2 text-ink-muted">Acesso restrito ao responsável.</p>
-        <Link href="/caixa" className="mt-2 inline-block text-brand">
-          ← caixa
-        </Link>
-      </main>
+      <AppShell title="Devoluções">
+        <Card className="p-6 text-ink-muted">Acesso restrito ao responsável do empório.</Card>
+      </AppShell>
     )
 
   return (
-    <main className="mx-auto max-w-2xl p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-brand">Devoluções</h1>
-        <Link href="/caixa" className="text-sm text-ink-muted">
-          ← caixa
-        </Link>
-      </div>
-      <p className="mt-1 text-ink-muted">Vendas do expediente aberto. Clique para devolver itens.</p>
-      {msg && <p className="mt-2 text-sm font-semibold text-ink">{msg}</p>}
+    <AppShell title="Devoluções">
+      <div className="mx-auto max-w-2xl">
+        <div className="border-b border-line pb-4">
+          <h1 className="flex items-center gap-2 text-2xl font-bold text-ink">
+            <RotateCcw size={22} className="text-brand" /> Devoluções
+          </h1>
+          <p className="mt-1 text-base text-ink-muted">
+            Vendas do expediente aberto. Toque numa venda para devolver itens.
+          </p>
+        </div>
 
-      <div className="mt-4 space-y-2">
-        {vendas.map((v) => {
-          const expandida = aberta === v.id
-          return (
-            <Card key={v.id} className="p-3">
-              <button
-                type="button"
-                onClick={() => abrir(v)}
-                className="flex w-full items-center justify-between gap-3 text-left"
-              >
-                <span className="font-semibold">
-                  Venda #{v.numero} · {METODO[v.metodo] ?? v.metodo}
-                </span>
-                <span className="font-bold text-ink">{formatBRL(v.totalCents)}</span>
-              </button>
+        {msg && <p className="mt-3 text-sm font-semibold text-ink">{msg}</p>}
 
-              {expandida && (
-                <div className="mt-3 border-t border-line pt-3">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-left text-ink-light">
-                        <th className="py-1">Item</th>
-                        <th className="py-1 text-right">Vend.</th>
-                        <th className="py-1 text-right">Devolv.</th>
-                        <th className="py-1 text-right">Devolver</th>
-                      </tr>
-                    </thead>
-                    <tbody>
+        <div className="mt-4 space-y-2">
+          {vendas.map((v) => {
+            const expandida = aberta === v.id
+            return (
+              <Card key={v.id} className="overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => abrir(v)}
+                  className="flex w-full items-center gap-3 p-3 text-left"
+                >
+                  <span className="flex-1 font-semibold text-ink">
+                    Venda #{v.numero}{' '}
+                    <span className="font-normal text-ink-muted">· {METODO[v.metodo] ?? v.metodo}</span>
+                  </span>
+                  <span className="font-bold text-ink">{formatBRL(v.totalCents)}</span>
+                  <ChevronDown
+                    size={18}
+                    className={cn('text-ink-light transition-transform', expandida && 'rotate-180')}
+                  />
+                </button>
+
+                {expandida && (
+                  <div className="border-t border-line px-3 py-3">
+                    <div className="space-y-1.5">
                       {v.itens.map((i) => {
                         const disp = i.qtde - i.devolvido
                         return (
-                          <tr key={i.id} className="border-t border-line">
-                            <td className="py-1">{i.descricao}</td>
-                            <td className="py-1 text-right">{i.qtde}</td>
-                            <td className="py-1 text-right text-ink-light">{i.devolvido}</td>
-                            <td className="py-1 text-right">
-                              {disp <= 0 ? (
-                                <span className="text-ink-light">—</span>
-                              ) : (
-                                <Input
-                                  inputMode="decimal"
-                                  className="w-16 text-right"
-                                  placeholder={`0/${disp}`}
-                                  value={qtd[i.id] ?? ''}
-                                  onChange={(e) => setQtd((p) => ({ ...p, [i.id]: e.target.value }))}
-                                />
-                              )}
-                            </td>
-                          </tr>
+                          <div
+                            key={i.id}
+                            className="flex items-center gap-3 rounded-lg border border-line/60 px-3 py-2"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium text-ink">{i.descricao}</p>
+                              <p className="text-xs text-ink-light">
+                                Vendido {i.qtde}
+                                {i.devolvido > 0 && ` · já devolvido ${i.devolvido}`}
+                              </p>
+                            </div>
+                            {disp <= 0 ? (
+                              <span className="text-sm text-ink-light">devolvido</span>
+                            ) : (
+                              <Input
+                                inputMode="decimal"
+                                className="h-10 w-20 text-right text-base"
+                                placeholder={`0/${disp}`}
+                                value={qtd[i.id] ?? ''}
+                                onChange={(e) => setQtd((p) => ({ ...p, [i.id]: e.target.value }))}
+                              />
+                            )}
+                          </div>
                         )
                       })}
-                    </tbody>
-                  </table>
-                  <Input
-                    className="mt-3"
-                    placeholder="Motivo (opcional)"
-                    value={motivo}
-                    onChange={(e) => setMotivo(e.target.value)}
-                  />
-                  <Button className="mt-3 w-full" onClick={() => devolver(v)} disabled={busy}>
-                    {busy ? 'Registrando…' : 'Confirmar devolução'}
-                  </Button>
-                </div>
-              )}
-            </Card>
-          )
-        })}
-        {vendas.length === 0 && (
-          <Card className="p-5 text-ink-light">Nenhuma venda no expediente aberto.</Card>
-        )}
+                    </div>
+                    <Input
+                      className="mt-3 h-11 text-base"
+                      placeholder="Motivo (opcional)"
+                      value={motivo}
+                      onChange={(e) => setMotivo(e.target.value)}
+                    />
+                    <Button
+                      className="mt-3 min-h-touch-lg w-full"
+                      onClick={() => devolver(v)}
+                      disabled={busy}
+                    >
+                      <RotateCcw size={16} /> {busy ? 'Registrando…' : 'Confirmar devolução'}
+                    </Button>
+                  </div>
+                )}
+              </Card>
+            )
+          })}
+          {vendas.length === 0 && (
+            <Card className="p-6 text-center text-ink-light">Nenhuma venda no expediente aberto.</Card>
+          )}
+        </div>
       </div>
-    </main>
+    </AppShell>
   )
 }
