@@ -18,10 +18,12 @@ export function ProductGrid({
           key={p.id}
           type="button"
           onClick={() => onAdd(p)}
-          className="flex min-h-[92px] flex-col justify-between gap-1 rounded-xl border border-line bg-surface p-3 text-left shadow-sm transition hover:border-brand hover:bg-brand-bg/40 hover:shadow-md active:scale-[0.98]"
+          className="flex min-h-[62px] flex-col justify-between gap-0.5 rounded-xl border border-line bg-surface p-2.5 text-left shadow-sm transition hover:border-brand hover:bg-brand-bg/40 hover:shadow-md active:scale-[0.98] sm:min-h-[92px] sm:gap-1 sm:p-3"
         >
-          <span className="text-base font-semibold leading-tight text-ink">{p.descricao}</span>
-          <span className="text-lg font-extrabold text-brand">
+          <span className="line-clamp-2 text-sm font-semibold leading-tight text-ink sm:text-base">
+            {p.descricao}
+          </span>
+          <span className="text-base font-extrabold text-brand sm:text-lg">
             {formatBRL(reaisToCents(Number(p.precoVenda)))}
           </span>
         </button>

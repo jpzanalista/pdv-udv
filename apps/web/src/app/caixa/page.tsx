@@ -349,7 +349,7 @@ export default function CaixaPage() {
 
       <div className="flex flex-1 flex-col overflow-hidden md:flex-row">
         <section className="flex flex-1 flex-col overflow-hidden p-3">
-          <div className="mb-3 flex flex-wrap items-center gap-3">
+          <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
             <Input
               ref={buscaRef}
               name="busca-produto"
@@ -366,7 +366,7 @@ export default function CaixaPage() {
             />
             <QtyStepper value={qtde} onChange={setQtde} />
           </div>
-          <div className="mb-3 flex flex-wrap gap-1.5">
+          <div className="-mx-3 mb-3 flex gap-1.5 overflow-x-auto px-3 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
             <Tab active={activeCat === TODOS} onClick={() => setActiveCat(TODOS)}>
               TODOS
             </Tab>
@@ -521,7 +521,7 @@ function Tab({
     <button
       type="button"
       onClick={onClick}
-      className={`min-h-touch rounded-full border px-4 text-base font-semibold transition-colors ${
+      className={`min-h-touch shrink-0 whitespace-nowrap rounded-full border px-4 text-sm font-semibold transition-colors sm:text-base ${
         active ? 'border-brand bg-brand text-white' : 'border-line bg-surface text-ink-muted hover:bg-canvas'
       }`}
     >
