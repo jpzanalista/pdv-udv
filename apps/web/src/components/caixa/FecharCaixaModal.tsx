@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Field, Input } from '@/components/ui/Input'
+import { desktopAutofocus } from '@/lib/focus'
 
 export function FecharCaixaModal({
   esperadoCents,
@@ -33,7 +34,7 @@ export function FecharCaixaModal({
             value={contado}
             onChange={(e) => setContado(e.target.value)}
             placeholder="0,00"
-            autoFocus
+            ref={desktopAutofocus}
           />
         </Field>
         <p className="mt-2 text-sm">

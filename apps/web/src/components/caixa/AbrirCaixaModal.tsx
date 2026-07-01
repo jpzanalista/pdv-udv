@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Field, Input } from '@/components/ui/Input'
+import { desktopAutofocus } from '@/lib/focus'
 
 export function AbrirCaixaModal({
   submitting,
@@ -35,7 +36,7 @@ export function AbrirCaixaModal({
             value={fundo}
             onChange={(e) => setFundo(e.target.value)}
             placeholder="0,00"
-            autoFocus
+            ref={desktopAutofocus}
           />
         </Field>
         {sugestaoFundoCents != null && (

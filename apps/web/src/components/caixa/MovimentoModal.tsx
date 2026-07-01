@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Field, Input } from '@/components/ui/Input'
+import { desktopAutofocus } from '@/lib/focus'
 
 export type MovimentoPayload = {
   tipo: 'sangria' | 'suprimento'
@@ -91,7 +92,7 @@ export function MovimentoModal({
             value={valor}
             onChange={(e) => setValor(e.target.value)}
             placeholder="0,00"
-            autoFocus
+            ref={desktopAutofocus}
           />
         </Field>
 

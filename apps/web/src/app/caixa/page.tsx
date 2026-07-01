@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/Input'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { ApiError, api } from '@/lib/api'
 import { getToken } from '@/lib/auth'
+import { useDesktopAutoFocus } from '@/lib/focus'
 import type { CartItem, Categoria, Conta, Expediente, Produto } from '@/lib/types'
 
 const TODOS = '__todos__'
@@ -44,6 +45,8 @@ export default function CaixaPage() {
   const [submitting, setSubmitting] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
   const buscaRef = useRef<HTMLInputElement>(null)
+  // Foca a busca só no desktop e após a tela carregar (evita teclado no mobile).
+  useDesktopAutoFocus(buscaRef, !carregando)
 
   useEffect(() => {
     if (!getToken()) {
@@ -361,7 +364,6 @@ export default function CaixaPage() {
               onChange={(e) => setBusca(e.target.value)}
               onKeyDown={onBuscaEnter}
               placeholder="🔎 Buscar / bipar código  (F3)"
-              autoFocus
               className="h-11 flex-1 text-base sm:min-w-[16rem] sm:max-w-md"
             />
             <QtyStepper value={qtde} onChange={setQtde} />

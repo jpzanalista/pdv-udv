@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Field, Input } from '@/components/ui/Input'
+import { desktopAutofocus } from '@/lib/focus'
 import { ApiError, api } from '@/lib/api'
 import { TELEFONE_INICIAL, maskTelefone, telefoneCompleto } from '@/lib/telefone'
 
@@ -141,7 +142,7 @@ export function ReciboModal({
                 onChange={(e) => setTelefone(e.target.value)}
                 onBlur={() => setTelefone(maskTelefone(telefone))}
                 placeholder="+55 (00) 00000-0000"
-                autoFocus
+                ref={desktopAutofocus}
               />
             </Field>
             {erro && <p className="mt-2 text-sm text-danger">{erro}</p>}

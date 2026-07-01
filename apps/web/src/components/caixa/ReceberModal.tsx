@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Field, Input } from '@/components/ui/Input'
+import { desktopAutofocus } from '@/lib/focus'
 import { TELEFONE_INICIAL, maskTelefone, telefoneCompleto, telefoneParaSalvar } from '@/lib/telefone'
 import type { Conta } from '@/lib/types'
 
@@ -215,7 +216,7 @@ export function ReceberModal({
           <>
             <p className="mb-2 text-sm font-semibold text-ink-muted">{tipoLabel} — escolha a conta</p>
             <Input
-              autoFocus
+              ref={desktopAutofocus}
               placeholder="Buscar por nome…"
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
@@ -267,7 +268,7 @@ export function ReceberModal({
             <p className="mb-2 text-sm font-semibold text-ink-muted">Nova conta {tipoLabel}</p>
             <div className="flex flex-col gap-3">
               <Field label="Nome" htmlFor="novo-nome">
-                <Input id="novo-nome" autoFocus value={nome} onChange={(e) => setNome(e.target.value)} />
+                <Input id="novo-nome" ref={desktopAutofocus} value={nome} onChange={(e) => setNome(e.target.value)} />
               </Field>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="CPF (opcional)" htmlFor="novo-cpf">
