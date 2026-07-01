@@ -5,7 +5,9 @@ import { type FormEvent, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Field, Input } from '@/components/ui/Input'
+import { Logo } from '@/components/ui/Logo'
 import { ApiError, api } from '@/lib/api'
+import { desktopAutofocus } from '@/lib/focus'
 
 export default function DefinirSenhaPage() {
   const [token, setToken] = useState('')
@@ -52,8 +54,13 @@ export default function DefinirSenhaPage() {
   return (
     <main className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-sm p-6">
-        <h1 className="text-2xl font-bold text-brand">Definir senha</h1>
-        <p className="mb-5 text-ink-muted">Empório · responsável</p>
+        <div className="mb-5 flex items-center gap-3">
+          <Logo size={44} />
+          <div>
+            <h1 className="text-2xl font-bold leading-none text-brand">Empório</h1>
+            <p className="mt-1 text-ink-muted">Definir senha</p>
+          </div>
+        </div>
 
         {ok ? (
           <>
@@ -76,7 +83,7 @@ export default function DefinirSenhaPage() {
                 value={senha}
                 onChange={(e) => setSenha(e.target.value)}
                 autoComplete="new-password"
-                autoFocus
+                ref={desktopAutofocus}
               />
             </Field>
             <Field label="Confirmar senha" htmlFor="conf">
