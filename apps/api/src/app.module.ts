@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
+import { APP_INTERCEPTOR } from '@nestjs/core'
 import { AsaasModule } from './asaas/asaas.module'
 import { AuthModule } from './auth/auth.module'
 import { CatalogoModule } from './catalogo/catalogo.module'
 import { ContasModule } from './contas/contas.module'
 import { CortesModule } from './cortes/cortes.module'
 import { DbModule } from './db/db.module'
+import { TenantInterceptor } from './db/tenant.interceptor'
 import { ExpedientesModule } from './expedientes/expedientes.module'
 import { HealthController } from './health/health.controller'
 import { NucleosModule } from './nucleos/nucleos.module'
@@ -35,5 +37,6 @@ import { VendasModule } from './vendas/vendas.module'
     CortesModule,
   ],
   controllers: [HealthController],
+  providers: [{ provide: APP_INTERCEPTOR, useClass: TenantInterceptor }],
 })
 export class AppModule {}

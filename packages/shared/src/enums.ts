@@ -1,5 +1,6 @@
 /** Papéis de autorização (ver ../AUTH.md). Por Núcleo, exceto `admin`. */
 export const ROLES = [
+  'gestor_plataforma', // dono da plataforma (sem núcleo; autentica pelo .env)
   'responsavel_emporio',
   'presidencia',
   'representante_nucleo',

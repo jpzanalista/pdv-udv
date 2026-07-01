@@ -8,8 +8,10 @@ import {
   nucleos,
 } from '@pdv-udv/db'
 import { and, desc, eq, inArray, sql } from 'drizzle-orm'
+import type { Pool } from 'pg'
 import { anoMesLocal, instanteLocal } from '../common/timezone'
-import { DB } from '../db/db.module'
+import { DB, POOL } from '../db/db.module'
+import { runInContext } from '../db/tenant'
 
 const reais = (cents: number) => (cents / 100).toFixed(2)
 const toCents = (v: string | null) => Math.round(Number(v ?? 0) * 100)
@@ -19,7 +21,10 @@ type Config = { timezone: string; corteDia: number; corteHora: string }
 
 @Injectable()
 export class CortesService {
-  constructor(@Inject(DB) private readonly db: Database) {}
+  constructor(
+    @Inject(DB) private readonly db: Database,
+    @Inject(POOL) private readonly pool: Pool,
+  ) {}
 
   private async config(nucleoId: string): Promise<Config> {
     const [n] = await this.db
@@ -210,7 +215,12 @@ export class CortesService {
    * Fecha automaticamente o corte DEVIDO (último limite que já passou) de cada núcleo,
    * pulando os já fechados e os sem sócios em aberto. Idempotente. `executadoPor` = null.
    */
+  /** Agendador (sem usuário): varre todos os núcleos → precisa de bypass de RLS. */
   async fecharDevidosAutomatico() {
+    return runInContext(this.pool, { bypass: true }, () => this.fecharDevidosImpl())
+  }
+
+  private async fecharDevidosImpl() {
     const ns = await this.db
       .select({
         id: nucleos.id,

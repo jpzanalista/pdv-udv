@@ -60,6 +60,7 @@ async function main() {
   const pool = new Pool({ connectionString: url })
   const client = await pool.connect()
   try {
+    await client.query("SET app.bypass = 'on'") // manutenção: ignora RLS
     const q = (s: string) => client.query(s) as unknown as Promise<{ rows: { n: string }[] }>
     console.log(CONFIRMAR ? '⚠️  MODO APLICAR (CONFIRMAR=SIM)\n' : 'ℹ️  DRY-RUN (nada será apagado)\n')
     console.log('Antes:', await contagens(q))

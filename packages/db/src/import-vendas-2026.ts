@@ -13,7 +13,7 @@
 import { randomUUID } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { and, eq, inArray } from 'drizzle-orm'
-import { createDb } from './client.js'
+import { createAdminDb } from './client.js'
 import { contas, nucleos, pagamentos, produtos, terminais, vendaItens, vendas } from './schema.js'
 
 const url = process.env.DATABASE_URL ?? 'postgresql://pdv:pdv@localhost:5440/pdv'
@@ -113,7 +113,7 @@ function parse(md: string): Venda[] {
 }
 
 async function main() {
-  const db = createDb(url)
+  const db = createAdminDb(url)
   const md = readFileSync(MD_PATH, 'utf8')
 
   const [nucleo] = await db.select().from(nucleos).where(eq(nucleos.udvId, NUCLEO_UDV_ID)).limit(1)

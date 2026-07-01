@@ -21,6 +21,7 @@ export const roleEnum = pgEnum('role', [
   'tesoureiro_2',
   'admin',
   'socio',
+  'gestor_plataforma',
 ])
 export const accountTypeEnum = pgEnum('account_type', ['socio', 'visitante', 'institucional'])
 export const personKindEnum = pgEnum('person_kind', ['socio', 'visitante'])

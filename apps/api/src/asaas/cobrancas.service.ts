@@ -1,8 +1,10 @@
 import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common'
 import { type Database, asaasCustomers, cobrancas, contas, lancamentos, nucleos, pessoas } from '@pdv-udv/db'
 import { and, desc, eq } from 'drizzle-orm'
+import type { Pool } from 'pg'
 import { bloqueioFechamento } from '../common/timezone'
-import { DB } from '../db/db.module'
+import { DB, POOL } from '../db/db.module'
+import { runInContext } from '../db/tenant'
 import { AsaasService } from './asaas.service'
 
 const toCents = (v: string | null) => Math.round(Number(v ?? 0) * 100)
@@ -28,6 +30,7 @@ type ContaRef = { id: string; nucleoId: string; nome: string }
 export class CobrancasService {
   constructor(
     @Inject(DB) private readonly db: Database,
+    @Inject(POOL) private readonly pool: Pool,
     private readonly asaas: AsaasService,
   ) {}
 
@@ -182,27 +185,30 @@ export class CobrancasService {
   }
 
   /** Baixa idempotente acionada pelo webhook (ou pela simulação em dev). */
+  /** Webhook do ASAAS: acha a cobrança por paymentId (cross-núcleo) e baixa → exige bypass de RLS. */
   async baixaPorPagamento(asaasPaymentId: string) {
-    const [cob] = await this.db
-      .select()
-      .from(cobrancas)
-      .where(eq(cobrancas.asaasPaymentId, asaasPaymentId))
-      .limit(1)
-    if (!cob) return { ok: false, motivo: 'cobranca-desconhecida' as const }
-    if (cob.status === 'confirmada') return { ok: true, jaProcessado: true }
+    return runInContext(this.pool, { bypass: true }, async () => {
+      const [cob] = await this.db
+        .select()
+        .from(cobrancas)
+        .where(eq(cobrancas.asaasPaymentId, asaasPaymentId))
+        .limit(1)
+      if (!cob) return { ok: false, motivo: 'cobranca-desconhecida' as const }
+      if (cob.status === 'confirmada') return { ok: true, jaProcessado: true }
 
-    await this.db.update(cobrancas).set({ status: 'confirmada' }).where(eq(cobrancas.id, cob.id))
-    if (cob.contaId) {
-      await this.db.insert(lancamentos).values({
-        nucleoId: cob.nucleoId,
-        contaId: cob.contaId,
-        tipo: 'credito',
-        valor: cob.valor,
-        cobrancaId: cob.id,
-        descricao: 'Pagamento Pix (ASAAS)',
-      })
-    }
-    return { ok: true }
+      await this.db.update(cobrancas).set({ status: 'confirmada' }).where(eq(cobrancas.id, cob.id))
+      if (cob.contaId) {
+        await this.db.insert(lancamentos).values({
+          nucleoId: cob.nucleoId,
+          contaId: cob.contaId,
+          tipo: 'credito',
+          valor: cob.valor,
+          cobrancaId: cob.id,
+          descricao: 'Pagamento Pix (ASAAS)',
+        })
+      }
+      return { ok: true }
+    })
   }
 
   // ---------- internos ----------

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { eq } from 'drizzle-orm'
-import { createDb } from './client.js'
+import { createAdminDb } from './client.js'
 import { categorias, contas, nucleos, produtos } from './schema.js'
 
 const url = process.env.DATABASE_URL ?? 'postgresql://pdv:pdv@localhost:5440/pdv'
@@ -34,7 +34,7 @@ function req<T>(v: T | undefined, msg: string): T {
 }
 
 async function main() {
-  const db = createDb(url)
+  const db = createAdminDb(url)
 
   const nucleo = req(
     (await db.select().from(nucleos).where(eq(nucleos.udvId, NUCLEO_UDV_ID)).limit(1))[0],
