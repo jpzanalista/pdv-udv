@@ -1,9 +1,10 @@
 'use client'
 
 import { formatBRL } from '@pdv-udv/core'
-import Link from 'next/link'
+import { CheckCircle2, FileSpreadsheet, FileText, Lock } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { AppShell } from '@/components/AppShell'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ApiError, api } from '@/lib/api'
@@ -11,6 +12,7 @@ import { getToken } from '@/lib/auth'
 import { exportarCortePdf } from '@/lib/corte-pdf'
 import { exportarCorteXlsx } from '@/lib/corte-xlsx'
 import { fmtDataHora } from '@/lib/datahora'
+import { cn } from '@/lib/utils'
 
 const ALLOWED = ['responsavel_emporio', 'admin', 'tesoureiro_1', 'tesoureiro_2']
 const PODE_FECHAR = ['responsavel_emporio', 'admin']
@@ -37,6 +39,8 @@ type CorteRow = {
   qtdSocios: number
   executadoEm: string
 }
+
+const cod = (c: number | null) => (c != null ? String(c).padStart(3, '0') : '—')
 
 export default function CortePage() {
   const router = useRouter()
@@ -94,7 +98,10 @@ export default function CortePage() {
     setFechando(true)
     setMsg(null)
     try {
-      await api('/cortes/fechar', { method: 'POST', body: JSON.stringify({ competencia: previa.competencia }) })
+      await api('/cortes/fechar', {
+        method: 'POST',
+        body: JSON.stringify({ competencia: previa.competencia }),
+      })
       setConfirmar(false)
       setMsg(`Crediário de ${previa.competencia} fechado ✓`)
       await carregarPrevia(previa.competencia)
@@ -140,40 +147,39 @@ export default function CortePage() {
     }
   }
 
-  if (carregando) return <main className="p-8 text-ink-muted">Carregando…</main>
+  if (carregando)
+    return <main className="grid min-h-[100dvh] place-items-center text-ink-muted">Carregando…</main>
   if (me && !ALLOWED.includes(me.role))
     return (
-      <main className="p-8">
-        <h1 className="text-xl font-bold text-brand">Fechamento do crediário</h1>
-        <p className="mt-2 text-ink-muted">Acesso restrito ao responsável.</p>
-        <Link href="/caixa" className="mt-2 inline-block text-brand">
-          ← caixa
-        </Link>
-      </main>
+      <AppShell title="Fechamento do crediário">
+        <Card className="p-6 text-ink-muted">Acesso restrito.</Card>
+      </AppShell>
     )
 
   return (
-    <main className="mx-auto max-w-2xl p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-brand">Fechamento do crediário</h1>
-        <Link href="/caixa" className="text-sm text-ink-muted">
-          ← caixa
-        </Link>
+    <AppShell title="Fechamento do crediário" fluid>
+      <div className="border-b border-line pb-4">
+        <h1 className="text-2xl font-bold text-ink">Fechamento do crediário</h1>
+        <p className="mt-1 text-base text-ink-muted">
+          Prévia e fechamento mensal dos sócios para a tesouraria.
+        </p>
       </div>
 
+      {/* Competência */}
       <div className="mt-4 flex flex-wrap items-end gap-3">
-        <label className="text-sm">
-          <span className="block text-ink-light">Competência</span>
+        <label className="flex flex-col gap-1 text-sm">
+          <span className="font-semibold text-ink-light">Competência</span>
           <input
             type="month"
             value={competencia}
             onChange={(e) => trocarCompetencia(e.target.value)}
-            className="min-h-touch rounded border border-line bg-surface px-2 text-ink"
+            className="min-h-touch rounded-lg border border-line bg-surface px-3 text-base text-ink"
           />
         </label>
         {previa && (
           <p className="text-sm text-ink-light">
-            Janela: {fmtDataHora(previa.periodoDe, me?.timezone)} → {fmtDataHora(previa.periodoAte, me?.timezone)}
+            Janela: {fmtDataHora(previa.periodoDe, me?.timezone)} →{' '}
+            {fmtDataHora(previa.periodoAte, me?.timezone)}
           </p>
         )}
       </div>
@@ -182,70 +188,63 @@ export default function CortePage() {
 
       {previa && (
         <Card className="mt-4 p-5">
-          <div className="flex items-center justify-between">
+          {/* Resumo + ações */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-lg font-bold text-ink">
-                {previa.qtdSocios} sócio(s) — {formatBRL(previa.totalCents)}
+              <p className="text-xl font-bold text-ink">
+                {previa.qtdSocios} sócio(s) · {formatBRL(previa.totalCents)}
               </p>
               {previa.jaFechado ? (
-                <p className="text-sm text-success">
-                  ✓ Fechado em {previa.executadoEm ? fmtDataHora(previa.executadoEm, me?.timezone) : '—'}
+                <p className="mt-0.5 inline-flex items-center gap-1.5 text-sm font-semibold text-success">
+                  <CheckCircle2 size={16} /> Fechado em{' '}
+                  {previa.executadoEm ? fmtDataHora(previa.executadoEm, me?.timezone) : '—'}
                 </p>
               ) : (
-                <p className="text-sm text-ink-light">Prévia (ainda não fechado)</p>
+                <p className="mt-0.5 text-sm text-ink-light">Prévia (ainda não fechado)</p>
               )}
             </div>
             <div className="flex flex-wrap gap-2">
               <Button
                 variant="secondary"
-                className="text-sm"
-                onClick={() => exportarCorteXlsx(previa.competencia, previa.itens, previa.totalCents, me?.nucleoNome ?? undefined)}
+                onClick={() =>
+                  exportarCorteXlsx(previa.competencia, previa.itens, previa.totalCents, me?.nucleoNome ?? undefined)
+                }
                 disabled={previa.itens.length === 0}
               >
-                Excel
+                <FileSpreadsheet size={16} /> Excel
               </Button>
-              <Button
-                variant="secondary"
-                className="text-sm"
-                onClick={exportarPreviaPdf}
-                disabled={previa.itens.length === 0}
-              >
-                PDF
+              <Button variant="secondary" onClick={exportarPreviaPdf} disabled={previa.itens.length === 0}>
+                <FileText size={16} /> PDF
               </Button>
               {podeFechar && !previa.jaFechado && (
-                <Button
-                  className="text-sm"
-                  onClick={() => setConfirmar(true)}
-                  disabled={previa.itens.length === 0}
-                >
-                  Realizar fechamento
+                <Button onClick={() => setConfirmar(true)} disabled={previa.itens.length === 0}>
+                  <Lock size={16} /> Realizar fechamento
                 </Button>
               )}
             </div>
           </div>
 
-          <div className="mt-4 max-h-96 overflow-auto rounded border border-line">
-            <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-canvas">
-                <tr className="text-left text-ink-light">
-                  <th className="p-2 text-right">Cód.</th>
-                  <th className="p-2">Cliente</th>
-                  <th className="p-2 text-right">Valor</th>
+          {/* Itens: tabela (desktop) */}
+          <div className="mt-4 hidden max-h-96 overflow-auto rounded-lg border border-line md:block">
+            <table className="w-full text-base">
+              <thead className="sticky top-0 bg-canvas text-xs font-semibold uppercase tracking-wide text-ink-light">
+                <tr>
+                  <th className="px-3 py-2 text-left">Cód.</th>
+                  <th className="px-3 py-2 text-left">Cliente</th>
+                  <th className="px-3 py-2 text-right">Valor</th>
                 </tr>
               </thead>
               <tbody>
                 {previa.itens.map((i, idx) => (
-                  <tr key={idx} className="border-t border-line">
-                    <td className="p-2 text-right font-mono text-ink-muted">
-                      {i.codigo != null ? String(i.codigo).padStart(3, '0') : '—'}
-                    </td>
-                    <td className="p-2">{i.clienteNome}</td>
-                    <td className="p-2 text-right font-semibold">{formatBRL(i.valorCents)}</td>
+                  <tr key={idx} className="border-t border-line/60 even:bg-brand-bg/40">
+                    <td className="px-3 py-2 font-mono text-ink-muted">{cod(i.codigo)}</td>
+                    <td className="px-3 py-2 text-ink">{i.clienteNome}</td>
+                    <td className="px-3 py-2 text-right font-semibold text-ink">{formatBRL(i.valorCents)}</td>
                   </tr>
                 ))}
                 {previa.itens.length === 0 && (
                   <tr>
-                    <td colSpan={3} className="p-4 text-ink-light">
+                    <td colSpan={3} className="px-3 py-6 text-center text-ink-light">
                       Nenhum sócio com saldo no período.
                     </td>
                   </tr>
@@ -253,55 +252,92 @@ export default function CortePage() {
               </tbody>
             </table>
           </div>
+
+          {/* Itens: cartões (mobile) */}
+          <div className="mt-4 space-y-1.5 md:hidden">
+            {previa.itens.map((i, idx) => (
+              <div
+                key={idx}
+                className="flex items-center justify-between gap-2 rounded-lg border border-line/60 px-3 py-2"
+              >
+                <span className="min-w-0">
+                  <span className="mr-2 font-mono text-xs text-ink-light">{cod(i.codigo)}</span>
+                  <span className="text-ink">{i.clienteNome}</span>
+                </span>
+                <span className="shrink-0 font-semibold text-ink">{formatBRL(i.valorCents)}</span>
+              </div>
+            ))}
+            {previa.itens.length === 0 && (
+              <p className="py-4 text-center text-ink-light">Nenhum sócio com saldo no período.</p>
+            )}
+          </div>
         </Card>
       )}
 
+      {/* Fechamentos anteriores */}
       <section className="mt-8">
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-light">
+        <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-ink-light">
           Fechamentos anteriores
         </h2>
         {cortes.length === 0 ? (
           <p className="text-sm text-ink-light">Nenhum fechamento ainda.</p>
         ) : (
-          <div className="overflow-auto rounded-lg border border-line bg-surface">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-line text-left text-ink-light">
-                  <th className="p-2">Competência</th>
-                  <th className="p-2 text-right">Sócios</th>
-                  <th className="p-2 text-right">Total</th>
-                  <th className="p-2">Fechado em</th>
-                  <th className="p-2"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {cortes.map((c) => (
-                  <tr key={c.id} className="border-b border-line last:border-0">
-                    <td className="p-2 font-semibold">{c.competencia}</td>
-                    <td className="p-2 text-right">{c.qtdSocios}</td>
-                    <td className="p-2 text-right font-semibold">{formatBRL(c.totalCents)}</td>
-                    <td className="p-2 text-ink-muted">{fmtDataHora(c.executadoEm, me?.timezone)}</td>
-                    <td className="p-2 text-right">
-                      <button
-                        type="button"
-                        onClick={() => exportarFechado(c.id, 'xlsx')}
-                        className="mr-3 text-sm font-semibold text-brand"
-                      >
-                        Excel
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => exportarFechado(c.id, 'pdf')}
-                        className="text-sm font-semibold text-brand"
-                      >
-                        PDF
-                      </button>
-                    </td>
+          <>
+            {/* Desktop */}
+            <Card className="hidden overflow-hidden md:block">
+              <table className="w-full text-base">
+                <thead>
+                  <tr className="border-b border-line bg-canvas text-center text-xs font-semibold uppercase tracking-wide text-ink-light">
+                    <th className="px-3 py-2.5 text-left">Competência</th>
+                    <th className="px-3 py-2.5 text-right">Sócios</th>
+                    <th className="px-3 py-2.5 text-right">Total</th>
+                    <th className="px-3 py-2.5 text-left">Fechado em</th>
+                    <th className="px-3 py-2.5">Planilhas</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {cortes.map((c) => (
+                    <tr
+                      key={c.id}
+                      className="border-b border-line/60 last:border-0 even:bg-brand-bg/40 hover:bg-brand-bg/70"
+                    >
+                      <td className="px-3 py-3 font-semibold text-ink">{c.competencia}</td>
+                      <td className="px-3 py-3 text-right text-ink-muted">{c.qtdSocios}</td>
+                      <td className="px-3 py-3 text-right font-semibold text-ink">{formatBRL(c.totalCents)}</td>
+                      <td className="px-3 py-3 text-ink-muted">{fmtDataHora(c.executadoEm, me?.timezone)}</td>
+                      <td className="px-3 py-3">
+                        <div className="flex items-center justify-center gap-2">
+                          <BotaoExport onClick={() => exportarFechado(c.id, 'xlsx')} tipo="xlsx" />
+                          <BotaoExport onClick={() => exportarFechado(c.id, 'pdf')} tipo="pdf" />
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+
+            {/* Mobile */}
+            <div className="grid gap-2 md:hidden">
+              {cortes.map((c) => (
+                <Card key={c.id} className="p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-bold text-ink">{c.competencia}</p>
+                      <p className="mt-0.5 text-sm text-ink-light">
+                        {c.qtdSocios} sócio(s) · {fmtDataHora(c.executadoEm, me?.timezone)}
+                      </p>
+                    </div>
+                    <span className="shrink-0 font-bold text-ink">{formatBRL(c.totalCents)}</span>
+                  </div>
+                  <div className="mt-2 flex gap-2 border-t border-line/60 pt-2">
+                    <BotaoExport onClick={() => exportarFechado(c.id, 'xlsx')} tipo="xlsx" />
+                    <BotaoExport onClick={() => exportarFechado(c.id, 'pdf')} tipo="pdf" />
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </>
         )}
       </section>
 
@@ -317,7 +353,7 @@ export default function CortePage() {
               <strong>{formatBRL(previa.totalCents)}</strong> — e transfere à tesouraria. Para o
               empório, ficam como pagos.
             </p>
-            <p className="mt-2 rounded bg-danger/10 px-3 py-2 text-sm font-semibold text-danger">
+            <p className="mt-2 rounded-lg bg-danger/10 px-3 py-2 text-sm font-semibold text-danger">
               ⚠️ Esta ação é irreversível pelo sistema.
             </p>
             <p className="mt-3 text-sm text-ink-light">
@@ -325,12 +361,7 @@ export default function CortePage() {
               <strong>{previa.corteHora}</strong> (fuso do núcleo).
             </p>
             <div className="mt-4 flex gap-2">
-              <Button
-                variant="ghost"
-                className="flex-1"
-                onClick={() => setConfirmar(false)}
-                disabled={fechando}
-              >
+              <Button variant="ghost" className="flex-1" onClick={() => setConfirmar(false)} disabled={fechando}>
                 Cancelar
               </Button>
               <Button className="flex-1" onClick={confirmarFechar} disabled={fechando}>
@@ -340,6 +371,21 @@ export default function CortePage() {
           </Card>
         </div>
       )}
-    </main>
+    </AppShell>
+  )
+}
+
+function BotaoExport({ onClick, tipo }: { onClick: () => void; tipo: 'xlsx' | 'pdf' }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-sm font-semibold text-ink-muted hover:border-brand hover:text-brand',
+      )}
+    >
+      {tipo === 'xlsx' ? <FileSpreadsheet size={14} /> : <FileText size={14} />}
+      {tipo === 'xlsx' ? 'Excel' : 'PDF'}
+    </button>
   )
 }
