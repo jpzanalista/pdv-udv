@@ -23,7 +23,7 @@ services:
       retries: 10
 
   api:
-    image: pdv-udv:latest
+    image: ghcr.io/jpzanalista/pdv-udv:latest
     build:
       context: .
       dockerfile: Dockerfile
@@ -44,7 +44,7 @@ services:
         condition: service_healthy
 
   web:
-    image: pdv-udv:latest
+    image: ghcr.io/jpzanalista/pdv-udv:latest
     build:
       context: .
       dockerfile: Dockerfile
