@@ -122,12 +122,12 @@ export class ResponsavelService {
     })
     const base = (process.env.APP_URL ?? 'http://localhost:3000').replace(/\/$/, '')
     const link = `${base}/definir-senha?token=${token}`
-    const assunto = tipo === 'definir' ? 'Defina sua senha — PDV UDV' : 'Redefinir senha — PDV UDV'
+    const assunto = tipo === 'definir' ? 'Defina sua senha — Empório' : 'Redefinir senha — Empório'
     const verbo = tipo === 'definir' ? 'definir' : 'redefinir'
     await this.email.enviar(
       email,
       assunto,
-      `Olá,\n\nAcesse o link abaixo para ${verbo} a senha de acesso ao PDV UDV (empório):\n${link}\n\nO link expira em ${TTL_HORAS} horas. Se você não solicitou, ignore este e-mail.`,
+      `Olá,\n\nRecebemos um pedido para ${verbo} a sua senha de acesso ao Empório (sistema do seu empório da UDV).\n\nÉ só clicar no link abaixo:\n${link}\n\nO link expira em ${TTL_HORAS} horas. Se você não fez esse pedido, pode ignorar este e-mail com segurança.\n\n— Empório`,
     )
   }
 }
