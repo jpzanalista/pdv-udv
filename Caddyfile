@@ -1,0 +1,26 @@
+# Caddy — HTTPS automático (Let's Encrypt) por subdomínio.
+# Coloque em /etc/caddy/Caddyfile na VPS e recarregue: `caddy reload`.
+# DNS: um registro A wildcard  *.emporio.cloud → IP_DA_VPS  (e @ → IP_DA_VPS).
+
+# API (Nest) — o prefixo /api já é interno da API.
+api.emporio.cloud {
+	encode gzip
+	reverse_proxy localhost:3333
+	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+}
+
+# Web (Next) — mesma app; o subdomínio é roteado pelo middleware.
+pdv.emporio.cloud,
+diretoria.emporio.cloud,
+socio.emporio.cloud,
+admin.emporio.cloud,
+emporio.cloud,
+www.emporio.cloud {
+	encode gzip
+	reverse_proxy localhost:3000
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+	}
+}

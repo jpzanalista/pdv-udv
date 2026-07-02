@@ -20,10 +20,10 @@ function origemPermitida(origin: string): boolean {
 }
 
 async function bootstrap() {
+  // Cria o app primeiro: o ConfigModule carrega o .env para process.env aqui.
+  const app = await NestFactory.create(AppModule)
   exigir('JWT_SECRET')
   exigir('JWT_REFRESH_SECRET')
-
-  const app = await NestFactory.create(AppModule)
   app.setGlobalPrefix('api')
 
   app.enableCors({
