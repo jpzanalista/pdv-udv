@@ -21,9 +21,13 @@ export class WhatsappService {
     await this.sendText(telefone, `Seu código de acesso ao Empório é ${codigo}. Expira em 5 minutos.`)
   }
 
+  /** Rodapé fixo: é um número automático, ninguém lê as respostas. */
+  private static readonly RODAPE = '\n\n_Número automático — por favor não responda por aqui._'
+
   /** Envia uma mensagem de texto livre. Sem EVOLUTION_* configurado, loga no servidor (dev). */
   async sendText(telefone: string, text: string): Promise<void> {
     const number = WhatsappService.numero(telefone)
+    const mensagem = `${text}${WhatsappService.RODAPE}`
 
     const url = process.env.EVOLUTION_URL
     const instance = process.env.EVOLUTION_INSTANCE
@@ -35,14 +39,14 @@ export class WhatsappService {
         this.logger.error('EVOLUTION_* não configurado — WhatsApp indisponível em produção')
         throw new Error('Serviço de WhatsApp indisponível')
       }
-      this.logger.warn(`[DEV] WhatsApp p/ ${number}:\n${text}\n(configure EVOLUTION_* para enviar de verdade)`)
+      this.logger.warn(`[DEV] WhatsApp p/ ${number}:\n${mensagem}\n(configure EVOLUTION_* para enviar de verdade)`)
       return
     }
 
     const res = await fetch(`${url.replace(/\/$/, '')}/message/sendText/${instance}`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', apikey: apiKey },
-      body: JSON.stringify({ number, text }),
+      body: JSON.stringify({ number, text: mensagem }),
     })
     if (!res.ok) {
       const body = await res.text().catch(() => '')

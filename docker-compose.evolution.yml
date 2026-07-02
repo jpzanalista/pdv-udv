@@ -1,14 +1,14 @@
 # Evolution API (WhatsApp) — atrás do nginx-proxy + acme-companion já existentes na VPS.
 # Sobe SEPARADO do PDV (stack própria, com Postgres e Redis dedicados).
 #
-#   1) Troque AUTHENTICATION_API_KEY por uma chave forte:  openssl rand -hex 24
+#   1) No .env: EVOLUTION_AUTH_KEY=<openssl rand -hex 24>
 #   2) docker compose -f docker-compose.evolution.yml up -d
 #   3) Abra https://evolution.emporio.cloud/manager  (usa a mesma chave para logar)
 #   4) Crie uma instância, escaneie o QR com o WhatsApp do empório
 #   5) No .env do PDV: EVOLUTION_URL / EVOLUTION_INSTANCE / EVOLUTION_API_KEY
 services:
   evolution:
-    image: atendai/evolution-api:v2.1.1
+    image: evoapicloud/evolution-api:v2.3.7
     restart: unless-stopped
     depends_on:
       evolution-postgres:
@@ -17,18 +17,18 @@ services:
         condition: service_started
     environment:
       SERVER_URL: https://evolution.emporio.cloud
-      # >>> TROQUE por: openssl rand -hex 24 <<<
-      AUTHENTICATION_API_KEY: TROQUE_ESTA_CHAVE_POR_openssl_rand_hex_24
+      # A chave vem do .env (EVOLUTION_AUTH_KEY) — gere com: openssl rand -hex 24
+      AUTHENTICATION_API_KEY: ${EVOLUTION_AUTH_KEY}
       # Banco (persiste instâncias/mensagens)
       DATABASE_ENABLED: 'true'
       DATABASE_PROVIDER: postgresql
       DATABASE_CONNECTION_URI: postgresql://evolution:evolution@evolution-postgres:5432/evolution
       DATABASE_CONNECTION_CLIENT_NAME: evolution
       DATABASE_SAVE_DATA_INSTANCE: 'true'
-      DATABASE_SAVE_DATA_NEW_MESSAGE: 'true'
-      DATABASE_SAVE_MESSAGE_UPDATE: 'true'
-      DATABASE_SAVE_DATA_CONTACTS: 'true'
-      DATABASE_SAVE_DATA_CHATS: 'true'
+      DATABASE_SAVE_DATA_NEW_MESSAGE: 'false'
+      DATABASE_SAVE_MESSAGE_UPDATE: 'false'
+      DATABASE_SAVE_DATA_CONTACTS: 'false'
+      DATABASE_SAVE_DATA_CHATS: 'false'
       # Cache Redis
       CACHE_REDIS_ENABLED: 'true'
       CACHE_REDIS_URI: redis://evolution-redis:6379/6
@@ -39,6 +39,10 @@ services:
       QRCODE_LIMIT: '30'
       DEL_INSTANCE: 'false'
       LOG_LEVEL: ERROR
+      # Modo "número automático": rejeita ligações e ignora grupos
+      REJECT_CALL: 'true'
+      MSG_CALL: 'Este é um número automático de notificações. Ligações não são atendidas.'
+      GROUPS_IGNORE: 'true'
       # Publicação via nginx-proxy (Evolution escuta na 8080)
       VIRTUAL_HOST: evolution.emporio.cloud
       VIRTUAL_PORT: '8080'
