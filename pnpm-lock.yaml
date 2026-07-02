@@ -56,6 +56,9 @@ importers:
       nodemailer:
         specifier: ^9.0.1
         version: 9.0.1
+      pg:
+        specifier: ^8.13.1
+        version: 8.22.0
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2
@@ -81,6 +84,9 @@ importers:
       '@types/nodemailer':
         specifier: ^8.0.1
         version: 8.0.1
+      '@types/pg':
+        specifier: ^8.11.10
+        version: 8.20.0
       typescript:
         specifier: ^5.7.3
         version: 5.9.3

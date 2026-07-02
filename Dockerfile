@@ -1,7 +1,7 @@
 # Imagem única do monorepo (API Nest + Web Next). O compose roda cada serviço com seu comando.
 FROM node:22-alpine
 RUN apk add --no-cache libc6-compat
-RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
+RUN npm install -g pnpm@9.15.4
 WORKDIR /app
 
 # 1) Só os manifests → o layer de instalação fica em CACHE enquanto package.json/lock não mudam.
