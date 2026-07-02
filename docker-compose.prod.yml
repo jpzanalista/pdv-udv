@@ -23,9 +23,12 @@ services:
       retries: 10
 
   api:
+    image: pdv-udv:latest
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: https://api.emporio.cloud
     restart: unless-stopped
     working_dir: /app/apps/api
     command: node dist/main.js
@@ -41,6 +44,7 @@ services:
         condition: service_healthy
 
   web:
+    image: pdv-udv:latest
     build:
       context: .
       dockerfile: Dockerfile
