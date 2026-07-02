@@ -8,3 +8,4 @@ dist
 .git
 *.log
 .env
+backup_antes_limpeza.sql

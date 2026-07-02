@@ -1,0 +1,66 @@
+# Produção — Empório atrás do nginx-proxy + acme-companion já existentes na VPS.
+# Não publica portas 80/443/3000; o nginx-proxy roteia pela rede "proxy_network"
+# usando VIRTUAL_HOST, e o acme-companion emite HTTPS por LETSENCRYPT_HOST.
+#
+#   docker compose -f docker-compose.prod.yml build
+#   docker compose -f docker-compose.prod.yml run --rm -w /app api pnpm --filter @pdv-udv/db db:migrate
+#   docker compose -f docker-compose.prod.yml up -d
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pdv
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: pdv
+    volumes:
+      - emporio_pgdata:/var/lib/postgresql/data
+    networks: [internal]
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U pdv -d pdv']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    working_dir: /app/apps/api
+    command: node dist/main.js
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      VIRTUAL_HOST: api.emporio.cloud
+      VIRTUAL_PORT: '3333'
+      LETSENCRYPT_HOST: api.emporio.cloud
+    networks: [internal, proxy_network]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: https://api.emporio.cloud
+    restart: unless-stopped
+    working_dir: /app
+    command: pnpm --filter @pdv-udv/web start
+    environment:
+      NODE_ENV: production
+      VIRTUAL_HOST: pdv.emporio.cloud,diretoria.emporio.cloud,socio.emporio.cloud,admin.emporio.cloud,emporio.cloud,www.emporio.cloud
+      VIRTUAL_PORT: '3000'
+      LETSENCRYPT_HOST: pdv.emporio.cloud,diretoria.emporio.cloud,socio.emporio.cloud,admin.emporio.cloud,emporio.cloud,www.emporio.cloud
+    networks: [proxy_network]
+    depends_on: [api]
+
+networks:
+  internal:
+  proxy_network:
+    external: true
+
+volumes:
+  emporio_pgdata:
