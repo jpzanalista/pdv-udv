@@ -134,6 +134,13 @@
       "when": 1782948891722,
       "tag": "0018_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1782952151267,
+      "tag": "0019_mighty_james_howlett",
+      "breakpoints": true
     }
   ]
 }

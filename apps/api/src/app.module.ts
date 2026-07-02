@@ -10,6 +10,7 @@ import { RateLimitGuard } from './common/rate-limit.guard'
 import { DbModule } from './db/db.module'
 import { TenantInterceptor } from './db/tenant.interceptor'
 import { ExpedientesModule } from './expedientes/expedientes.module'
+import { GestorModule } from './gestor/gestor.module'
 import { HealthController } from './health/health.controller'
 import { NucleosModule } from './nucleos/nucleos.module'
 import { PessoasModule } from './pessoas/pessoas.module'
@@ -36,6 +37,7 @@ import { VendasModule } from './vendas/vendas.module'
     RelatoriosModule,
     ResponsavelModule,
     CortesModule,
+    GestorModule,
   ],
   controllers: [HealthController],
   providers: [

@@ -10,5 +10,6 @@ import { ResponsavelService } from './responsavel.service'
   imports: [AuthModule, EmailModule],
   controllers: [EmporioAuthController, ResponsaveisController],
   providers: [ResponsavelService, RolesGuard],
+  exports: [ResponsavelService],
 })
 export class ResponsavelModule {}

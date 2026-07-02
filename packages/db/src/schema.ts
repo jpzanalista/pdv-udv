@@ -66,6 +66,7 @@ export const nucleos = pgTable('nucleos', {
   timezone: varchar('timezone', { length: 40 }).notNull().default('America/Sao_Paulo'), // fuso local do empório
   corteDia: integer('corte_dia').notNull().default(28), // dia do corte mensal do crediário
   corteHora: varchar('corte_hora', { length: 5 }).notNull().default('02:59'), // HH:MM no fuso do núcleo
+  ativo: boolean('ativo').notNull().default(true), // gestor da plataforma autoriza/suspende o uso do PDV
 
   // CNPJ entra depois (quando o núcleo for ter subconta ASAAS) — por isso nullable.
   cnpj: varchar('cnpj', { length: 14 }).unique(),
