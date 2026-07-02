@@ -21,7 +21,8 @@ export class AsaasService {
     /\/$/,
     '',
   )
-  private readonly masterKey = process.env.ASAAS_MASTER_API_KEY
+  // No piloto (1 núcleo) a chave única do .env já é a "master". Aceita os dois nomes.
+  private readonly masterKey = process.env.ASAAS_MASTER_API_KEY ?? process.env.ASAAS_API_KEY
 
   get isStub(): boolean {
     return !this.masterKey

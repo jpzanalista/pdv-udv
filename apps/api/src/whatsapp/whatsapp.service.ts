@@ -18,7 +18,7 @@ export class WhatsappService {
   }
 
   async sendOtp(telefone: string, codigo: string): Promise<void> {
-    await this.sendText(telefone, `Seu código de acesso ao PDV UDV é ${codigo}. Expira em 5 minutos.`)
+    await this.sendText(telefone, `Seu código de acesso ao Empório é ${codigo}. Expira em 5 minutos.`)
   }
 
   /** Envia uma mensagem de texto livre. Sem EVOLUTION_* configurado, loga no servidor (dev). */
