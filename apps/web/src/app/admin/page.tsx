@@ -1,7 +1,7 @@
 'use client'
 
 import { BR_TIMEZONES } from '@pdv-udv/shared'
-import { Building2, LogOut, Plus } from 'lucide-react'
+import { Building2, Eye, LogOut, Plus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { type FormEvent, useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/Button'
@@ -80,6 +80,23 @@ export default function AdminPage() {
     router.replace('/admin/login')
   }
 
+  /** "Ver como" — abre a área do núcleo numa aba nova, em observação (somente leitura). */
+  async function verComo(n: NucleoRow, papel: 'responsavel_emporio' | 'presidencia') {
+    try {
+      const t = await api<{ accessToken: string; label: string }>('/gestor/impersonar', {
+        method: 'POST',
+        body: JSON.stringify({ nucleoId: n.id, papel }),
+      })
+      const area = papel === 'responsavel_emporio' ? '/caixa' : '/'
+      window.open(
+        `${area}#imp=${encodeURIComponent(t.accessToken)}&lbl=${encodeURIComponent(t.label)}`,
+        '_blank',
+      )
+    } catch {
+      setMsg('Não foi possível abrir a observação.')
+    }
+  }
+
   if (carregando) return <main className="grid min-h-[100dvh] place-items-center text-ink-muted">Carregando…</main>
   if (!ok) return null
 
@@ -128,6 +145,7 @@ export default function AdminPage() {
                 <th className="px-3 py-2.5 text-right">Vendas</th>
                 <th className="px-3 py-2.5">Pix</th>
                 <th className="px-3 py-2.5">Situação</th>
+                <th className="px-3 py-2.5">Observar</th>
               </tr>
             </thead>
             <tbody>
@@ -153,11 +171,17 @@ export default function AdminPage() {
                       </span>
                     </label>
                   </td>
+                  <td className="px-3 py-3">
+                    <div className="inline-flex gap-1.5">
+                      <ObsBtn onClick={() => verComo(n, 'responsavel_emporio')}>PDV</ObsBtn>
+                      <ObsBtn onClick={() => verComo(n, 'presidencia')}>Direção</ObsBtn>
+                    </div>
+                  </td>
                 </tr>
               ))}
               {nucleos.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-3 py-6 text-center text-ink-light">
+                  <td colSpan={7} className="px-3 py-6 text-center text-ink-light">
                     Nenhum empório ainda.
                   </td>
                 </tr>
@@ -190,6 +214,10 @@ export default function AdminPage() {
                 {n.responsaveis.length ? n.responsaveis.map((r) => r.email).join(', ') : 'nenhum'}
                 {n.temAsaas && ' · Pix ✓'}
               </p>
+              <div className="mt-2 flex gap-1.5">
+                <ObsBtn onClick={() => verComo(n, 'responsavel_emporio')}>Ver PDV</ObsBtn>
+                <ObsBtn onClick={() => verComo(n, 'presidencia')}>Ver Direção</ObsBtn>
+              </div>
             </Card>
           ))}
           {nucleos.length === 0 && <Card className="p-6 text-center text-ink-light">Nenhum empório ainda.</Card>}
@@ -208,6 +236,19 @@ export default function AdminPage() {
         />
       )}
     </div>
+  )
+}
+
+function ObsBtn({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title="Abrir em observação (somente leitura)"
+      className="inline-flex items-center gap-1 rounded-lg border border-brand/40 px-2.5 py-1.5 text-xs font-semibold text-brand hover:bg-brand-bg"
+    >
+      <Eye size={13} /> {children}
+    </button>
   )
 }
 

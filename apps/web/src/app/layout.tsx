@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import type { ReactNode } from 'react'
+import { ObservacaoBanner } from '@/components/ObservacaoBanner'
 import { ThemeProvider } from '@/components/theme-provider'
 import './globals.css'
 
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="pt-BR" suppressHydrationWarning>
       <body>
         <ThemeProvider>{children}</ThemeProvider>
+        <ObservacaoBanner />
       </body>
     </html>
   )

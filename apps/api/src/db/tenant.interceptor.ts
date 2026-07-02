@@ -38,6 +38,10 @@ export class TenantInterceptor implements NestInterceptor {
     }
 
     const escrita = !LEITURA.has(req.method)
+    // Token de observação do gestor: só leitura, nunca escreve.
+    if (escrita && user.imp) {
+      throw new ForbiddenException('Modo observação — somente leitura.')
+    }
     const nucleoId = user.nucleoId
     return from(
       runInContext(this.pool, { nucleoId }, async () => {

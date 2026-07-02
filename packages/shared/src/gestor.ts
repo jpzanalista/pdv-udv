@@ -26,3 +26,11 @@ export type OnboardNucleoInput = z.infer<typeof onboardNucleoSchema>
 /** Autorizar/suspender o uso do PDV por um núcleo. */
 export const toggleNucleoSchema = z.object({ ativo: z.boolean() })
 export type ToggleNucleoInput = z.infer<typeof toggleNucleoSchema>
+
+/** Observação ("ver como"): papéis que o gestor pode assumir (somente leitura). */
+export const IMPERSONAVEIS = ['responsavel_emporio', 'presidencia'] as const
+export const impersonarSchema = z.object({
+  nucleoId: z.string().uuid(),
+  papel: z.enum(IMPERSONAVEIS),
+})
+export type ImpersonarInput = z.infer<typeof impersonarSchema>

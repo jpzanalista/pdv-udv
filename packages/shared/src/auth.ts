@@ -28,11 +28,13 @@ export type OtpVerifyInput = z.infer<typeof otpVerifySchema>
 
 /** Conteúdo do NOSSO JWT (token exchange). */
 export const jwtClaimsSchema = z.object({
-  sub: z.string().uuid(),
+  sub: z.string(), // uuid do usuário, ou sentinela do gestor da plataforma
   nucleoId: z.string().uuid().nullable(),
   role: z.enum(ROLES),
   // Só no token do sócio (portal): aponta para a pessoa dona da conta.
   pessoaId: z.string().uuid().nullish(),
+  // Token de observação do gestor (impersonation): somente leitura.
+  imp: z.boolean().nullish(),
 })
 export type JwtClaims = z.infer<typeof jwtClaimsSchema>
 

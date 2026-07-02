@@ -1,7 +1,7 @@
-import { createHash, scryptSync, timingSafeEqual } from 'node:crypto'
-import { BadRequestException, Inject, Injectable, UnauthorizedException } from '@nestjs/common'
+import { scryptSync, timingSafeEqual } from 'node:crypto'
+import { BadRequestException, Inject, Injectable, Logger, UnauthorizedException } from '@nestjs/common'
 import { type Database, nucleos, regioes, usuarios, vendas } from '@pdv-udv/db'
-import type { OnboardNucleoInput, TokenPair } from '@pdv-udv/shared'
+import type { OnboardNucleoInput, Role, TokenPair } from '@pdv-udv/shared'
 import { and, eq, isNotNull, sql } from 'drizzle-orm'
 import { CobrancasService } from '../asaas/cobrancas.service'
 import { DB } from '../db/db.module'
@@ -18,12 +18,32 @@ function verificarSenha(senha: string, hash: string): boolean {
 
 @Injectable()
 export class GestorService {
+  private readonly logger = new Logger('Gestor')
+
   constructor(
     @Inject(DB) private readonly db: Database,
     private readonly tokens: TokenService,
     private readonly responsavel: ResponsavelService,
     private readonly cobrancas: CobrancasService,
   ) {}
+
+  /** Observação ("ver como"): emite um token escopado ao núcleo/papel, SOMENTE LEITURA. */
+  async impersonar(nucleoId: string, papel: Role): Promise<TokenPair & { label: string }> {
+    const [n] = await this.db
+      .select({ nome: nucleos.nome, nomeExibicao: nucleos.nomeExibicao })
+      .from(nucleos)
+      .where(eq(nucleos.id, nucleoId))
+      .limit(1)
+    if (!n) throw new BadRequestException('Núcleo não encontrado')
+    this.logger.warn(`[OBSERVAÇÃO] gestor → núcleo ${nucleoId} como ${papel} (somente leitura)`)
+    const pair = await this.tokens.issue({
+      sub: 'gestor-plataforma',
+      nucleoId,
+      role: papel,
+      imp: true,
+    })
+    return { ...pair, label: `${n.nomeExibicao ?? n.nome} · ${papel === 'presidencia' ? 'Direção' : 'PDV'}` }
+  }
 
   /** Login do gestor único (credenciais no .env). */
   async login(emailRaw: string, senha: string): Promise<TokenPair> {

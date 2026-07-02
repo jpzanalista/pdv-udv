@@ -1,7 +1,9 @@
 import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common'
 import {
+  type ImpersonarInput,
   type OnboardNucleoInput,
   type ToggleNucleoInput,
+  impersonarSchema,
   onboardNucleoSchema,
   toggleNucleoSchema,
 } from '@pdv-udv/shared'
@@ -34,5 +36,11 @@ export class GestorController {
     @Body(new ZodValidationPipe(toggleNucleoSchema)) body: ToggleNucleoInput,
   ) {
     return this.gestor.definirAtivo(id, body.ativo)
+  }
+
+  /** "Ver como" — token de observação (somente leitura) de um núcleo/papel. */
+  @Post('impersonar')
+  impersonar(@Body(new ZodValidationPipe(impersonarSchema)) body: ImpersonarInput) {
+    return this.gestor.impersonar(body.nucleoId, body.papel)
   }
 }
