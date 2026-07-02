@@ -77,9 +77,9 @@ export default function ResponsaveisPage() {
     if (!r.email) return
     try {
       await api('/auth/emporio/reset', { method: 'POST', body: JSON.stringify({ email: r.email }) })
-      setMsg(`Link de senha reenviado para ${r.email}.`)
+      setMsg(`Link para (re)definir a senha enviado para ${r.email}.`)
     } catch {
-      setMsg('Não foi possível reenviar.')
+      setMsg('Não foi possível enviar o link.')
     }
   }
 
@@ -129,15 +129,14 @@ export default function ResponsaveisPage() {
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-3">
-                {!r.temSenha && (
-                  <button
-                    type="button"
-                    onClick={() => reenviar(r)}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-brand/40 px-3 py-1.5 text-sm font-semibold text-brand hover:bg-brand-bg"
-                  >
-                    <Mail size={14} /> Reenviar
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => reenviar(r)}
+                  title="Envia um link para (re)definir a senha"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-brand/40 px-3 py-1.5 text-sm font-semibold text-brand hover:bg-brand-bg"
+                >
+                  <Mail size={14} /> {r.temSenha ? 'Redefinir senha' : 'Reenviar link'}
+                </button>
                 <label className="flex cursor-pointer items-center gap-2">
                   <Switch checked={r.ativo} onCheckedChange={() => toggleAtivo(r)} aria-label="Ativo" />
                 </label>

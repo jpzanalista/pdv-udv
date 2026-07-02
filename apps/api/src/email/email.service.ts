@@ -13,6 +13,11 @@ export class EmailService {
   async enviar(to: string, assunto: string, texto: string): Promise<void> {
     const host = process.env.SMTP_HOST
     if (!host) {
+      if (process.env.NODE_ENV === 'production') {
+        // Não loga o link (que dá acesso a definir senha) nem finge sucesso.
+        this.logger.error('SMTP_HOST não configurado — e-mail indisponível em produção')
+        throw new Error('Serviço de e-mail indisponível')
+      }
       this.logger.warn(`[DEV] E-mail p/ ${to} | ${assunto}\n${texto}`)
       return
     }
